@@ -365,6 +365,75 @@
   }
 
 
+  function printTree(root, depth) {
+
+    desc = "";
+    for (var i = 0; i < depth; i++) desc = desc + " ";
+
+    desc = desc + root.index + ": ";
+
+    if (!root.children) return;
+
+    childIdxs = root.children.map(function(child) {return child.index;});
+    desc = desc + childIdxs.join(", ");
+
+    console.log(desc);
+
+    root.children.forEach(function(child) {
+      printTree(child, depth + 1);
+    });
+  }
+
+
+  /*
+   *
+   */
+  function flattenTree(network, maxClusters) {
+
+    function getClusters() {
+      var allClusts  = network.nodes.map(function(node) {return node.parent;});
+      var uniqClusts = [];
+
+      for (var i = 0; i < allClusts.length; i++) {
+        if (uniqClusts.indexOf(allClusts[i]) > -1) continue;
+        uniqClusts.push(allClusts[i]);
+      }
+
+      var clIdxs = uniqClusts.map(function(c) {return c.index;});;
+//      console.log("Clusters: " + clIdxs.join(", "));
+      return uniqClusts;
+    }
+
+    var clusters = getClusters();
+
+    while (clusters.length > maxClusters) {
+//      console.log("Tree:");
+//      printTree(network.treeNodes[network.treeNodes.length - 1], 0);
+
+      distances = clusters.map(function(clust) {return clust.distance;});
+      minIdx    = distances.indexOf(d3.min(distances));
+
+      clust         = clusters[minIdx];
+      parent        = clust.parent;
+      children      = clust.children;
+      clustChildIdx = parent.children.indexOf(clust);
+      clustTreeIdx  = network.treeNodes.indexOf(clust);
+      
+      parent .children .splice(clustChildIdx, 1);
+      network.treeNodes.splice(clustTreeIdx,  1);
+
+      parent.distance += clust.distance;
+
+      children.forEach(function(child) {
+        child.parent = parent;
+        parent.children.push(child);
+      });
+      
+
+      clusters = getClusters();
+    }
+  }
+
   /*
    * Given a network (see makeNetwork), and the output of a call to the 
    * MATLAB linkage function which describes the dendrogram of clusters 
@@ -373,9 +442,6 @@
    * an attribute called 'treeNodes' of the provided network.
    */
   function networkToTree(network, linkages) {
-
-    // TODO specify maximum tree depth, or number of clusters.
-    // 
 
     var numNodes  = network.nodes.length;
     var treeNodes = [];
@@ -393,6 +459,8 @@
       left .parent = treeNode;
       right.parent = treeNode;
       treeNode.children = [left, right];
+      treeNode.distance = linkages[i][2];
+      treeNode.index = i + numNodes + 1;
 
       treeNodes.push(treeNode);
     }
@@ -550,6 +618,9 @@
     // the dendrogram in the linkages data
     networkToTree(network, linkages);
 
+    // flatten the tree to 10 clusters
+    flattenTree(network, 10);
+
     // load the thumbnail for every node
     var zerofmt = d3.format("04d");
     for (var i = 0; i < network.nodes.length; i++) {
@@ -561,6 +632,8 @@
     // generate colour scales for network display
     genColourScales(network);
 
+    console.log(network);
+
     // TODO generate diameter from display size
     displayFullNetwork(network, "#fullNetwork", "none", 900, 900);
   }
@@ -571,6 +644,15 @@
    * may be used to pass standard arguments to the await function.
    */ 
   function qId(arg, cb) {cb(null, arg);}
+  // queue()
+  //   .defer(d3.text, "/data/Znet1_first20.txt")
+  //   .defer(d3.text, "/data/Znet2_first20.txt")
+  //   .defer(d3.text, "/data/clusters_first20.txt")
+  //   .defer(d3.text, "/data/hier_first20.txt")
+  //   .defer(d3.text, "/data/linkages_first20.txt")
+  //   .defer(qId,     "/data/melodic_IC_sum.sum")
+  //   .await(onDataLoad);
+
   queue()
     .defer(d3.text, "/data/Znet1.txt")
     .defer(d3.text, "/data/Znet2.txt")
