@@ -10,19 +10,30 @@
     var clusteredNodes = clusterLayout.nodes(rootNode);
     var leafNodes      = network.nodes;
 
-    var svgNodes = svg.append("g").selectAll(".node")
-      .data(network.nodes)
-      .enter();
-
-    var svgNodeLabels = svg.append("g").selectAll(".node")
-      .data(network.nodes)
-      .enter(); 
-
     // Position nodes in a big circle
-    function positionNode(node, off) {
-      return "rotate("    + (node.x - 90)   + ")"   + 
-             "translate(" + (node.y + off)  + ",0)" + 
+    function positionNode(node) {
+      return "rotate("    + (node.x - 90) + ")"   + 
+             "translate(" + (node.y + 8)  + ",0)" + 
              (node.x < 180 ? "" : "rotate(180)"); 
+    }
+
+    // Position labels in a slightly bigger circle
+    function positionLabel(node, off) {
+      return "rotate("    + (node.x - 90)   + ")"  + 
+             "translate(" + (node.y + 12)  + ",0)" + 
+             (node.x < 180 ? "" : "rotate(180)"); 
+    }
+
+    function anchorLabel(node) {
+      return node.x < 180 ? "start" : "end"; 
+    }
+
+    // Position thumbnails in a big circle, 
+    // ensuring that they are upright
+    function positionThumbnail(node) {
+      return "rotate("    + (node.x - 90)  + ",23,28)"   + 
+             "translate(" + (node.y - 10)  + ",0)" + 
+             "rotate("    + (-node.x + 90) + ",23,28)";
     }
 
     // Colour each node and its label according to cluster
@@ -48,32 +59,48 @@
       return classes.join(" ");
     }
 
+
     // Draw the nodes
-    svgNodes = svgNodes
+    network.svgNodes = network.svgNodes
+      .data(network.nodes)
+      .enter()
       .append("circle")
       .attr("class",     nodeClasses)
-      .attr("transform", function(node) {return positionNode(node, 8);})
+      .attr("transform", positionNode)
       .attr("r",         3)
       .attr("fill",      colourNode);
       
     // Draw the node labels
-    svgNodeLabels = svgNodeLabels
+    network.svgNodeLabels = network.svgNodeLabels
+      .data(network.nodes)
+      .enter()
       .append("text")
-      .attr("class",       nodeClasses)
+      .attr("class",        nodeClasses)
       .attr("dy",          ".31em")
       .attr("fill",         colourNode)
-      .attr("transform",    function(node) {return positionNode(node, 12);})
-      .style("text-anchor", function(node) {return node.x < 180 ? "start" : "end"; })
-      .text(function(node) { return node.name; });
+      .attr("transform",    positionLabel)
+      .style("text-anchor", anchorLabel)
+      .text(function(node) {return node.name; });
 
-    network.svgNodes      = svgNodes;
-    network.svgNodeLabels = svgNodeLabels;
+    // Draw the node thumbnails 
+    network.svgThumbnails = network.svgThumbnails
+      .data(network.nodes)
+      .enter()
+      .append("image")
+      .attr("class",      nodeClasses)
+      .attr("transform",  positionThumbnail)
+      .attr("xlink:href", function(node) {return node.thumbnail;})
+      .attr("width", "46")
+      .attr("height", "56");
   }
 
   /*
    * Draw the edges of the given network.
    */
-  function drawFullEdges(svg, network, radius) {
+  function drawFullEdges(
+    svg, 
+    network, 
+    radius) {
 
     // For drawing network edges as splines
     var bundle = d3.layout.bundle();
@@ -82,7 +109,6 @@
       .tension(.85)
       .radius(function(node) { return node.y; })
       .angle( function(node) { return node.x / 180 * Math.PI; });
-
 
      // Each svg path element is given two classes - 'edge-X' 
      // and 'edge-Y', where X and Y are the edge endpoints
@@ -101,18 +127,8 @@
       return "edge-" + idxs[0] + "-" + idxs[1];
     }
 
-    var colourDomain = d3.max([Math.abs(network.weightMins[1]), 
-                               Math.abs(network.weightMaxs[1])]);
-    var edgeColourScale = d3.scale.linear()
-      .domain([-colourDomain, 0, colourDomain])
-      .range(["blue", "white", "red"]);
 
-    function edgeColour(path) {
-      var colour = edgeColourScale(path.edge.weights[1]);
-      return colour;
-    }
-
-    // Edges are drawn as splines
+    // edges are drawn as splines
     var paths = bundle(network.edges);
 
     for (var i = 0; i < paths.length; i++) {
@@ -121,13 +137,14 @@
     }
 
     // draw the edges
-    var svgEdges = svg.append("g").selectAll(".edge")
+    var svgEdges = network.svgEdges;
+    svgEdges
       .data(paths)
       .enter()
       .append("path")
       .attr("id",            edgeId)
       .attr("class",         edgeClasses)
-      .attr("stroke",        edgeColour)
+      .attr("stroke",        "#cccccc")
       .attr("stroke-width",  1)
       .attr("fill",         "none")
       .attr("d",             line);
@@ -140,6 +157,7 @@
 
     var svgNodes      = network.svgNodes;
     var svgNodeLabels = network.svgNodeLabels;
+    var svgThumbnails = network.svgThumbnails;
     var svgEdges      = network.svgEdges;
 
     // scale for edge width
@@ -147,33 +165,45 @@
       .domain([network.weightMins[0], network.weightMaxs[0]])
       .range([1, 15]);
 
-    function setEdgeWidths(pathElems, paths, over) {
-      
-      var width = 1;
+    var colourDomain = d3.max([Math.abs(network.weightMins[1]), 
+                               Math.abs(network.weightMaxs[1])]);
+    var edgeColourScale = d3.scale.linear()
+      .domain([-colourDomain, 0, colourDomain])
+      .range(["blue", "white", "red"]);
 
+    function setEdgeAttrs(pathElems, paths, over) {
+      
+      var width  = 1;
+      var colour = "#dddddd";
+      
       if (over) {
-        width = function(path) {
-          var scaledWidth = edgeWidthScale(path.edge.weights[0]);
-          return scaledWidth;
-        }
+        width  = function(path) {return edgeWidthScale( path.edge.weights[0]);}
+        colour = function(path) {return edgeColourScale(path.edge.weights[0]);}
       }
 
       pathElems
         .data(paths)
         .attr("stroke-width", width)
+        .attr("stroke",       colour)
         .each(function() {this.parentNode.appendChild(this)});
     }
 
+    // Pre-emptively run CSS selector lookups so they
+    // don't have to be done on every mouse event
+    network.nodes.forEach(function(node) {
+      node.paths     = node.edges.map(function(edge) {return edge.path;});
+      node.pathElems = d3.selectAll(".edge-"    + node.index);
+      node.nodeElems = d3.selectAll(".node-"    + node.index);
+      node.nbrElems  = d3.selectAll(".nodenbr-" + node.index);
+    });
+
     function mouseOverNode(node, over) {
-
       
-      var paths     = node.edges.map(function(edge) {return edge.path;});
-      var pathElems = d3.selectAll(".edge-" + node.index);
+      node.nodeElems.classed("highlight", over);
+      node.nbrElems .classed("highlight", over);
+      node.pathElems.classed("highlight", over);
 
-      d3.selectAll(".node-"    + node.index).classed("highlight", over);
-      d3.selectAll(".nodenbr-" + node.index).classed("highlight", over);
-      pathElems                             .classed("highlight", over);
-      setEdgeWidths(pathElems, paths, over);
+      setEdgeAttrs(node.pathElems, node.paths, over);
     }
 
     svgNodes
@@ -191,11 +221,9 @@
    *
    * Citation: http://bl.ocks.org/mbostock/7607999
    */
-  function displayFullNetwork(network, networkDiv, controlDiv) {
+  function displayFullNetwork(network, networkDiv, controlDiv, diameter) {
 
-    // TODO generate diameter from display size
-    var diameter    = 960;
-    var radius      = diameter / 2;
+    var radius = diameter / 2;
 
     // put an svg element inside the networkDiv
     var svg = d3.select(networkDiv).append("svg")
@@ -204,8 +232,27 @@
       .append("g")
       .attr("transform", "translate(" + radius + "," + radius + ")");
 
-    drawFullNodes(svg, network, radius);
-    drawFullEdges(svg, network, radius);
+    var svgNodes = svg.append("g").selectAll(".node");
+//      .data(network.nodes)
+//      .enter();
+
+    var svgNodeLabels = svg.append("g").selectAll(".node");
+//      .data(network.nodes)
+//      .enter(); 
+
+    var svgEdges = svg.append("g").selectAll(".edge");
+//      .data(paths);
+
+    var svgThumbnails = svg.append("g").selectAll(".node");
+//      .data(network.nodes);
+
+    network.svgNodes      = svgNodes;
+    network.svgEdges      = svgEdges;
+    network.svgNodeLabels = svgNodeLabels;
+    network.svgThumbnails = svgThumbnails;
+
+    drawFullNodes( svg, network, radius);
+    drawFullEdges( svg, network, radius);
     configDynamics(svg, network, radius);
 
     d3.select(self.frameElement).style("height", diameter + "px");
@@ -220,6 +267,9 @@
    * an attribute called 'treeNodes' of the provided network.
    */
   function networkToTree(network, linkages) {
+
+    // TODO specify maximum tree depth, or number of clusters.
+    // 
 
     var numNodes  = network.nodes.length;
     var treeNodes = [];
@@ -355,7 +405,13 @@
    * function.
    */
   function onDataLoad(
-    error, znet1Data, znet2Data, clusterData, hierData, linkageData) {
+    error, 
+    znet1Data, 
+    znet2Data, 
+    clusterData, 
+    hierData, 
+    linkageData, 
+    imageDir) {
 
     znet1Matrix = parseTextMatrix(znet1Data);
     znet2Matrix = parseTextMatrix(znet2Data);
@@ -383,31 +439,35 @@
 
     // turn the matrix data into a network
     var network = makeNetwork([znet2Matrix, znet1Matrix], clusters, hiers);
-    
+
     // generate a tree of dummy nodes from 
     // the dendrogram in the linkages data
     networkToTree(network, linkages);
 
-    //console.log(znet2Matrix);
-    //console.log(znet1Matrix);
-    //console.log(clusters);
-    //console.log(hiers);
-    console.log(network);
+    // load the thumbnail for every node
+    var zerofmt = d3.format("04d");
+    for (var i = 0; i < network.nodes.length; i++) {
 
-    // and display 
-    displayFullNetwork(network, "#fullNetwork", "none");
+      var imgUrl = imageDir + "/" + zerofmt(i) + ".png";
+      network.nodes[i].thumbnail = imgUrl;
+    }
+
+    // TODO generate diameter from display size
+    displayFullNetwork(network, "#fullNetwork", "none", 750);
   }
 
   /*
    * Load all of the network data, and pass it to the onDataLoad
-   * function.
+   * function. The qId function is an identity function which 
+   * may be used to pass standard arguments to the await function.
    */ 
+  function qId(arg, cb) {cb(null, arg);}
   queue()
     .defer(d3.text, "/data/Znet1.txt")
     .defer(d3.text, "/data/Znet2.txt")
     .defer(d3.text, "/data/clusters.txt")
     .defer(d3.text, "/data/hier.txt")
     .defer(d3.text, "/data/linkages.txt")
+    .defer(qId,     "/data/melodic_IC_sum.sum")
     .await(onDataLoad);
-
 })();
