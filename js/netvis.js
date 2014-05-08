@@ -5,7 +5,7 @@
    */
   function drawFullNodes(svg, network, radius) {
 
-    var clusterLayout  = d3.layout.cluster().size([360, radius-50]);
+    var clusterLayout  = d3.layout.cluster().size([360, radius-140]);
     var rootNode       = network.treeNodes[network.treeNodes.length - 1];
     var clusteredNodes = clusterLayout.nodes(rootNode);
     var leafNodes      = network.nodes;
@@ -13,14 +13,14 @@
     // Position nodes in a big circle
     function positionNode(node) {
       return "rotate("    + (node.x - 90) + ")"   + 
-             "translate(" + (node.y + 8)  + ",0)" + 
+             "translate(" + (node.y)      + ",0)" + 
              (node.x < 180 ? "" : "rotate(180)"); 
     }
 
     // Position labels in a slightly bigger circle
     function positionLabel(node, off) {
       return "rotate("    + (node.x - 90)   + ")"  + 
-             "translate(" + (node.y + 12)  + ",0)" + 
+             "translate(" + (node.y + 4)  + ",0)" + 
              (node.x < 180 ? "" : "rotate(180)"); 
     }
 
@@ -31,9 +31,10 @@
     // Position thumbnails in a big circle, 
     // ensuring that they are upright
     function positionThumbnail(node) {
-      return "rotate("    + (node.x - 90)  + ",23,28)"   + 
-             "translate(" + (node.y - 10)  + ",0)" + 
-             "rotate("    + (-node.x + 90) + ",23,28)";
+      return "rotate("    + ( node.x - 90) + ")"   + 
+             "translate(" + ( node.y + 70) + ",0)" + 
+             "rotate("    + (-node.x + 90) + ")"   +
+             "translate(-23,-28)";
     }
 
     // Colour each node and its label according to cluster
@@ -59,7 +60,6 @@
       return classes.join(" ");
     }
 
-
     // Draw the nodes
     network.svgNodes = network.svgNodes
       .data(network.nodes)
@@ -67,6 +67,7 @@
       .append("circle")
       .attr("class",     nodeClasses)
       .attr("transform", positionNode)
+      .attr("opacity",  "0.2")
       .attr("r",         3)
       .attr("fill",      colourNode);
       
@@ -77,6 +78,7 @@
       .append("text")
       .attr("class",        nodeClasses)
       .attr("dy",          ".31em")
+      .attr("opacity",     "0.2")
       .attr("fill",         colourNode)
       .attr("transform",    positionLabel)
       .style("text-anchor", anchorLabel)
@@ -87,11 +89,12 @@
       .data(network.nodes)
       .enter()
       .append("image")
-      .attr("class",      nodeClasses)
-      .attr("transform",  positionThumbnail)
-      .attr("xlink:href", function(node) {return node.thumbnail;})
-      .attr("width", "46")
-      .attr("height", "56");
+      .attr("class",       nodeClasses)
+      .attr("transform",   positionThumbnail)
+      .attr("visibility", "hidden")
+      .attr("xlink:href",  function(node) {return node.thumbnail;})
+      .attr("width",      "46")
+      .attr("height",     "56");
   }
 
   /*
@@ -188,20 +191,50 @@
         .each(function() {this.parentNode.appendChild(this)});
     }
 
+    function setNodeAttrs(nodeElems, nbrElems, node, nbrs, over) {
+
+      if (over) {
+      }
+    }
+
     // Pre-emptively run CSS selector lookups so they
     // don't have to be done on every mouse event
     network.nodes.forEach(function(node) {
       node.paths     = node.edges.map(function(edge) {return edge.path;});
       node.pathElems = d3.selectAll(".edge-"    + node.index);
-      node.nodeElems = d3.selectAll(".node-"    + node.index);
-      node.nbrElems  = d3.selectAll(".nodenbr-" + node.index);
+      node.nodeElems = d3.selectAll(".node-"        + node.index);
+      node.nbrElems  = d3.selectAll(".nodenbr-"     + node.index);
+      
+      node.thumbElem     = d3.selectAll("image.node-"    + node.index);
+      node.nbrThumbElems = d3.selectAll("image.nodenbr-" + node.index);
     });
 
     function mouseOverNode(node, over) {
-      
-      node.nodeElems.classed("highlight", over);
-      node.nbrElems .classed("highlight", over);
-      node.pathElems.classed("highlight", over);
+
+      var opacity     = 0.3;
+      var font        = "normal";
+      var thumbVis    = "hidden";
+      var thumbWidth  = 46;
+      var thumbHeight = 56;
+
+      if (over) {
+        opacity     = 1.0;
+        font        = "bold";
+        thumbVis    = "visible";
+        thumbWidth  = 91;
+        thumbHeight = 109;
+      }
+
+      node.nodeElems.attr("opacity",        opacity);
+      node.nodeElems.attr("font-weight",    font);
+      node.nbrElems .attr("opacity",        opacity);
+      node.nbrElems .attr("font-weight",    font);
+
+      node.thumbElem.attr("visibility",     thumbVis);
+      node.thumbElem.attr("width",          thumbWidth);
+      node.thumbElem.attr("height",         thumbHeight);
+
+      node.nbrThumbElems.attr("visibility", thumbVis);
 
       setEdgeAttrs(node.pathElems, node.paths, over);
     }
@@ -221,30 +254,23 @@
    *
    * Citation: http://bl.ocks.org/mbostock/7607999
    */
-  function displayFullNetwork(network, networkDiv, controlDiv, diameter) {
+  function displayFullNetwork(
+    network, networkDiv, controlDiv, width, height) {
 
-    var radius = diameter / 2;
+    var diameter = Math.min(width, height);
+    var radius   = diameter / 2;
 
     // put an svg element inside the networkDiv
     var svg = d3.select(networkDiv).append("svg")
-      .attr("width",  diameter)
-      .attr("height", diameter)
+      .attr("width",  width)
+      .attr("height", height)
       .append("g")
       .attr("transform", "translate(" + radius + "," + radius + ")");
 
-    var svgNodes = svg.append("g").selectAll(".node");
-//      .data(network.nodes)
-//      .enter();
-
+    var svgNodes      = svg.append("g").selectAll(".node");
     var svgNodeLabels = svg.append("g").selectAll(".node");
-//      .data(network.nodes)
-//      .enter(); 
-
-    var svgEdges = svg.append("g").selectAll(".edge");
-//      .data(paths);
-
+    var svgEdges      = svg.append("g").selectAll(".edge");
     var svgThumbnails = svg.append("g").selectAll(".node");
-//      .data(network.nodes);
 
     network.svgNodes      = svgNodes;
     network.svgEdges      = svgEdges;
@@ -453,7 +479,7 @@
     }
 
     // TODO generate diameter from display size
-    displayFullNetwork(network, "#fullNetwork", "none", 750);
+    displayFullNetwork(network, "#fullNetwork", "none", 900, 900);
   }
 
   /*
