@@ -39,11 +39,12 @@
                           Math.abs(network.weightMaxs[1])]);
     var hltEdgeColourScale = d3.scale.linear()
       .domain([-edgeMax, -edgeMax/3.0, 0, edgeMax/3.0, edgeMax])
-      .range(["blue", "#ffff00", "white", "#ffff00", "red"]);
+      .range(["blue", "#ffffcc", "white", "#ffffcc", "red"]);
 
     var defEdgeColourScale = function(val) {
-      var c = hltEdgeColourScale(val);
-      return c;
+//      var c = hltEdgeColourScale(val);
+//      return c;
+      return null;
     }
 
     network.nodeColourScale    = nodeColourScale;
