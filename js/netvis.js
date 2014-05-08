@@ -13,13 +13,14 @@
   var HLT_THUMB_HEIGHT = 109/1.5;
 
   var DEF_EDGE_COLOUR = "#cccccc";
-  var DEF_EDGE_WIDTH  = 1;
+  var DEF_EDGE_WIDTH   = 1;
+  var DEF_EDGE_OPACITY = 1.0;
+  var HLT_EDGE_OPACITY = 0.7;
 
   var DEF_NODE_SIZE    = 3;
   var HLT_NODE_SIZE    = 5;
   var DEF_NODE_OPACITY = 0.2;
   var HLT_NODE_OPACITY = 1.0;
-
 
   function genColourScales(network) {
 
@@ -41,10 +42,25 @@
       .domain([-edgeMax, -edgeMax/3.0, 0, edgeMax/3.0, edgeMax])
       .range(["blue", "#ffffcc", "white", "#ffffcc", "red"]);
 
+    var edgeColourDefToHlt = d3.scale.linear()
+      .domain([0,   255])
+      .range( [150, 255]);
+
     var defEdgeColourScale = function(val) {
-//      var c = hltEdgeColourScale(val);
-//      return c;
-      return null;
+      var c = d3.rgb(hltEdgeColourScale(val));
+      
+      var cols = [c.r,c.g,c.b];
+      cols.sort(function(a,b) {return a-b;});
+
+      var ri = cols.indexOf(c.r);
+      var gi = cols.indexOf(c.g);
+      var bi = cols.indexOf(c.b);
+
+      c.r = Math.ceil(edgeColourDefToHlt(cols[ri]));
+      c.g = Math.ceil(edgeColourDefToHlt(cols[gi]));
+      c.b = Math.ceil(edgeColourDefToHlt(cols[bi]));
+
+      return c;
     }
 
     network.nodeColourScale    = nodeColourScale;
@@ -202,6 +218,7 @@
       .attr("class",         edgeClasses)
       .attr("stroke",        edgeColour)
       .attr("stroke-width",  DEF_EDGE_WIDTH)
+      .attr("opacity",       DEF_EDGE_OPACITY)
       .attr("fill",         "none")
       .attr("d",             line);
   }
@@ -218,20 +235,25 @@
 
     function setEdgeAttrs(pathElems, paths, over) {
 
-      var width  = DEF_EDGE_WIDTH;
-      var colour = function(path) {
+      var opacity = DEF_EDGE_OPACITY;
+      var width   = DEF_EDGE_WIDTH;
+      var colour  = function(path) {
         return network.defEdgeColourScale(path.edge.weights[0]);};
       
       if (over) {
-        width  = function(path) {return network.edgeWidthScale(path.edge.weights[0]);}
+        opacity = HLT_EDGE_OPACITY;
+        width  = function(path) {
+          return network.edgeWidthScale(path.edge.weights[0]);}
         colour = function(path) {
           return network.hltEdgeColourScale(path.edge.weights[0]);};
+
       }
 
       pathElems
         .data(paths)
         .attr("stroke-width", width)
         .attr("stroke",       colour)
+        .attr("opacity",      opacity)
         .each(function() {this.parentNode.appendChild(this)});
     }
 
