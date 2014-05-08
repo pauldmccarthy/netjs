@@ -5,6 +5,11 @@
    */
   function drawFullNodes(svg, network, radius) {
 
+    var clusterLayout  = d3.layout.cluster().size([360, radius-50]);
+    var rootNode       = network.treeNodes[network.treeNodes.length - 1];
+    var clusteredNodes = clusterLayout.nodes(rootNode);
+    var leafNodes      = network.nodes;
+
     var svgNodes = svg.append("g").selectAll(".node")
       .data(network.nodes)
       .enter();
@@ -21,10 +26,10 @@
     }
 
     // Colour each node and its label according to cluster
-    // TODO will there ever be more than 20 clusters?
-    clusterScale = d3.scale.category20();
+    // TODO will there ever be more than 10 clusters?
+    clusterScale = d3.scale.category10();
     function colourNode(node) {
-      return clusterScale(node.cluster-1);
+      return clusterScale(node.cluster-1 % 10);
     }
 
     /*
@@ -71,23 +76,27 @@
   function drawFullEdges(svg, network, radius) {
 
     // For drawing network edges as splines
-    var line = d3.svg.line.radial()
+    var bundle = d3.layout.bundle();
+    var line   = d3.svg.line.radial()
       .interpolate("bundle")
       .tension(.85)
       .radius(function(node) { return node.y; })
       .angle( function(node) { return node.x / 180 * Math.PI; });
 
+
      // Each svg path element is given two classes - 'edge-X' 
      // and 'edge-Y', where X and Y are the edge endpoints
     function edgeClasses(path) {
-      classes = ["edge-" + path[0].index, "edge-" + path[2].index];
+      end = path.length - 1;
+      classes = ["edge-" + path[0].index, "edge-" + path[end].index];
       return classes.join(" ");
     }
 
     // Each edge is given an id 'edge-X-Y', where X 
     // and Y are the edge endpoints (and X < Y).
     function edgeId(path) {
-      idxs = [path[0].index, path[2].index];
+      end = path.length - 1;
+      idxs = [path[0].index, path[end].index];
       idxs.sort(function(a, b){return a-b});
       return "edge-" + idxs[0] + "-" + idxs[1];
     }
@@ -99,13 +108,17 @@
       .range(["blue", "white", "red"]);
 
     function edgeColour(path) {
-      var colour = edgeColourScale(path.weights[1]);
+      var colour = edgeColourScale(path.edge.weights[1]);
       return colour;
     }
-    
 
-    // Edges are drawn as splines (see makeNetwork)
-    var paths = network.edges.map(function(edge) {return edge.path; });
+    // Edges are drawn as splines
+    var paths = bundle(network.edges);
+
+    for (var i = 0; i < paths.length; i++) {
+      paths[i].edge         = network.edges[i];
+      network.edges[i].path = paths[i];
+    }
 
     // draw the edges
     var svgEdges = svg.append("g").selectAll(".edge")
@@ -114,7 +127,6 @@
       .append("path")
       .attr("id",            edgeId)
       .attr("class",         edgeClasses)
-      //.attr("stroke",        "#bbbbbb")
       .attr("stroke",        edgeColour)
       .attr("stroke-width",  1)
       .attr("fill",         "none")
@@ -141,7 +153,8 @@
 
       if (over) {
         width = function(path) {
-          return edgeWidthScale(path.weights[0]);
+          var scaledWidth = edgeWidthScale(path.edge.weights[0]);
+          return scaledWidth;
         }
       }
 
@@ -153,6 +166,7 @@
 
     function mouseOverNode(node, over) {
 
+      
       var paths     = node.edges.map(function(edge) {return edge.path;});
       var pathElems = d3.selectAll(".edge-" + node.index);
 
@@ -192,10 +206,42 @@
 
     drawFullNodes(svg, network, radius);
     drawFullEdges(svg, network, radius);
-
     configDynamics(svg, network, radius);
 
     d3.select(self.frameElement).style("height", diameter + "px");
+  }
+
+
+  /*
+   * Given a network (see makeNetwork), and the output of a call to the 
+   * MATLAB linkage function which describes the dendrogram of clusters 
+   * of the network nodes, this function creates a list of 'dummy' nodes 
+   * which represent the binary dendrogram tree. This list is added as 
+   * an attribute called 'treeNodes' of the provided network.
+   */
+  function networkToTree(network, linkages) {
+
+    var numNodes  = network.nodes.length;
+    var treeNodes = [];
+
+    for (var i = 0; i < linkages.length; i++) {
+      var treeNode = {};
+      var left     = linkages[i][0];
+      var right    = linkages[i][1];
+
+      if (left  > numNodes) left  = treeNodes[    left  - 1 - numNodes];
+      else                  left  = network.nodes[left  - 1];
+      if (right > numNodes) right = treeNodes[    right - 1 - numNodes];
+      else                  right = network.nodes[right - 1];
+
+      left .parent = treeNode;
+      right.parent = treeNode;
+      treeNode.children = [left, right];
+
+      treeNodes.push(treeNode);
+    }
+
+    network.treeNodes = treeNodes;
   }
 
   /*
@@ -207,7 +253,7 @@
    * matrices will be added as attributes on the corresponding
    * network edge.
    */
-  function makeNetwork(matrices, clusters, hiers) {
+  function makeNetwork(matrices, clusters, hier) {
 
     matrix = matrices[0];
 
@@ -215,23 +261,6 @@
     var nodes    = [];
     var edges    = [];
     var numNodes = matrix.length;
-
-
-    var paths    = [];
-
-    // And a dummy root node, which is needed to 
-    // define svg paths representing network edges
-    var rootNode      = {};
-    rootNode.x        = 0;
-    rootNode.y        = 0;
-    rootNode.children = nodes;
-
-    // Create an index for each node, specifying its
-    // location in the list of hierarchy indices
-    hierIdxs = [];
-    for (var i = 0; i < numNodes; i++) {
-      hierIdxs[hiers[i]] = i;
-    }
 
     // Create a list of nodes
     for (var i = 0; i < numNodes; i++) {
@@ -241,20 +270,9 @@
       // Node label is 1-indexed
       node.index      = i+1;
       node.name       = "" + (i+1);
-      node.parent     = rootNode;
       node.cluster    = clusters[i];
       node.neighbours = [];
       node.edges      = [];
-
-      // x represents angle of rotation, and y 
-      // represents radius (distance from centre).
-      // Note that we're using the node location
-      // in hierarchy index list to determine 
-      // its location on screen.
-      // TODO y should be scaled according to 
-      // display size.
-      node.x = 360.0 * hierIdxs[i] / numNodes;
-      node.y = 400.0;
 
       nodes.push(node);
     }
@@ -277,19 +295,14 @@
 
         if (isNaN(matrix[i][j])) continue;
 
-        // Each edge has an associated path (a list of 
-        // nodes), so we can draw edges as pretty splines
-        var edge = {};
-        var path = [];
-
+        var edge     = {};
         edge.i       = nodes[i];
         edge.j       = nodes[j];
-        edge.weights = matrices.map(function(mat) {return mat[i][j]; });
 
-        // path from this node to the root, and back
-        path         = [edge.i, rootNode, edge.j];
-        path.weights = edge.weights;
-        edge.path    = path;
+        // d3.layout.bundle requires two attributes, 'source' and 'target'.
+        edge.source  = nodes[i];
+        edge.target  = nodes[j];
+        edge.weights = matrices.map(function(mat) {return mat[i][j]; });
 
         // update weight mins/maxs
         for (var k = 0; k < edge.weights.length; k++) {
@@ -305,20 +318,11 @@
       }
     }
 
-    // Reorder the node list according to 
-    // the list of indices stored in 'hiers'
-    reorderedNodes = [];
-    for (var i = 0; i < numNodes; i++) {
-      reorderedNodes.push(nodes[hiers[i]]);
-    }
-
     // put all the network information 
     // into a dictionary
     var network = {};
-    network.root        = rootNode;
-    network.nodes       = reorderedNodes;
+    network.nodes       = nodes;
     network.edges       = edges;
-    network.numClusters = d3.set(clusters).length;
     network.weightMins  = weightMins;
     network.weightMaxs  = weightMaxs;
 
@@ -350,12 +354,14 @@
    * passes the resulting network to the displayFullNetwork 
    * function.
    */
-  function onDataLoad(error, znet1Data, znet2Data, clusterData, hierData) {
+  function onDataLoad(
+    error, znet1Data, znet2Data, clusterData, hierData, linkageData) {
 
     znet1Matrix = parseTextMatrix(znet1Data);
     znet2Matrix = parseTextMatrix(znet2Data);
     clusters    = parseTextMatrix(clusterData)[0];
     hiers       = parseTextMatrix(hierData)   [0];
+    linkages    = parseTextMatrix(linkageData)
 
     // threshold the znet2 matrix
     for (var i = 0; i < znet2Matrix.length; i++) {
@@ -377,6 +383,10 @@
 
     // turn the matrix data into a network
     var network = makeNetwork([znet2Matrix, znet1Matrix], clusters, hiers);
+    
+    // generate a tree of dummy nodes from 
+    // the dendrogram in the linkages data
+    networkToTree(network, linkages);
 
     //console.log(znet2Matrix);
     //console.log(znet1Matrix);
@@ -392,23 +402,12 @@
    * Load all of the network data, and pass it to the onDataLoad
    * function.
    */ 
-  cutdown = false;
-  if (cutdown) {
-    queue()
-    .defer(d3.text, "/data/Znet1_first20.txt")
-    .defer(d3.text, "/data/Znet2_first20.txt")
-    .defer(d3.text, "/data/clusters_first20.txt")
-    .defer(d3.text, "/data/hier_first20.txt")
-      .await(onDataLoad);
-  }
-  else {
-    queue()
-      .defer(d3.text, "/data/Znet1.txt")
-      .defer(d3.text, "/data/Znet2.txt")
-      .defer(d3.text, "/data/clusters.txt")
-      .defer(d3.text, "/data/hier.txt")
-      .await(onDataLoad);
-  }
-
+  queue()
+    .defer(d3.text, "/data/Znet1.txt")
+    .defer(d3.text, "/data/Znet2.txt")
+    .defer(d3.text, "/data/clusters.txt")
+    .defer(d3.text, "/data/hier.txt")
+    .defer(d3.text, "/data/linkages.txt")
+    .await(onDataLoad);
 
 })();
