@@ -1,7 +1,7 @@
 (function() {
 
   var DEF_LABEL_SIZE   = 10;
-  var HLT_LABEL_SIZE   = 14;
+  var HLT_LABEL_SIZE   = 18;
   var DEF_LABEL_WEIGHT = "normal";
   var HLT_LABEL_WEIGHT = "bold";
   var DEF_LABEL_FONT   = "sans";
@@ -44,7 +44,7 @@
 
     var edgeColourDefToHlt = d3.scale.linear()
       .domain([0,   255])
-      .range( [150, 255]);
+      .range( [175, 255]);
 
     var defEdgeColourScale = function(val) {
       var c = d3.rgb(hltEdgeColourScale(val));
@@ -74,7 +74,7 @@
    */
   function drawFullNodes(svg, network, radius) {
 
-    var clusterLayout  = d3.layout.cluster().size([360, radius-140]);
+    var clusterLayout  = d3.layout.cluster().size([360, radius-110]);
     var rootNode       = network.treeNodes[network.treeNodes.length - 1];
     var clusteredNodes = clusterLayout.nodes(rootNode);
     var leafNodes      = network.nodes;
@@ -299,7 +299,6 @@
       node.nbrElems     .attr("opacity",     opacity);
       node.nbrElems     .attr("font-family", font);
       node.nbrElems     .attr("font-weight", fontWeight);
-      node.nbrElems     .attr("font-size",   fontSize);
       node.nodeElem     .attr("r",           nodeSize);
       node.thumbElem    .attr("visibility",  thumbVis);
       node.thumbElem    .attr("width",       thumbWidth);
@@ -338,15 +337,20 @@
 
     // put an svg element inside the networkDiv
     var svg = d3.select(networkDiv).append("svg")
-      .attr("width",  width)
-      .attr("height", height)
+      .attr("width",       width)
+      .attr("height",      height)
+      .style("background-color", "#fafaf0")
       .append("g")
       .attr("transform", "translate(" + radius + "," + radius + ")");
 
-    var svgNodes      = svg.append("g").selectAll(".node");
-    var svgNodeLabels = svg.append("g").selectAll(".node");
+
+    // The order of these lines defines the order in which
+    // the elements are displayed (last displayed on top)
     var svgEdges      = svg.append("g").selectAll(".edge");
     var svgThumbnails = svg.append("g").selectAll(".node");
+    var svgNodes      = svg.append("g").selectAll(".node");
+    var svgNodeLabels = svg.append("g").selectAll(".node");
+
 
     network.svgNodes      = svgNodes;
     network.svgEdges      = svgEdges;
