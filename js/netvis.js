@@ -73,18 +73,19 @@
     // TODO handle more than 10 clusters?
     var nodeColourScale = d3.scale.category10();
 
+    var ecMax = d3.max([Math.abs(network.weightMins[ecwIdx]), 
+                        Math.abs(network.weightMaxs[ecwIdx])]);
+    var ewMax = d3.max([Math.abs(network.weightMins[ewwIdx]), 
+                        Math.abs(network.weightMaxs[ewwIdx])]);
+
     // Edge width scale
     var edgeWidthScale = d3.scale.linear()
-      .domain([network.weightMins[ewwIdx], network.weightMaxs[ewwIdx]])
-      .range([1, 15]);
-
-    // Edge colour range is centered at 0.0
-    var edgeMax = d3.max([Math.abs(network.weightMins[ecwIdx]), 
-                          Math.abs(network.weightMaxs[ecwIdx])]);
+      .domain([-ewMax, 0, ewMax])
+      .range([15, 1, 15]);
 
     // Colour scale for highlighted edges
     var hltEdgeColourScale = d3.scale.linear()
-      .domain([-edgeMax, -edgeMax/3.0, 0, edgeMax/3.0, edgeMax])
+      .domain([-ecMax, -ecMax/3.0, 0, ecMax/3.0, ecMax])
       .range(["blue", "#ffffcc", "white", "#ffffcc", "red"]);
 
     // The colour scale for non-highlighted edges
