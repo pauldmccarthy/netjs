@@ -1,5 +1,57 @@
 (function() {
 
+  var DEF_LABEL_SIZE   = 10;
+  var HLT_LABEL_SIZE   = 14;
+  var DEF_LABEL_WEIGHT = "normal";
+  var HLT_LABEL_WEIGHT = "bold";
+  var DEF_LABEL_FONT   = "sans";
+  var HLT_LABEL_FONT   = "sans";
+
+  var DEF_THUMB_WIDTH  = 91 /2.0
+  var DEF_THUMB_HEIGHT = 109/2.0;
+  var HLT_THUMB_WIDTH  = 91 /1.5
+  var HLT_THUMB_HEIGHT = 109/1.5;
+
+  var DEF_EDGE_COLOUR = "#cccccc";
+  var DEF_EDGE_WIDTH  = 1;
+
+  var DEF_NODE_SIZE    = 3;
+  var HLT_NODE_SIZE    = 5;
+  var DEF_NODE_OPACITY = 0.2;
+  var HLT_NODE_OPACITY = 1.0;
+
+
+  function genColourScales(network) {
+
+    // Nodes are coloured according to their cluster
+    // TODO will there ever be more than 10 clusters?
+    var nodeColourScale = d3.scale.category10();
+
+    // Edge widths are scaled according 
+    // to their partial correlation value
+    var edgeWidthScale = d3.scale.linear()
+      .domain([network.weightMins[0], network.weightMaxs[0]])
+      .range([1, 15]);
+
+    // Edges are coloured according to 
+    // their full correlation value
+    var edgeMax = d3.max([Math.abs(network.weightMins[1]), 
+                          Math.abs(network.weightMaxs[1])]);
+    var hltEdgeColourScale = d3.scale.linear()
+      .domain([-edgeMax, -edgeMax/3.0, 0, edgeMax/3.0, edgeMax])
+      .range(["blue", "#ffff00", "white", "#ffff00", "red"]);
+
+    var defEdgeColourScale = function(val) {
+      var c = hltEdgeColourScale(val);
+      return c;
+    }
+
+    network.nodeColourScale    = nodeColourScale;
+    network.edgeWidthScale     = edgeWidthScale;
+    network.defEdgeColourScale = defEdgeColourScale;
+    network.hltEdgeColourScale = hltEdgeColourScale;
+  }
+
   /*
    * Draw the nodes of the given network.
    */
@@ -37,11 +89,8 @@
              "translate(-23,-28)";
     }
 
-    // Colour each node and its label according to cluster
-    // TODO will there ever be more than 10 clusters?
-    clusterScale = d3.scale.category10();
     function colourNode(node) {
-      return clusterScale(node.cluster-1 % 10);
+      return network.nodeColourScale(node.cluster-1);
     }
 
     /*
@@ -67,8 +116,8 @@
       .append("circle")
       .attr("class",     nodeClasses)
       .attr("transform", positionNode)
-      .attr("opacity",  "0.2")
-      .attr("r",         3)
+      .attr("opacity",   DEF_NODE_OPACITY)
+      .attr("r",         DEF_NODE_SIZE)
       .attr("fill",      colourNode);
       
     // Draw the node labels
@@ -78,7 +127,10 @@
       .append("text")
       .attr("class",        nodeClasses)
       .attr("dy",          ".31em")
-      .attr("opacity",     "0.2")
+      .attr("opacity",      DEF_NODE_OPACITY)
+      .attr("font-family",  DEF_LABEL_FONT)
+      .attr("font-weight",  DEF_LABEL_WEIGHT)
+      .attr("font-size",    DEF_LABEL_SIZE)
       .attr("fill",         colourNode)
       .attr("transform",    positionLabel)
       .style("text-anchor", anchorLabel)
@@ -93,24 +145,21 @@
       .attr("transform",   positionThumbnail)
       .attr("visibility", "hidden")
       .attr("xlink:href",  function(node) {return node.thumbnail;})
-      .attr("width",      "46")
-      .attr("height",     "56");
+      .attr("width",       DEF_THUMB_WIDTH)
+      .attr("height",      DEF_THUMB_HEIGHT);
   }
 
   /*
    * Draw the edges of the given network.
    */
-  function drawFullEdges(
-    svg, 
-    network, 
-    radius) {
+  function drawFullEdges(svg, network, radius) {
 
     // For drawing network edges as splines
     var bundle = d3.layout.bundle();
     var line   = d3.svg.line.radial()
       .interpolate("bundle")
       .tension(.85)
-      .radius(function(node) { return node.y; })
+      .radius(function(node) { return node.y - 8; })
       .angle( function(node) { return node.x / 180 * Math.PI; });
 
      // Each svg path element is given two classes - 'edge-X' 
@@ -130,6 +179,9 @@
       return "edge-" + idxs[0] + "-" + idxs[1];
     }
 
+    function edgeColour(path) {
+      return network.defEdgeColourScale(path.edge.weights[0]);
+    }
 
     // edges are drawn as splines
     var paths = bundle(network.edges);
@@ -147,8 +199,8 @@
       .append("path")
       .attr("id",            edgeId)
       .attr("class",         edgeClasses)
-      .attr("stroke",        "#cccccc")
-      .attr("stroke-width",  1)
+      .attr("stroke",        edgeColour)
+      .attr("stroke-width",  DEF_EDGE_WIDTH)
       .attr("fill",         "none")
       .attr("d",             line);
   }
@@ -163,25 +215,16 @@
     var svgThumbnails = network.svgThumbnails;
     var svgEdges      = network.svgEdges;
 
-    // scale for edge width
-    var edgeWidthScale = d3.scale.linear()
-      .domain([network.weightMins[0], network.weightMaxs[0]])
-      .range([1, 15]);
-
-    var colourDomain = d3.max([Math.abs(network.weightMins[1]), 
-                               Math.abs(network.weightMaxs[1])]);
-    var edgeColourScale = d3.scale.linear()
-      .domain([-colourDomain, 0, colourDomain])
-      .range(["blue", "white", "red"]);
-
     function setEdgeAttrs(pathElems, paths, over) {
-      
-      var width  = 1;
-      var colour = "#dddddd";
+
+      var width  = DEF_EDGE_WIDTH;
+      var colour = function(path) {
+        return network.defEdgeColourScale(path.edge.weights[0]);};
       
       if (over) {
-        width  = function(path) {return edgeWidthScale( path.edge.weights[0]);}
-        colour = function(path) {return edgeColourScale(path.edge.weights[0]);}
+        width  = function(path) {return network.edgeWidthScale(path.edge.weights[0]);}
+        colour = function(path) {
+          return network.hltEdgeColourScale(path.edge.weights[0]);};
       }
 
       pathElems
@@ -191,50 +234,60 @@
         .each(function() {this.parentNode.appendChild(this)});
     }
 
-    function setNodeAttrs(nodeElems, nbrElems, node, nbrs, over) {
-
-      if (over) {
-      }
-    }
-
     // Pre-emptively run CSS selector lookups so they
     // don't have to be done on every mouse event
     network.nodes.forEach(function(node) {
       node.paths     = node.edges.map(function(edge) {return edge.path;});
-      node.pathElems = d3.selectAll(".edge-"    + node.index);
-      node.nodeElems = d3.selectAll(".node-"        + node.index);
-      node.nbrElems  = d3.selectAll(".nodenbr-"     + node.index);
-      
-      node.thumbElem     = d3.selectAll("image.node-"    + node.index);
+
+      node.pathElems     = d3.selectAll(".edge-"         + node.index);
+      node.nodeElems     = d3.selectAll(".node-"         + node.index);
+      node.nbrElems      = d3.selectAll(".nodenbr-"      + node.index);
+      node.nodeElem      = d3.select(   "circle.node-"   + node.index);
+      node.thumbElem     = d3.select(   "image.node-"    + node.index);
       node.nbrThumbElems = d3.selectAll("image.nodenbr-" + node.index);
     });
 
     function mouseOverNode(node, over) {
 
-      var opacity     = 0.3;
-      var font        = "normal";
+      var opacity     = DEF_NODE_OPACITY;
+      var font        = DEF_LABEL_FONT;
+      var fontWeight  = DEF_LABEL_WEIGHT;
+      var fontSize    = DEF_LABEL_SIZE;
+      var nodeSize    = DEF_NODE_SIZE;
       var thumbVis    = "hidden";
-      var thumbWidth  = 46;
-      var thumbHeight = 56;
+      var thumbWidth  = DEF_THUMB_WIDTH;
+      var thumbHeight = DEF_THUMB_HEIGHT;
 
       if (over) {
-        opacity     = 1.0;
-        font        = "bold";
+        opacity     = HLT_NODE_OPACITY;
+        font        = HLT_LABEL_FONT;
+        fontWeight  = HLT_LABEL_WEIGHT; 
+        fontSize    = HLT_LABEL_SIZE;
+        nodeSize    = HLT_NODE_SIZE;
         thumbVis    = "visible";
-        thumbWidth  = 91;
-        thumbHeight = 109;
+        thumbWidth  = HLT_THUMB_WIDTH;
+        thumbHeight = HLT_THUMB_HEIGHT;
       }
 
-      node.nodeElems.attr("opacity",        opacity);
-      node.nodeElems.attr("font-weight",    font);
-      node.nbrElems .attr("opacity",        opacity);
-      node.nbrElems .attr("font-weight",    font);
+      node.nodeElems    .attr("opacity",     opacity);
+      node.nodeElems    .attr("font-family", font);
+      node.nodeElems    .attr("font-weight", fontWeight);
+      node.nodeElems    .attr("font-size",   fontSize);
+      node.nbrElems     .attr("opacity",     opacity);
+      node.nbrElems     .attr("font-family", font);
+      node.nbrElems     .attr("font-weight", fontWeight);
+      node.nbrElems     .attr("font-size",   fontSize);
+      node.nodeElem     .attr("r",           nodeSize);
+      node.thumbElem    .attr("visibility",  thumbVis);
+      node.thumbElem    .attr("width",       thumbWidth);
+      node.thumbElem    .attr("height",      thumbHeight);
+      node.nbrThumbElems.attr("visibility",  thumbVis);
 
-      node.thumbElem.attr("visibility",     thumbVis);
-      node.thumbElem.attr("width",          thumbWidth);
-      node.thumbElem.attr("height",         thumbHeight);
-
-      node.nbrThumbElems.attr("visibility", thumbVis);
+      // move the highlighted node thumbnail element
+      // to the end of its parents' list of children,
+      // so it is displayed on top
+      var thumbNode = node.thumbElem.node();
+      thumbNode.parentNode.appendChild(thumbNode);
 
       setEdgeAttrs(node.pathElems, node.paths, over);
     }
@@ -477,6 +530,9 @@
       var imgUrl = imageDir + "/" + zerofmt(i) + ".png";
       network.nodes[i].thumbnail = imgUrl;
     }
+
+    // generate colour scales for network display
+    genColourScales(network);
 
     // TODO generate diameter from display size
     displayFullNetwork(network, "#fullNetwork", "none", 900, 900);
