@@ -84,20 +84,20 @@
     // TODO handle more than 10 clusters?
     var nodeColourScale = d3.scale.category10();
 
-    var ecMax = d3.max([Math.abs(network.weightMins[ecwIdx]), 
-                        Math.abs(network.weightMaxs[ecwIdx])]);
-    var ewMax = d3.max([Math.abs(network.weightMins[ewwIdx]), 
-                        Math.abs(network.weightMaxs[ewwIdx])]);
+    var ecMin = network.weightAbsMins[ecwIdx];
+    var ecMax = network.weightAbsMaxs[ecwIdx];
+    var ewMin = network.weightAbsMins[ewwIdx];
+    var ewMax = network.weightAbsMaxs[ewwIdx];
 
     // Edge width scale
     var edgeWidthScale = d3.scale.linear()
-      .domain([-ewMax, 0, ewMax])
-      .range([15, 1, 15]);
+      .domain([-ewMax, -ewMin, 0, ewMin, ewMax])
+      .range( [    15,      2, 0,     2,    15]);
 
     // Colour scale for highlighted edges
     var hltEdgeColourScale = d3.scale.linear()
-      .domain([-ecMax, -ecMax/3.0, 0, ecMax/3.0, ecMax])
-      .range(["blue", "#ffffcc", "white", "#ffffcc", "red"]);
+      .domain([ -ecMax,    -ecMin,    0,          ecMin,     ecMax  ])
+      .range( ["#0000dd", "#ccccdd", "#ffffff", "#ddaaaa", "#dd0000"]);
 
     // The colour scale for non-highlighted edges
     // is a washed out version of that used for 
@@ -106,7 +106,7 @@
     // gives better performance.
     var edgeColourHltToDef = d3.scale.linear()
       .domain([0,   255])
-      .range( [175, 255]);
+      .range( [210, 240]);
 
     var defEdgeColourScale = function(val) {
       var c = d3.rgb(hltEdgeColourScale(val));
@@ -313,18 +313,18 @@
     });
 
     // draw the edges
-    var svgEdges = network.svgEdges;
-    svgEdges
+    network.svgEdges = network.svgEdges
       .data(paths)
       .enter()
       .append("path")
-      .attr("id",            edgeId)
-      .attr("class",         edgeClasses)
-      .attr("stroke",        edgeColour)
-      .attr("stroke-width",  DEF_EDGE_WIDTH)
-      .attr("opacity",       DEF_EDGE_OPACITY)
-      .attr("fill",         "none")
-      .attr("d",             line);
+      .attr("id",              edgeId)
+      .attr("class",           edgeClasses)
+      .attr("stroke",          edgeColour)
+      .attr("stroke-width",    DEF_EDGE_WIDTH)
+      .attr("stroke-linecap", "round")
+      .attr("opacity",         DEF_EDGE_OPACITY)
+      .attr("fill",           "none")
+      .attr("d",               line);
   }
 
   /*
@@ -560,6 +560,17 @@
         showNode(node, false);
       }
     }
+
+
+    function mouseClickPath(path) {
+
+      var desc = "Edge " + path.edge.i + " -- " + path.edge.j + ": ";
+      desc = desc + path.edge.weights.join(", ");
+      console.log(desc);
+    }
+
+    svgEdges.on("click", mouseClickPath);
+    
     
     // configure mouse event callbacks on 
     // node circles, labels, and thumbnails.
@@ -598,10 +609,10 @@
 
     // The order of these lines defines the order in which
     // the elements are displayed (last displayed on top)
-    var svgEdges      = svg.append("g").selectAll(".edge");
-    var svgThumbnails = svg.append("g").selectAll(".node");
-    var svgNodes      = svg.append("g").selectAll(".node");
-    var svgNodeLabels = svg.append("g").selectAll(".node");
+    var svgEdges      = svg.append("g").selectAll("path");
+    var svgThumbnails = svg.append("g").selectAll("image");
+    var svgNodes      = svg.append("g").selectAll("circle");
+    var svgNodeLabels = svg.append("g").selectAll("text");
 
     // Attach all of those selections to the network 
     // object, so the drawFullNodes and drawFullEdges 
@@ -700,7 +711,7 @@
       network.treeNodes.splice(clustTreeIdx,  1);
 
       // Hmm, I'm not sure if this is necessary.
-      parent.distance += clust.distance;
+      //parent.distance += clust.distance;
 
       children.forEach(function(child) {
         child.parent = parent;
@@ -783,16 +794,20 @@
     }
 
     // Create a list of edges. At the same time, we'll 
-    // figure out the the max/min values for each weight 
-    // matrix across all edges, so they can be used to 
-    // scale edge colour/width/etc properly.
-    var weightMins = [];
-    var weightMaxs = [];
+    // figure out the real and absolute max/min values 
+    // for each weight matrix across all edges, so they 
+    // can be used to scale edge colour/width/etc properly.
+    var weightMins    = [];
+    var weightMaxs    = [];
+    var weightAbsMins = [];
+    var weightAbsMaxs = [];
     
     // initialise min/max arrays
     for (var i = 0; i < matrices.length; i++) {
-      weightMins.push( Number.MAX_VALUE);
-      weightMaxs.push(-Number.MAX_VALUE);
+      weightMins   .push( Number.MAX_VALUE);
+      weightMaxs   .push(-Number.MAX_VALUE);
+      weightAbsMins.push( Number.MAX_VALUE);
+      weightAbsMaxs.push(-Number.MAX_VALUE);
     }
 
     for (var i = 0; i < numNodes; i++) {
@@ -816,8 +831,14 @@
 
         // update weight mins/maxs
         for (var k = 0; k < edge.weights.length; k++) {
-          if (edge.weights[k] > weightMaxs[k]) weightMaxs[k] = edge.weights[k];
-          if (edge.weights[k] < weightMins[k]) weightMins[k] = edge.weights[k];
+
+          var w  =          edge.weights[k];
+          var aw = Math.abs(edge.weights[k]);
+
+          if (w  > weightMaxs[k])    weightMaxs[k]    = w;
+          if (w  < weightMins[k])    weightMins[k]    = w;
+          if (aw > weightAbsMaxs[k]) weightAbsMaxs[k] = aw;
+          if (aw < weightAbsMins[k]) weightAbsMins[k] = aw;
         }
 
         edges              .push(edge);
@@ -831,10 +852,12 @@
     // put all the network information 
     // into a dictionary
     var network = {};
-    network.nodes       = nodes;
-    network.edges       = edges;
-    network.weightMins  = weightMins;
-    network.weightMaxs  = weightMaxs;
+    network.nodes         = nodes;
+    network.edges         = edges;
+    network.weightMins    = weightMins;
+    network.weightMaxs    = weightMaxs;
+    network.weightAbsMins = weightAbsMins;
+    network.weightAbsMaxs = weightAbsMaxs;
 
     return network;
   }
@@ -883,6 +906,10 @@
     // threshold the znet2 matrix
     for (var i = 0; i < znet2Matrix.length; i++) {
 
+      // TODO We are assuming here that the matrix
+      // is symmetric, and is fully populated.
+      // This thresholding will break if either
+      // of the above assumptions are not true.
       absVals   = znet2Matrix[i].map(function(val) {return Math.abs(val);});
       nodeThres = d3.max(absVals) * 0.75;
 
@@ -931,13 +958,13 @@
    * may be used to pass standard arguments to the await function.
    */ 
   function qId(arg, cb) {cb(null, arg);}
-  // queue()
-  //   .defer(d3.text, "/data/Znet1_first20.txt")
-  //   .defer(d3.text, "/data/Znet2_first20.txt")
-  //   .defer(d3.text, "/data/clusters_first20.txt")
-  //   .defer(d3.text, "/data/linkages_first20.txt")
-  //   .defer(qId,     "/data/melodic_IC_sum.sum")
-  //   .await(onDataLoad);
+  queue()
+    .defer(d3.text, "/data/dummy/corr1.txt")
+    .defer(d3.text, "/data/dummy/corr1.txt")
+    .defer(d3.text, "/data/dummy/clusters.txt")
+    .defer(d3.text, "/data/dummy/linkages.txt")
+    .defer(qId,     "/data/dummy/thumbnails")
+    .await(onDataLoad);
 
   // queue()
   //   .defer(d3.text, "/data/Znet1.txt")
@@ -946,11 +973,11 @@
   //   .defer(d3.text, "/data/Paul2/linkages.txt")
   //   .defer(qId,     "/data/melodic_IC_sum.sum")
   //   .await(onDataLoad);
-  queue()
-    .defer(d3.text, "/data/Paul2/Znet1.txt")
-    .defer(d3.text, "/data/Paul2/Znet2.txt")
-    .defer(d3.text, "/data/Paul2/clusters.txt")
-    .defer(d3.text, "/data/Paul2/linkages.txt")
-    .defer(qId,     "/data/Paul2/melodic_IC_sum.sum")
-    .await(onDataLoad);
+  // queue()
+  //   .defer(d3.text, "/data/Paul2/Znet1.txt")
+  //   .defer(d3.text, "/data/Paul2/Znet2.txt")
+  //   .defer(d3.text, "/data/Paul2/clusters.txt")
+  //   .defer(d3.text, "/data/Paul2/linkages.txt")
+  //   .defer(qId,     "/data/Paul2/melodic_IC_sum.sum")
+  //   .await(onDataLoad);
 })();
