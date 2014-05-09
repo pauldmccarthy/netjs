@@ -10,7 +10,7 @@
  *   - http://d3js.org/
  *   - http://bl.ocks.org/mbostock/7607999
  */
-(function() {
+var netvis = (function() {
 
   /* 
    * Various constants for configuring how nodes,
@@ -136,7 +136,7 @@
   /*
    * Draw the nodes of the network. It is assumed that the network
    * has the following D3 selections as attributes (which are 
-   * created and attached to the network in the displayFullNetwork 
+   * created and attached to the network in the displayNetwork 
    * function):
    *
    *   - network.svgNodes:      Place to draw circles representing nodes
@@ -147,14 +147,14 @@
    * node in the dendrogram tree (see the makeNetworkDendrogramTree 
    * function).
    */
-  function drawFullNodes(svg, network, radius) {
+  function drawNodes(svg, network, radius) {
 
     // We use the D3 cluster layout to draw the nodes in a circle.
     // This also lays out the tree nodes (see the 
     // makeNetworkDendrogramTree function) which represent the 
     // network dendrogram. These nodes are not displayed, but their
     // locations are used to determine the path splines used to
-    // display edges (see the drawFullEdges function).
+    // display edges (see the drawEdges function).
     var clusterLayout  = d3.layout.cluster().size([360, radius-110]);
     var rootNode       = network.treeNodes[network.treeNodes.length - 1];
     var clusteredNodes = clusterLayout.nodes(rootNode);
@@ -258,7 +258,7 @@
    * node. Most of the hard work is done by the d3.layout.bundle 
    * function.
    */
-  function drawFullEdges(svg, network, radius) {
+  function drawEdges(svg, network, radius) {
 
     // For drawing network edges as splines
     var bundle = d3.layout.bundle();
@@ -296,7 +296,7 @@
     // and attach each edge as an attribute of
     // its path, and vice versa, to make things
     // easier in the various callback functions
-    // passed to D3 (see the configFullDynamics
+    // passed to D3 (see the configDynamics
     // function)
     var paths = bundle(network.edges);
     for (var i = 0; i < paths.length; i++) {
@@ -337,7 +337,7 @@
    * and remain so until the node is clicked again, or 
    * another node is clicked upon.
    */
-  function configFullDynamics(svg, network, radius) {
+  function configDynamics(svg, network, radius) {
 
     var svgNodes      = network.svgNodes;
     var svgNodeLabels = network.svgNodeLabels;
@@ -528,7 +528,6 @@
      * Highlights that node.
      */
     function mouseOverNode(node) {
-
       showNode(node, "select");
     }
 
@@ -563,14 +562,12 @@
 
 
     function mouseClickPath(path) {
-
       var desc = "Edge " + path.edge.i + " -- " + path.edge.j + ": ";
       desc = desc + path.edge.weights.join(", ");
       console.log(desc);
     }
-
     svgEdges.on("click", mouseClickPath);
-    
+
     
     // configure mouse event callbacks on 
     // node circles, labels, and thumbnails.
@@ -589,12 +586,12 @@
   }
 
   /*
-   * Takes a network created by the makeNetwork function (see 
-   * below), and displays it in the specified networkDiv 
-   * element, with nodes arranged in a big circle.
+   * Takes a network created by the matricesToNetowrk 
+   * function (see below), and displays it in the 
+   * specified networkDiv element, with nodes arranged 
+   * in a big circle.
    */
-  function displayFullNetwork(
-    network, networkDiv, controlDiv, width, height) {
+  function displayNetwork(network, networkDiv, width, height) {
 
     var diameter = Math.min(width, height);
     var radius   = diameter / 2;
@@ -615,18 +612,17 @@
     var svgNodeLabels = svg.append("g").selectAll("text");
 
     // Attach all of those selections to the network 
-    // object, so the drawFullNodes and drawFullEdges 
-    // functions (above) can access them to draw their 
-    // things.
+    // object, so the drawNodes and drawEdges functions 
+    // (above) can access them to draw their things.
     network.svgNodes      = svgNodes;
     network.svgEdges      = svgEdges;
     network.svgNodeLabels = svgNodeLabels;
     network.svgThumbnails = svgThumbnails;
     
     // Draw all of the things!
-    drawFullNodes(     svg, network, radius);
-    drawFullEdges(     svg, network, radius);
-    configFullDynamics(svg, network, radius);
+    drawNodes(     svg, network, radius);
+    drawEdges(     svg, network, radius);
+    configDynamics(svg, network, radius);
   }
 
   /*
@@ -679,8 +675,8 @@
         uniqClusts.push(allClusts[i]);
       }
 
-      // var clIdxs = uniqClusts.map(function(c) {return c.index;});
-      // console.log("Clusters: " + clIdxs.join(", "));
+      //var clIdxs = uniqClusts.map(function(c) {return c.index;});
+      //console.log("Clusters: " + clIdxs.join(", "));
       return uniqClusts;
     }
 
@@ -690,8 +686,8 @@
     var clusters = getClusters();
 
     while (clusters.length > maxClusters) {
-      // console.log("Tree:");
-      // printTree(network.treeNodes[network.treeNodes.length - 1], 0);
+      //console.log("Tree:");
+      //printTree(network.treeNodes[network.treeNodes.length - 1], 0);
 
       // Identify the cluster with the minimum 
       // distance  between its children
@@ -709,9 +705,6 @@
       // parent and vice versa.
       parent .children .splice(clustChildIdx, 1);
       network.treeNodes.splice(clustTreeIdx,  1);
-
-      // Hmm, I'm not sure if this is necessary.
-      //parent.distance += clust.distance;
 
       children.forEach(function(child) {
         child.parent = parent;
@@ -769,7 +762,7 @@
    * matrices are added as 'weight' attributes on the 
    * corresponding network edge.
    */
-  function makeNetwork(matrices, clusters) {
+  function matricesToNetwork(matrices, clusters) {
 
     matrix = matrices[0];
 
@@ -821,7 +814,7 @@
         edge.i       = nodes[i];
         edge.j       = nodes[j];
 
-        // d3.layout.bundle (see the drawFullEdges function, 
+        // d3.layout.bundle (see the drawEdges function, 
         // above) requires two attributes, 'source' and 
         // 'target', so we add them here, purely for 
         // convenience.
@@ -863,6 +856,62 @@
   }
 
   /*
+   * Converts all the given text data into numerical matrices,
+   * thresholds znet2 matrix, and does some other minor tweaks,
+   * then passes all the data to the makeNetwork function, and
+   * passes the resulting network to the displayNetwork function.
+   */
+  function createNetwork(
+    matrices,
+    clusters,
+    linkage,
+    thumbUrl) {
+
+    // threshold the first matrix
+    for (var i = 0; i < matrices[0].length; i++) {
+
+      // TODO We are assuming here that the matrix
+      // is symmetric, and is fully populated.
+      // This thresholding will break if either
+      // of the above assumptions are not true.
+      absVals   = matrices[0][i].map(function(val) {return Math.abs(val);});
+      nodeThres = d3.max(absVals) * 0.75;
+
+      for (var j = 0; j < matrices[0].length; j ++) {
+        if (Math.abs(matrices[0][i][j]) < nodeThres) {
+          matrices[0][i][j] = Number.NaN;
+        }
+      }
+    }
+
+    // turn the matrix data into a network
+    var network = matricesToNetwork(matrices, clusters);
+
+    // generate a tree of dummy nodes from 
+    // the dendrogram in the linkages data
+    makeNetworkDendrogramTree(network, linkage);
+
+    // flatten that tree to 10 clusters
+    flattenDendrogramTree(network, 1);
+
+    // Attach a thumbnail URL to 
+    // every node in the network
+    var zerofmt = d3.format("04d");
+    for (var i = 0; i < network.nodes.length; i++) {
+
+      var imgUrl = thumbUrl + "/" + zerofmt(i) + ".png";
+      network.nodes[i].thumbnail = imgUrl;
+    }
+
+    // generate colour scales for network display
+    network.edgeWidthWeightIdx  = 0;
+    network.edgeColourWeightIdx = 0;
+    genColourScales(network);
+
+    return network;
+  }
+
+  /*
    * Uses d3.dsv to turn a string containing 
    * numerical matrix data into a 2D array.
    */
@@ -883,101 +932,69 @@
     return matrix;
   }
 
-  /*
-   * Converts all the given text data into numerical matrices,
-   * thresholds znet2 matrix, and does some other minor tweaks,
-   * then passes all the data to the makeNetwork function, and
-   * passes the resulting network to the displayFullNetwork 
-   * function.
-   */
-  function onDataLoad(
-    error, 
-    znet1Data, 
-    znet2Data, 
-    clusterData, 
-    linkageData, 
-    imageDir) {
+  function onDataLoad(error, args) {
 
-    znet1Matrix = parseTextMatrix(znet1Data);
-    znet2Matrix = parseTextMatrix(znet2Data);
-    clusters    = parseTextMatrix(clusterData)[0];
-    linkages    = parseTextMatrix(linkageData)
+    // TODO handle error
 
-    // threshold the znet2 matrix
-    for (var i = 0; i < znet2Matrix.length; i++) {
+    var linkage   = args[args.length-1];
+    var clusters  = args[args.length-2];
+    var thumbUrl  = args[args.length-3];
+    var cb        = args[args.length-4];
 
-      // TODO We are assuming here that the matrix
-      // is symmetric, and is fully populated.
-      // This thresholding will break if either
-      // of the above assumptions are not true.
-      absVals   = znet2Matrix[i].map(function(val) {return Math.abs(val);});
-      nodeThres = d3.max(absVals) * 0.75;
+    args.splice(-4, 4);
+    var matrices = args;
 
-      for (var j = 0; j < znet2Matrix.length; j ++) {
-        if (Math.abs(znet2Matrix[i][j]) < nodeThres) {
-          znet2Matrix[i][j] = Number.NaN;
-        }
-      }
-    }
+    linkage  = parseTextMatrix(linkage);
+    clusters = parseTextMatrix(clusters);
+    matrices = matrices.map(parseTextMatrix);
 
-    // turn the matrix data into a network
-    var network = makeNetwork([znet2Matrix, znet1Matrix], clusters);
-
-    // generate a tree of dummy nodes from 
-    // the dendrogram in the linkages data
-    makeNetworkDendrogramTree(network, linkages);
-
-    // flatten that tree to 10 clusters
-    flattenDendrogramTree(network, 10);
-
-    // Attach a thumbnail URL to 
-    // every node in the network
-    var zerofmt = d3.format("04d");
-    for (var i = 0; i < network.nodes.length; i++) {
-
-      var imgUrl = imageDir + "/" + zerofmt(i) + ".png";
-      network.nodes[i].thumbnail = imgUrl;
-    }
-
-    // generate colour scales for network display
-    network.edgeWidthWeightIdx  = 1;
-    network.edgeColourWeightIdx = 0;
-    genColourScales(network);
-
-    // console.log(clusters);
-    // console.log(network);
-    
-    // Display the network
-    // TODO generate diameter from display size
-    displayFullNetwork(network, "#fullNetwork", "none", 900, 900);
+    cb(createNetwork(matrices, clusters, linkage, thumbUrl));
   }
 
   /*
-   * Load all of the network data, and pass it to the onDataLoad
-   * function. The qId function is an identity function which 
-   * may be used to pass standard arguments to the await function.
-   */ 
-  function qId(arg, cb) {cb(null, arg);}
-  queue()
-    .defer(d3.text, "/data/dummy/corr1.txt")
-    .defer(d3.text, "/data/dummy/corr1.txt")
-    .defer(d3.text, "/data/dummy/clusters.txt")
-    .defer(d3.text, "/data/dummy/linkages.txt")
-    .defer(qId,     "/data/dummy/thumbnails")
-    .await(onDataLoad);
+   *
+   */
+  function loadNetwork(urls, cb) {
 
-  // queue()
-  //   .defer(d3.text, "/data/Znet1.txt")
-  //   .defer(d3.text, "/data/Znet2.txt")
-  //   .defer(d3.text, "/data/clusters.txt")
-  //   .defer(d3.text, "/data/Paul2/linkages.txt")
-  //   .defer(qId,     "/data/melodic_IC_sum.sum")
-  //   .await(onDataLoad);
-  // queue()
-  //   .defer(d3.text, "/data/Paul2/Znet1.txt")
-  //   .defer(d3.text, "/data/Paul2/Znet2.txt")
-  //   .defer(d3.text, "/data/Paul2/clusters.txt")
-  //   .defer(d3.text, "/data/Paul2/linkages.txt")
-  //   .defer(qId,     "/data/Paul2/melodic_IC_sum.sum")
-  //   .await(onDataLoad);
+    var matrixUrls = urls.matrices;
+    var clusterUrl = urls.clusters;
+    var linkageUrl = urls.linkage;
+    var thumbUrl   = urls.thumbnails;
+
+    // The qId function is an identity function 
+    // which may be used to pass standard 
+    // arguments to the await function.
+    function qId(arg, cb) {cb(null, arg);}
+
+    // Load all of the network data, and 
+    // pass it to the onDataLoad function. 
+    var q = queue();
+    
+    matrixUrls.forEach(function(url) {
+      q = q.defer(d3.text, url);
+    });
+
+    q .defer(qId,     cb)
+      .defer(qId,     thumbUrl)
+      .defer(d3.text, clusterUrl)
+      .defer(d3.text, linkageUrl)
+      .awaitAll(onDataLoad);
+  }
+
+  var nvPublic = {};
+  nvPublic.loadNetwork    = loadNetwork;
+  nvPublic.displayNetwork = displayNetwork;
+  return nvPublic;
+
 })();
+
+var urls = {};
+urls.matrices   = ["/data/dummy/corr1.txt"];
+urls.clusters   =  "/data/dummy/clusters.txt";
+urls.linkage    =  "/data/dummy/linkages.txt";
+urls.thumbnails =  "/data/dummy/thumbnails";
+
+netvis.loadNetwork(urls, function(net) {
+  netvis.displayNetwork(net, "#fullNetwork",  800, 800);
+});
+
