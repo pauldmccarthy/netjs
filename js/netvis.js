@@ -15,28 +15,39 @@
   /* 
    * Various constants for configuring how nodes,
    * labels, thumbnails, and edges are displayed
-   * normally (DEF), and when highlighted (HLT).
+   * normally (DEF), when highlighted (HLT),
+   * and when selected (SEL).
    */
   var DEF_LABEL_SIZE   = 10;
-  var HLT_LABEL_SIZE   = 18;
+  var SEL_LABEL_SIZE   = 16;
   var DEF_LABEL_WEIGHT = "normal";
   var HLT_LABEL_WEIGHT = "bold";
+  var SEL_LABEL_WEIGHT = "bold";
   var DEF_LABEL_FONT   = "sans";
   var HLT_LABEL_FONT   = "sans";
+  var SEL_LABEL_FONT   = "sans";
 
-  var DEF_THUMB_WIDTH  = 91 /2.0
-  var DEF_THUMB_HEIGHT = 109/2.0;
-  var HLT_THUMB_WIDTH  = 91 /1.5
-  var HLT_THUMB_HEIGHT = 109/1.5;
+  // thumbnails are hidden by default
+  var HLT_THUMB_WIDTH  = 91 /2.0;
+  var HLT_THUMB_HEIGHT = 109/2.0;
+  var SEL_THUMB_WIDTH  = 91 /1.5;
+  var SEL_THUMB_HEIGHT = 109/1.5;
 
+  // edge width and colour are scaled 
+  // according to edge weights. Also,
+  // a default edge opacity of less 
+  // than 1.0 will result in a huge 
+  // performance hit for large networks.
   var DEF_EDGE_WIDTH   = 1;
   var DEF_EDGE_OPACITY = 1.0;
   var HLT_EDGE_OPACITY = 0.7;
 
   var DEF_NODE_SIZE    = 3;
   var HLT_NODE_SIZE    = 5;
+  var SEL_NODE_SIZE    = 5;
   var DEF_NODE_OPACITY = 0.2;
   var HLT_NODE_OPACITY = 1.0;
+  var SEL_NODE_OPACITY = 1.0;
 
   /*
    * Generates D3 colour (and edge width) scales for the given
@@ -127,9 +138,14 @@
    * has the following D3 selections as attributes (which are 
    * created and attached to the network in the displayFullNetwork 
    * function):
+   *
    *   - network.svgNodes:      Place to draw circles representing nodes
    *   - network.svgNodeLabels: Place to draw node labels
    *   - network.svgThumbnails: Place to draw node thumbnails
+   *
+   * And that the network also has a 'treeNodes' attribute, containing 
+   * node in the dendrogram tree (see the makeNetworkDendrogramTree 
+   * function).
    */
   function drawFullNodes(svg, network, radius) {
 
@@ -178,11 +194,11 @@
       return network.nodeColourScale(node.cluster-1);
     }
 
-    // The circle and label for a specific node are given 
-    // css class 'node-X', where X is the node id. For 
-    // every neighbour of a particular node, that node is 
-    // also given the css class  'nodenbr-Y', where Y is 
-    // the index of the neighbour.
+    // The circle, label and thumbnail for a specific node 
+    // are given css class 'node-X', where X is the node 
+    // id. For every neighbour of a particular node, that 
+    // node is also given the css class  'nodenbr-Y', where 
+    // Y is the index of the neighbour.
     function nodeClasses(node) {
 
       var classes = ["node-" + node.index];
@@ -230,8 +246,8 @@
       .attr("transform",   positionThumbnail)
       .attr("visibility", "hidden")
       .attr("xlink:href",  function(node) {return node.thumbnail;})
-      .attr("width",       DEF_THUMB_WIDTH)
-      .attr("height",      DEF_THUMB_HEIGHT);
+      .attr("width",       0)
+      .attr("height",      0);
   }
 
   /*
@@ -313,11 +329,13 @@
 
   /*
    * Configures mouse-based interaction with the full 
-   * connectivity network. When the mouse moves over
-   * a node or its label, all of the neighbours of 
-   * that node are highlighted, along with the edges
-   * to them. The thumbnails for each of these nodes 
-   * are also displayed.
+   * connectivity network. When the mouse moves over a node 
+   * or its label, it is highlighted and its thumbnail 
+   * displayed. When a mouse click occurs on a node, its 
+   * label or thumbnail, it is 'selected'.  The edges of
+   * that node, and its neighbour nodes are then highlighted,
+   * and remain so until the node is clicked again, or 
+   * another node is clicked upon.
    */
   function configFullDynamics(svg, network, radius) {
 
@@ -326,49 +344,94 @@
     var svgThumbnails = network.svgThumbnails;
     var svgEdges      = network.svgEdges;
 
+    // This variable is used to keep track 
+    // of the currently selected node. 
+    var selectedNode  = null;
+
     // Here, we pre-emptively run CSS selector lookups 
     // so they don't have to be done on every mouse event.
     // Makes the interaction a bit more snappy.
     network.nodes.forEach(function(node) {
 
-      node.pathElems     = d3.selectAll(".edge-"         + node.index);
-      node.nodeElems     = d3.selectAll(".node-"         + node.index);
-      node.nbrElems      = d3.selectAll(".nodenbr-"      + node.index);
-      node.nodeElem      = d3.select(   "circle.node-"   + node.index);
-      node.thumbElem     = d3.select(   "image.node-"    + node.index);
-      node.nbrThumbElems = d3.selectAll("image.nodenbr-" + node.index);
+      node.pathElems     = d3.selectAll(".edge-"          + node.index);
+      node.nodeElem      = d3.select(   "circle.node-"    + node.index);
+      node.labelElem     = d3.select(   "text.node-"      + node.index);
+      node.thumbElem     = d3.select(   "image.node-"     + node.index);
+      node.nbrElems      = d3.selectAll("circle.nodenbr-" + node.index);
+      node.nbrLabelElems = d3.selectAll("text.nodenbr-"   + node.index);
+      node.nbrThumbElems = d3.selectAll("image.nodenbr-"  + node.index);
     });
 
-    // Change style attributes on 
-    // the given path elements
-    function setEdgeAttrs(pathElems, paths, over) {
+    /*
+     * Shows or hides the network for the given node.
+     * This includes the edges on the node and the 
+     * thumbnails of the node neighbours.
+     */
+    function showNodeNetwork(node, show) {
 
-      var opacity = DEF_EDGE_OPACITY;
-      var width   = DEF_EDGE_WIDTH;
-      var colour  = function(path) {
+      var pathElems     = node.pathElems;
+      var paths         = node.paths;
+      var nbrElems      = node.nbrElems;
+      var nbrLabelElems = node.nbrLabelElems;
+      var nbrThumbElems = node.nbrThumbElems;
+
+      var nodeOpacity = DEF_NODE_OPACITY;
+      var font        = DEF_LABEL_FONT;
+      var fontWeight  = DEF_LABEL_WEIGHT;
+      var thumbVis    = "hidden";
+      var thumbWidth  = HLT_THUMB_WIDTH;
+      var thumbHeight = HLT_THUMB_HEIGHT;
+
+      var edgeOpacity = DEF_EDGE_OPACITY;
+      var edgeWidth   = DEF_EDGE_WIDTH;
+      var edgeColour  = function(path) {
         return network.defEdgeColourScale(path.edge.weights[0]);};
       
-      if (over) {
-        opacity = HLT_EDGE_OPACITY;
-        width  = function(path) {
+      if (show) {
+
+        nodeOpacity = HLT_NODE_OPACITY;
+        font        = HLT_LABEL_FONT;
+        fontWeight  = HLT_LABEL_WEIGHT;
+        thumbVis    = "visible";
+        
+        edgeOpacity = HLT_EDGE_OPACITY;
+        edgeWidth   = function(path) {
           return network.edgeWidthScale(path.edge.weights[0]);}
-        colour = function(path) {
+        edgeColour  = function(path) {
           return network.hltEdgeColourScale(path.edge.weights[0]);};
-
       }
+     
+      nbrElems
+        .attr("opacity",     nodeOpacity);
 
+      nbrLabelElems
+        .attr("opacity",     nodeOpacity)
+        .attr("font-family", font)
+        .attr("font-weight", fontWeight);
+
+      nbrThumbElems
+        .attr("visibility", thumbVis)
+        .attr("width",      thumbWidth)
+        .attr("height",     thumbHeight);
+      
       pathElems
         .data(paths)
-        .attr("stroke-width", width)
-        .attr("stroke",       colour)
-        .attr("opacity",      opacity)
+        .attr("stroke-width", edgeWidth)
+        .attr("stroke",       edgeColour)
+        .attr("opacity",      edgeOpacity)
         .each(function() {this.parentNode.appendChild(this)});
     }
     
-    // When the mouse moves over a node or its label,
-    // change its display, along with the display of 
-    // its neighbours adn the edges to them.
-    function mouseOverNode(node, over) {
+
+    /*
+     * Show or hide the given node, label, and thumbnail. The 
+     * 'show' parameter may be "highlight", in which case the 
+     * node is highlighted, "select", in which case the node 
+     * is highlighted in a slightly more emphatic manner, or 
+     * any other value, in which case the node thumbnail is 
+     * hidden, and circle/label set to a default style.
+     */
+    function showNode(node, show) {
 
       var opacity     = DEF_NODE_OPACITY;
       var font        = DEF_LABEL_FONT;
@@ -376,51 +439,142 @@
       var fontSize    = DEF_LABEL_SIZE;
       var nodeSize    = DEF_NODE_SIZE;
       var thumbVis    = "hidden";
-      var thumbWidth  = DEF_THUMB_WIDTH;
-      var thumbHeight = DEF_THUMB_HEIGHT;
+      var thumbWidth  = 0;
+      var thumbHeight = 0;
 
-      if (over) {
+      if (show === "highlight") {
         opacity     = HLT_NODE_OPACITY;
-        font        = HLT_LABEL_FONT;
+        font        = DEF_LABEL_FONT;
         fontWeight  = HLT_LABEL_WEIGHT; 
-        fontSize    = HLT_LABEL_SIZE;
-        nodeSize    = HLT_NODE_SIZE;
+        fontSize    = DEF_LABEL_SIZE;
+        nodeSize    = DEF_NODE_SIZE;
         thumbVis    = "visible";
         thumbWidth  = HLT_THUMB_WIDTH;
         thumbHeight = HLT_THUMB_HEIGHT;
       }
+      else if (show === "select") {
+        opacity     = SEL_NODE_OPACITY;
+        font        = SEL_LABEL_FONT;
+        fontWeight  = SEL_LABEL_WEIGHT; 
+        fontSize    = SEL_LABEL_SIZE;
+        nodeSize    = SEL_NODE_SIZE;
+        thumbVis    = "visible";
+        thumbWidth  = SEL_THUMB_WIDTH;
+        thumbHeight = SEL_THUMB_HEIGHT;
+      }
 
-      node.nodeElems    .attr("opacity",     opacity);
-      node.nodeElems    .attr("font-family", font);
-      node.nodeElems    .attr("font-weight", fontWeight);
-      node.nodeElems    .attr("font-size",   fontSize);
-      node.nbrElems     .attr("opacity",     opacity);
-      node.nbrElems     .attr("font-family", font);
-      node.nbrElems     .attr("font-weight", fontWeight);
-      node.nodeElem     .attr("r",           nodeSize);
-      node.thumbElem    .attr("visibility",  thumbVis);
-      node.thumbElem    .attr("width",       thumbWidth);
-      node.thumbElem    .attr("height",      thumbHeight);
-      node.nbrThumbElems.attr("visibility",  thumbVis);
+      node.labelElem.attr("opacity",     opacity);
+      node.labelElem.attr("font-family", font);
+      node.labelElem.attr("font-weight", fontWeight);
+      node.labelElem.attr("font-size",   fontSize);
+
+      node.nodeElem .attr("r",           nodeSize);
+      node.nodeElem .attr("opacity",     opacity);
+
+      node.thumbElem.attr("visibility",  thumbVis);
+      node.thumbElem.attr("width",       thumbWidth);
+      node.thumbElem.attr("height",      thumbHeight);
 
       // move the highlighted node thumbnail element
       // to the end of its parents' list of children,
       // so it is displayed on top
       var thumbNode = node.thumbElem.node();
       thumbNode.parentNode.appendChild(thumbNode);
+    }
 
-      // change display of the spline paths 
-      // representing the edges on this node
-      setEdgeAttrs(node.pathElems, node.paths, over);
+    /*
+     * Called when a node, its label or thumbnail is clicked.
+     * Selects that node, which involves highlighting the node 
+     * and its immediate network. Or if the node was already
+     * selected, it is deselected.
+     */
+    function mouseClickNode(node) {
+
+      var oldSelection = selectedNode;
+
+      // Situation the first. No other node 
+      // was selected. Select this node.
+      if (oldSelection === null) {
+        selectedNode = node;
+
+        showNode(       node, "select");
+        showNodeNetwork(node,  true);
+      }
+      
+      // Situation the second. This node was
+      // already selected. Deselect it.
+      else if (oldSelection === node) {
+        selectedNode = null;
+
+        showNode(       node, false);
+        showNodeNetwork(node, false); 
+      }
+
+      // Situation the third. Another node 
+      // was selected. Deselect that node,
+      // and select this one.
+      else {
+        selectedNode = node;
+
+        showNode(       oldSelection, false);
+        showNodeNetwork(oldSelection, false);
+        showNode(       node,        "select");
+        showNodeNetwork(node,         true);
+      }
     }
     
-    // configure the mouse event callbacks
+    /*
+     * Called when the mouse moves over a node. 
+     * Highlights that node.
+     */
+    function mouseOverNode(node) {
+
+      showNode(node, "select");
+    }
+
+
+    /*
+     * Called when the mouse moves off a node.
+     * Removes any highlighting that was applied
+     * by the mouseOverNode function.
+     */
+    function mouseOutNode(node) {
+
+      // Situation the first. The node 
+      // is selected. Don't touch it.
+      if (selectedNode === node) {
+        return;
+      }
+
+      // Situation the second. The node is a 
+      // neighbour of the selected node. Return 
+      // it back to a 'highlight' state.
+      if (selectedNode !== null && 
+          (selectedNode.neighbours.indexOf(node) > -1)) {
+        showNode(node, "highlight");
+      }
+
+      // Situation the third. The node 
+      // is just a node. Hide it.
+      else {
+        showNode(node, false);
+      }
+    }
+    
+    // configure mouse event callbacks on 
+    // node circles, labels, and thumbnails.
     svgNodes
-      .on("mouseover", function(node) {mouseOverNode(node, true);  })
-      .on("mouseout",  function(node) {mouseOverNode(node, false); })
+      .on("mouseover", mouseOverNode)
+      .on("mouseout",  mouseOutNode)
+      .on("click",     mouseClickNode);
     svgNodeLabels
-      .on("mouseover", function(node) {mouseOverNode(node, true);  })
-      .on("mouseout",  function(node) {mouseOverNode(node, false); })
+      .on("mouseover", mouseOverNode)
+      .on("mouseout",  mouseOutNode)
+      .on("click",     mouseClickNode);
+    svgThumbnails
+      .on("mouseover", mouseOverNode)
+      .on("mouseout",  mouseOutNode)
+      .on("click",     mouseClickNode);
   }
 
   /*
