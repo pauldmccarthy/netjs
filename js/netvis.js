@@ -10,7 +10,7 @@
  *   - http://d3js.org/
  *   - http://bl.ocks.org/mbostock/7607999
  */
-var netvis = (function() {
+netvis = (function() {
 
   /* 
    * Various constants for configuring how nodes,
@@ -62,7 +62,7 @@ var netvis = (function() {
    *
    * The following attributes are added to the network object:
    *
-   *   - nodeColourScale:     Colours nodes according to their cluster
+   *   - nodeColourScale:     Colours nodes according to their label
    *
    *   - edgeWidthScale:      Scales edge widths according to the edge 
    *                          weight at index edgeWidthWeightIdx.
@@ -80,8 +80,8 @@ var netvis = (function() {
     var ewwIdx = network.edgeWidthWeightIdx;
     var ecwIdx = network.edgeColourWeightIdx;
 
-    // Nodes are coloured according to their cluster
-    // TODO handle more than 10 clusters?
+    // Nodes are coloured according to their label
+    // TODO handle more than 10 labels?
     var nodeColourScale = d3.scale.category10();
 
     var ecMin = network.weightAbsMins[ecwIdx];
@@ -147,7 +147,10 @@ var netvis = (function() {
    * node in the dendrogram tree (see the makeNetworkDendrogramTree 
    * function).
    */
-  function drawNodes(svg, network, radius) {
+  function drawNodes(network) {
+
+    var svg    = network.svg;
+    var radius = network.radius;
 
     // We use the D3 cluster layout to draw the nodes in a circle.
     // This also lays out the tree nodes (see the 
@@ -183,15 +186,14 @@ var netvis = (function() {
              "translate(-23,-28)";
     }
 
-    // Position node labels nicely.
+    // Position node names nicely.
     function anchorLabel(node) {
       return node.x < 180 ? "start" : "end"; 
     }
 
-    // Colour nodes according to 
-    // the cluster they belong to.
+    // Colour nodes according to their label value
     function colourNode(node) {
-      return network.nodeColourScale(node.cluster-1);
+      return network.nodeColourScale(node.label);
     }
 
     // The circle, label and thumbnail for a specific node 
@@ -211,7 +213,10 @@ var netvis = (function() {
     }
 
     // Draw the nodes
-    network.svgNodes = network.svgNodes
+    console.log("Putting nodes in svgnode");
+    console.log(network.svgNodes);
+    network.svgNodes
+      .selectAll("circle")
       .data(network.nodes)
       .enter()
       .append("circle")
@@ -222,7 +227,8 @@ var netvis = (function() {
       .attr("fill",      colourNode);
       
     // Draw the node labels
-    network.svgNodeLabels = network.svgNodeLabels
+    network.svgNodeLabels
+      .selectAll("text")
       .data(network.nodes)
       .enter()
       .append("text")
@@ -238,7 +244,8 @@ var netvis = (function() {
       .text(function(node) {return node.name; });
 
     // Draw the node thumbnails 
-    network.svgThumbnails = network.svgThumbnails
+    network.svgThumbnails
+      .selectAll("image")
       .data(network.nodes)
       .enter()
       .append("image")
@@ -258,7 +265,10 @@ var netvis = (function() {
    * node. Most of the hard work is done by the d3.layout.bundle 
    * function.
    */
-  function drawEdges(svg, network, radius) {
+  function drawEdges(network) {
+
+    var svg    = network.svg;
+    var radius = network.radius;
 
     // For drawing network edges as splines
     var bundle = d3.layout.bundle();
@@ -313,7 +323,8 @@ var netvis = (function() {
     });
 
     // draw the edges
-    network.svgEdges = network.svgEdges
+    network.svgEdges
+      .selectAll("path")
       .data(paths)
       .enter()
       .append("path")
@@ -337,8 +348,10 @@ var netvis = (function() {
    * and remain so until the node is clicked again, or 
    * another node is clicked upon.
    */
-  function configDynamics(svg, network, radius) {
+  function configDynamics(network) {
 
+    var svg           = network.svg;
+    var radius        = network.radius;
     var svgNodes      = network.svgNodes;
     var svgNodeLabels = network.svgNodeLabels;
     var svgThumbnails = network.svgThumbnails;
@@ -566,12 +579,13 @@ var netvis = (function() {
     // thanks: http://stackoverflow.com/questions/16256454/d3-js-position-tooltips-using-element-position-not-mouse-position
     var edgeLabelElem = d3.select("body")
       .append("div")
-      .style("position",      "absolute")
-      .style("padding",       "3px")
-      .style("text-align",    "center")
-      .style("background",    "#99cc66")
-      .style("border-radius", "5px")
-      .style("opacity",       "0")
+      .style("position",       "absolute")
+      .style("padding",        "3px")
+      .style("text-align",     "center")
+      .style("background",     "#99cc66")
+      .style("border-radius",  "5px")
+      .style("pointer-events", "none")
+      .style("opacity",        "0")
 
     /*
      * Called when the mouse moves over a path in the network
@@ -581,24 +595,23 @@ var netvis = (function() {
     function mouseOverPath(path) {
 
       if (selectedNode === null) return;
+      if (selectedNode !== path.edge.i &&
+          selectedNode !== path.edge.j)  return;
 
-      if (selectedNode.neighbours.indexOf(path.edge.i) > -1 ||
-          selectedNode.neighbours.indexOf(path.edge.j) > -1) {
-
-        var label = "";
-        for (var i = 0; i < path.edge.weights.length; i++) {
-          label = label + network.weightLabels[i] + ": " 
-                        + path.edge.weights[i] + "<br>";
-        }
-
-        edgeLabelElem
-          .html(label)
-          .style("left", (d3.event.pageX) + "px")
-          .style("top",  (d3.event.pageY) + "px")
-          .transition()
-          .duration(50)
-          .style("opacity", 0.7)
+      var label = path.edge.i.name + " - " + 
+                  path.edge.j.name + "<br>";
+      for (var i = 0; i < path.edge.weights.length; i++) {
+        label = label + network.weightLabels[i] + ": " 
+                      + path.edge.weights[i] + "<br>";
       }
+
+      edgeLabelElem
+        .html(label)
+        .style("left", (d3.event.pageX) + "px")
+        .style("top",  (d3.event.pageY) + "px")
+        .transition()
+        .duration(50)
+        .style("opacity", 0.7)
     }
 
     /*
@@ -611,20 +624,25 @@ var netvis = (function() {
         .style("opacity", 0);
     }
 
-    svgEdges.on("mouseover", mouseOverPath);
-    svgEdges.on("mouseout",  mouseOutPath);
+    svgEdges.selectAll("path")
+      .on("mouseover", mouseOverPath);
+    svgEdges.selectAll("path")
+      .on("mouseout",  mouseOutPath);
     
     // configure mouse event callbacks on 
     // node circles, labels, and thumbnails.
     svgNodes
+      .selectAll("circle")
       .on("mouseover", mouseOverNode)
       .on("mouseout",  mouseOutNode)
       .on("click",     mouseClickNode);
     svgNodeLabels
+      .selectAll("text")
       .on("mouseover", mouseOverNode)
       .on("mouseout",  mouseOutNode)
       .on("click",     mouseClickNode);
     svgThumbnails
+      .selectAll("image")
       .on("mouseover", mouseOverNode)
       .on("mouseout",  mouseOutNode)
       .on("click",     mouseClickNode);
@@ -636,38 +654,53 @@ var netvis = (function() {
    * specified networkDiv element, with nodes arranged 
    * in a big circle.
    */
-  function displayNetwork(network, networkDiv, width, height) {
+  function displayNetwork(network, div, width, height) {
 
     var diameter = Math.min(width, height);
     var radius   = diameter / 2;
 
     // put an svg element inside the networkDiv
-    var svg = d3.select(networkDiv).append("svg")
+    var svg = d3.select(div).append("svg")
       .attr("width",       width)
       .attr("height",      height)
       .style("background-color", "#fafaf0")
       .append("g")
       .attr("transform", "translate(" + radius + "," + radius + ")");
 
-    // The order of these lines defines the order in which
-    // the elements are displayed (last displayed on top)
-    var svgEdges      = svg.append("g").selectAll("path");
-    var svgThumbnails = svg.append("g").selectAll("image");
-    var svgNodes      = svg.append("g").selectAll("circle");
-    var svgNodeLabels = svg.append("g").selectAll("text");
+    // Attach selections for nodes, labels, thumbnails and 
+    // edges to the network object, so the drawNodes and 
+    // drawEdges functions  (above) can access them to draw 
+    // their things. The order of these lines defines the 
+    // order in which the elements are displayed (last 
+    // displayed on top)
+    network.svg           = svg;
+    network.radius        = radius;
+    network.svgEdges      = svg.append("g");
+    network.svgThumbnails = svg.append("g");
+    network.svgNodes      = svg.append("g");
+    network.svgNodeLabels = svg.append("g");
 
-    // Attach all of those selections to the network 
-    // object, so the drawNodes and drawEdges functions 
-    // (above) can access them to draw their things.
-    network.svgNodes      = svgNodes;
-    network.svgEdges      = svgEdges;
-    network.svgNodeLabels = svgNodeLabels;
-    network.svgThumbnails = svgThumbnails;
-    
     // Draw all of the things!
-    drawNodes(     svg, network, radius);
-    drawEdges(     svg, network, radius);
-    configDynamics(svg, network, radius);
+    drawNodes(     network);
+    drawEdges(     network);
+    configDynamics(network);
+
+    console.log(network);
+  }
+
+
+  function redrawNetwork(network) {
+
+    network.svgNodes     .exit().remove();
+    network.svgEdges     .exit().remove();
+    network.svgNodeLabels.exit().remove();
+    network.svgThumbnails.exit().remove();
+
+    drawNodes(     network);
+    drawEdges(     network);
+    configDynamics(network);
+
+    console.log(network);
   }
 
   /*
@@ -799,13 +832,12 @@ var netvis = (function() {
   }
 
   /*
-   * Creates a network from the given list of matrices, and 
-   * cluster and hierarchy labels for each node. The network
-   * edges are defined by the first matrix in the matrix list
-   * - any entries in this matrix which are not NaN will be
-   * added as an edge in the network. The values in all other
-   * matrices are added as 'weight' attributes on the 
-   * corresponding network edge.
+   * Creates a network from the given list of matrices. The 
+   * network edges are defined by the first matrix in the 
+   * matrix list - any entries in this matrix which are not 
+   * NaN will be added as an edge in the network. The values 
+   * in all other matrices are added as 'weight' attributes 
+   * on the corresponding network edge.
    */
   function matricesToNetwork(matrices) {
 
@@ -821,7 +853,7 @@ var netvis = (function() {
 
       var node = {};
 
-      // Node label is 1-indexed
+      // Node name 1-indexed
       node.index      = i+1;
       node.name       = "" + (i+1);
       node.neighbours = [];
@@ -908,7 +940,7 @@ var netvis = (function() {
   function createNetwork(
     matrices,
     matrixLabels,
-    clusters,
+    nodeLabels,
     linkage,
     thumbUrl) {
 
@@ -931,19 +963,15 @@ var netvis = (function() {
 
     // turn the matrix data into a network
     var network = matricesToNetwork(matrices);
+    network.linkage = linkage;
 
-    // use the cluster values as node labels
-    console.log(clusters);
+    // label the nodes
     for (var i = 0; i < network.nodes.length; i++) {
-      network.nodes[i].cluster = clusters[i];
+      network.nodes[i].label = nodeLabels[i];
     }
 
-    // generate a tree of dummy nodes from 
-    // the dendrogram in the linkages data
-    makeNetworkDendrogramTree(network, linkage);
-
-    // flatten that tree to 10 clusters
-    flattenDendrogramTree(network, 1);
+    // flatten the tree to one cluster
+    setNumClusters(network, 1);
 
     // Attach a thumbnail URL to 
     // every node in the network
@@ -961,6 +989,32 @@ var netvis = (function() {
     genColourScales(network);
 
     return network;
+  }
+  
+  /*
+   *
+   */
+  function setNumClusters(network, numClusts) {
+
+    
+
+    // generate a tree of dummy nodes from 
+    // the dendrogram in the linkages data
+    makeNetworkDendrogramTree(network, network.linkage);
+
+    // flatten the tree to one cluster
+    flattenDendrogramTree(network, 1);
+  }
+
+  function setEdgeWidthWeightIdx(network, idx) {
+    network.edgeWidthWeightIdx = idx;
+    genColourScales(network);
+  }
+
+
+  function setEdgeColourWeightIdx(network, idx) {
+    network.edgeWidthColourIdx = idx;
+    genColourScales(network);
   }
 
   /*
@@ -988,20 +1042,20 @@ var netvis = (function() {
 
     // TODO handle error
 
-    var linkage    = args[args.length-1];
-    var clusters   = args[args.length-2];
-    var matrixLbls = args[args.length-3];
-    var thumbUrl   = args[args.length-4];
-    var cb         = args[args.length-5];
+    var linkage      = args[args.length-1];
+    var nodeLabels   = args[args.length-2];
+    var matrixLabels = args[args.length-3];
+    var thumbUrl     = args[args.length-4];
+    var cb           = args[args.length-5];
 
     args.splice(-5, 5);
     var matrices = args;
 
-    linkage  = parseTextMatrix(linkage);
-    clusters = parseTextMatrix(clusters)[0];
-    matrices = matrices.map(parseTextMatrix);
+    linkage    = parseTextMatrix(linkage);
+    nodeLabels = parseTextMatrix(nodeLabels)[0];
+    matrices   = matrices.map(parseTextMatrix);
 
-    cb(createNetwork(matrices, matrixLbls, clusters, linkage, thumbUrl));
+    cb(createNetwork(matrices, matrixLabels, nodeLabels, linkage, thumbUrl));
   }
 
   /*
@@ -1009,11 +1063,11 @@ var netvis = (function() {
    */
   function loadNetwork(urls, cb) {
 
-    var matrixUrls   = urls.matrices;
-    var matrixLabels = urls.matrixLabels;
-    var clusterUrl   = urls.clusters;
-    var linkageUrl   = urls.linkage;
-    var thumbUrl     = urls.thumbnails;
+    var matrixUrls    = urls.matrices;
+    var matrixLabels  = urls.matrixLabels;
+    var nodeLabelsUrl = urls.nodeLabels;
+    var linkageUrl    = urls.linkage;
+    var thumbUrl      = urls.thumbnails;
 
     // The qId function is an identity function 
     // which may be used to pass standard 
@@ -1031,7 +1085,7 @@ var netvis = (function() {
     q .defer(qId,     cb)
       .defer(qId,     thumbUrl)
       .defer(qId,     matrixLabels)
-      .defer(d3.text, clusterUrl)
+      .defer(d3.text, nodeLabelsUrl)
       .defer(d3.text, linkageUrl)
       .awaitAll(onDataLoad);
   }
@@ -1039,24 +1093,8 @@ var netvis = (function() {
   var nvPublic = {};
   nvPublic.loadNetwork    = loadNetwork;
   nvPublic.displayNetwork = displayNetwork;
+  nvPublic.redrawNetwork  = redrawNetwork;
+  nvPublic.setNumClusters = setNumClusters;
   return nvPublic;
 
 })();
-
-var urls = {};
-// urls.matrices     = ["/data/dummy/corr1.txt", "/data/dummy/corr2.txt", "/data/dummy/corr1.txt"];
-// urls.matrixLabels = ["Full correlation", "Partial correlation", "Garbage"];
-// urls.clusters     =  "/data/dummy/clusters.txt";
-// urls.linkage      =  "/data/dummy/linkages.txt";
-// urls.thumbnails   =  "/data/dummy/thumbnails";
-
-urls.matrices     = ["/data/dataset2/Znet1.txt", "/data/dataset2/Znet2.txt"];
-urls.matrixLabels = ["Znet1", "Znet2"];
-urls.clusters     =  "/data/dataset2/clusters.txt";
-urls.linkage      =  "/data/dataset2/linkages.txt";
-urls.thumbnails   =  "/data/dataset2/melodic_IC_sum.sum";
-
-netvis.loadNetwork(urls, function(net) {
-  netvis.displayNetwork(net, "#fullNetwork",  800, 800);
-});
-
