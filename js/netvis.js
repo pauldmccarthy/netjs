@@ -560,14 +560,59 @@ var netvis = (function() {
       }
     }
 
+    
+    // Pop-up tooltip on edge paths, which displays
+    // edge weights on mouse over.
+    // thanks: http://stackoverflow.com/questions/16256454/d3-js-position-tooltips-using-element-position-not-mouse-position
+    var edgeLabelElem = d3.select("body")
+      .append("div")
+      .style("position",      "absolute")
+      .style("padding",       "3px")
+      .style("text-align",    "center")
+      .style("background",    "#99cc66")
+      .style("border-radius", "5px")
+      .style("opacity",       "0")
 
-    function mouseClickPath(path) {
-      var desc = "Edge " + path.edge.i + " -- " + path.edge.j + ": ";
-      desc = desc + path.edge.weights.join(", ");
-      console.log(desc);
+    /*
+     * Called when the mouse moves over a path in the network
+     * of the selected node. Pops up a tooltip displaying the 
+     * edge weights.
+     */
+    function mouseOverPath(path) {
+
+      if (selectedNode === null) return;
+
+      if (selectedNode.neighbours.indexOf(path.edge.i) > -1 ||
+          selectedNode.neighbours.indexOf(path.edge.j) > -1) {
+
+        var label = "";
+        for (var i = 0; i < path.edge.weights.length; i++) {
+          label = label + network.weightLabels[i] + ": " 
+                        + path.edge.weights[i] + "<br>";
+        }
+
+        edgeLabelElem
+          .html(label)
+          .style("left", (d3.event.pageX) + "px")
+          .style("top",  (d3.event.pageY) + "px")
+          .transition()
+          .duration(50)
+          .style("opacity", 0.7)
+      }
     }
-    svgEdges.on("click", mouseClickPath);
 
+    /*
+     * Hides the edge tooltip, if it is being displayed.
+     */
+    function mouseOutPath(path) {
+      edgeLabelElem
+        .transition()
+        .duration(50)
+        .style("opacity", 0);
+    }
+
+    svgEdges.on("mouseover", mouseOverPath);
+    svgEdges.on("mouseout",  mouseOutPath);
     
     // configure mouse event callbacks on 
     // node circles, labels, and thumbnails.
@@ -762,7 +807,7 @@ var netvis = (function() {
    * matrices are added as 'weight' attributes on the 
    * corresponding network edge.
    */
-  function matricesToNetwork(matrices, clusters) {
+  function matricesToNetwork(matrices) {
 
     matrix = matrices[0];
 
@@ -779,7 +824,6 @@ var netvis = (function() {
       // Node label is 1-indexed
       node.index      = i+1;
       node.name       = "" + (i+1);
-      node.cluster    = clusters[i];
       node.neighbours = [];
       node.edges      = [];
 
@@ -863,6 +907,7 @@ var netvis = (function() {
    */
   function createNetwork(
     matrices,
+    matrixLabels,
     clusters,
     linkage,
     thumbUrl) {
@@ -885,7 +930,13 @@ var netvis = (function() {
     }
 
     // turn the matrix data into a network
-    var network = matricesToNetwork(matrices, clusters);
+    var network = matricesToNetwork(matrices);
+
+    // use the cluster values as node labels
+    console.log(clusters);
+    for (var i = 0; i < network.nodes.length; i++) {
+      network.nodes[i].cluster = clusters[i];
+    }
 
     // generate a tree of dummy nodes from 
     // the dendrogram in the linkages data
@@ -904,6 +955,7 @@ var netvis = (function() {
     }
 
     // generate colour scales for network display
+    network.weightLabels        = matrixLabels;
     network.edgeWidthWeightIdx  = 0;
     network.edgeColourWeightIdx = 0;
     genColourScales(network);
@@ -936,19 +988,20 @@ var netvis = (function() {
 
     // TODO handle error
 
-    var linkage   = args[args.length-1];
-    var clusters  = args[args.length-2];
-    var thumbUrl  = args[args.length-3];
-    var cb        = args[args.length-4];
+    var linkage    = args[args.length-1];
+    var clusters   = args[args.length-2];
+    var matrixLbls = args[args.length-3];
+    var thumbUrl   = args[args.length-4];
+    var cb         = args[args.length-5];
 
-    args.splice(-4, 4);
+    args.splice(-5, 5);
     var matrices = args;
 
     linkage  = parseTextMatrix(linkage);
-    clusters = parseTextMatrix(clusters);
+    clusters = parseTextMatrix(clusters)[0];
     matrices = matrices.map(parseTextMatrix);
 
-    cb(createNetwork(matrices, clusters, linkage, thumbUrl));
+    cb(createNetwork(matrices, matrixLbls, clusters, linkage, thumbUrl));
   }
 
   /*
@@ -956,10 +1009,11 @@ var netvis = (function() {
    */
   function loadNetwork(urls, cb) {
 
-    var matrixUrls = urls.matrices;
-    var clusterUrl = urls.clusters;
-    var linkageUrl = urls.linkage;
-    var thumbUrl   = urls.thumbnails;
+    var matrixUrls   = urls.matrices;
+    var matrixLabels = urls.matrixLabels;
+    var clusterUrl   = urls.clusters;
+    var linkageUrl   = urls.linkage;
+    var thumbUrl     = urls.thumbnails;
 
     // The qId function is an identity function 
     // which may be used to pass standard 
@@ -976,6 +1030,7 @@ var netvis = (function() {
 
     q .defer(qId,     cb)
       .defer(qId,     thumbUrl)
+      .defer(qId,     matrixLabels)
       .defer(d3.text, clusterUrl)
       .defer(d3.text, linkageUrl)
       .awaitAll(onDataLoad);
@@ -989,10 +1044,17 @@ var netvis = (function() {
 })();
 
 var urls = {};
-urls.matrices   = ["/data/dummy/corr1.txt"];
-urls.clusters   =  "/data/dummy/clusters.txt";
-urls.linkage    =  "/data/dummy/linkages.txt";
-urls.thumbnails =  "/data/dummy/thumbnails";
+// urls.matrices     = ["/data/dummy/corr1.txt", "/data/dummy/corr2.txt", "/data/dummy/corr1.txt"];
+// urls.matrixLabels = ["Full correlation", "Partial correlation", "Garbage"];
+// urls.clusters     =  "/data/dummy/clusters.txt";
+// urls.linkage      =  "/data/dummy/linkages.txt";
+// urls.thumbnails   =  "/data/dummy/thumbnails";
+
+urls.matrices     = ["/data/dataset2/Znet1.txt", "/data/dataset2/Znet2.txt"];
+urls.matrixLabels = ["Znet1", "Znet2"];
+urls.clusters     =  "/data/dataset2/clusters.txt";
+urls.linkage      =  "/data/dataset2/linkages.txt";
+urls.thumbnails   =  "/data/dataset2/melodic_IC_sum.sum";
 
 netvis.loadNetwork(urls, function(net) {
   netvis.displayNetwork(net, "#fullNetwork",  800, 800);
