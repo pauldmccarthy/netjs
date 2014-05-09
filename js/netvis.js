@@ -785,11 +785,18 @@
   //   .defer(qId,     "/data/melodic_IC_sum.sum")
   //   .await(onDataLoad);
 
+  // queue()
+  //   .defer(d3.text, "/data/Znet1.txt")
+  //   .defer(d3.text, "/data/Znet2.txt")
+  //   .defer(d3.text, "/data/clusters.txt")
+  //   .defer(d3.text, "/data/Paul2/linkages.txt")
+  //   .defer(qId,     "/data/melodic_IC_sum.sum")
+  //   .await(onDataLoad);
   queue()
-    .defer(d3.text, "/data/Znet1.txt")
-    .defer(d3.text, "/data/Znet2.txt")
-    .defer(d3.text, "/data/clusters.txt")
-    .defer(d3.text, "/data/linkages.txt")
-    .defer(qId,     "/data/melodic_IC_sum.sum")
+    .defer(d3.text, "/data/Paul2/Znet1.txt")
+    .defer(d3.text, "/data/Paul2/Znet2.txt")
+    .defer(d3.text, "/data/Paul2/clusters.txt")
+    .defer(d3.text, "/data/Paul2/linkages.txt")
+    .defer(qId,     "/data/Paul2/melodic_IC_sum.sum")
     .await(onDataLoad);
 })();
