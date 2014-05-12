@@ -1,5 +1,5 @@
 /**
- *
+ * 
  */
 define(["lib/d3", "lib/queue"], function(d3, queue) {
 
@@ -215,6 +215,10 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
     network.treeNodes = treeNodes;
   }
 
+  function extractSubNetwork(network, nodeIdx) {
+    
+  }
+
   /*
    * Creates a network from the given list of matrices. The 
    * network edges are defined by the first matrix in the 
@@ -328,23 +332,6 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
     linkage,
     thumbUrl) {
 
-    // threshold the first matrix
-    for (var i = 0; i < matrices[0].length; i++) {
-
-      // TODO We are assuming here that the matrix
-      // is symmetric, and is fully populated.
-      // This thresholding will break if either
-      // of the above assumptions are not true.
-      absVals   = matrices[0][i].map(function(val) {return Math.abs(val);});
-      nodeThres = d3.max(absVals) * 0.75;
-
-      for (var j = 0; j < matrices[0].length; j ++) {
-        if (Math.abs(matrices[0][i][j]) < nodeThres) {
-          matrices[0][i][j] = Number.NaN;
-        }
-      }
-    }
-
     // turn the matrix data into a network
     var network = matricesToNetwork(matrices);
     network.linkage = linkage;
@@ -408,22 +395,27 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
     var nodeLabels   = args[args.length-2];
     var matrixLabels = args[args.length-3];
     var thumbUrl     = args[args.length-4];
-    var cb           = args[args.length-5];
+    var cbFunc       = args[args.length-5];
+    var thresFunc    = args[args.length-6];
 
-    args.splice(-5, 5);
+    args.splice(-6, 6);
     var matrices = args;
 
     linkage    = parseTextMatrix(linkage);
     nodeLabels = parseTextMatrix(nodeLabels)[0];
     matrices   = matrices.map(parseTextMatrix);
+    
+    if (thresFunc !== null) {
+      matrices[0] = thresFunc(matrices[0]);
+    }
 
-    cb(createNetwork(matrices, matrixLabels, nodeLabels, linkage, thumbUrl));
+    cbFunc(createNetwork(matrices, matrixLabels, nodeLabels, linkage, thumbUrl));
   }
 
   /*
    *
    */
-  function loadNetwork(urls, cb) {
+  function loadNetwork(urls, thresFunc, cbFunc) {
 
     var matrixUrls    = urls.matrices;
     var matrixLabels  = urls.matrixLabels;
@@ -444,7 +436,8 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
       q = q.defer(d3.text, url);
     });
 
-    q .defer(qId,     cb)
+    q .defer(qId,     thresFunc)
+      .defer(qId,     cbFunc)
       .defer(qId,     thumbUrl)
       .defer(qId,     matrixLabels)
       .defer(d3.text, nodeLabelsUrl)
