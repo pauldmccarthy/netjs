@@ -10,7 +10,7 @@
  *   - http://d3js.org/
  *   - http://bl.ocks.org/mbostock/7607999
  */
-netvis = (function() {
+define(["d3", "queue"], function(d3, queue) {
 
   /* 
    * Various constants for configuring how nodes,
@@ -1192,4 +1192,4 @@ netvis = (function() {
   nvPublic.setEdgeWidthWeightIdx  = setEdgeWidthWeightIdx;
   return nvPublic;
 
-})();
+});

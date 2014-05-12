@@ -1,4 +1,4 @@
-netctrl = (function() {
+define(["d3"], function(d3) {
 
   function createNetworkControls(network, div) {
 
@@ -9,7 +9,6 @@ netctrl = (function() {
       var numClustRange   = html.querySelector("#numClusts");
       var edgeColourScale = html.querySelector("#edgeColourScale");
       var edgeWidthScale  = html.querySelector("#edgeWidthScale");
-
 
       for (var i = 0; i < network.weightLabels.length; i++) {
 
@@ -51,4 +50,4 @@ netctrl = (function() {
   var ncPublic = {}; 
   ncPublic.createNetworkControls = createNetworkControls;
   return ncPublic;
-}());
+});
