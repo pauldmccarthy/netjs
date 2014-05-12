@@ -216,40 +216,68 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
   }
 
 
-  // function extractSubNetwork(network, rootIdx) {
 
-  //   subnet       = {}
-  //   subnet.nodes = [];
-  //   subnet.edges = [];
+  function extractSubMatrix(matrix, indices) {
+    var submat = [];
 
-  //   var nodeIdxs = [rootIdx];
+    for (var i = 0; i < indices.length; i++) {
 
-  //   // A 0-indexed mapping of node indices from the 
-  //   // new subnetwork to the old parent network
-  //   var indexMap = [];
-  //   indexMap[0] = rootIdx-1;
+      var row = [];
+      for (var j = 0; j < indices.length; j++) {
 
-  //   for (var i = 0; i < network.nodes[rootIdx-1].neighbours.length; i++) {
+        row.push(matrix[indices[i]][indices[j]]);
+      }
+      submat.push(row);
+    }
 
-  //     var nbrIdx = network.nodes[rootIdx-1].neighbours[i];
-
-  //     nodeIdxs.push(nbrIdx);
-  //     indexMap[i+1] = nbrIdx-1;
-  //   }
-
-  //   for (var i = 0; i < nodeIdxs.length; i++) {
-
-  //     oldNode        = network.nodes[indexMap[i]];
-  //     node           = {};
-  //     node.index     = idx;
-  //     node.label     = oldNode.label;
-  //     node.depth     = oldNode.depth;
-  //     node.thumbnail = oldNode.thumbnail;
-  //   });
+    return submat;
+  }
 
 
-    
-  // }
+  function extractSubNetwork(network, rootIdx) {
+
+    if (network.linkage === null) {
+      throw "extractSubNetwork: can only extract a " + 
+            "subnetwork from a full network";
+    }
+
+    var nodeIdxs = [rootIdx];
+    var oldRoot  = network.nodes[rootIdx];
+
+    for (var i = 0; i < oldRoot.neighbours.length; i++) {
+
+      var nbrIdx = oldRoot.neighbours[i].index;
+      nodeIdxs.push(nbrIdx);
+    }
+
+    var subMats = network.matrices.map(
+      function(mat) {return extractSubMatrix(mat, nodeIdxs);});
+
+    var subLabels = nodeIdxs.map(
+      function(idx) {return network.nodes[idx].label;});
+
+    var subnet = createNetwork(
+      subMats, 
+      network.weightLabels, 
+      subLabels,
+      null,
+      network.thumburl);
+
+    // Fix node indices, names and thumbnails
+    var zerofmt = d3.format("04d");
+    for (var i = 0; i < subnet.nodes.length; i++) {
+
+      var node = subnet.nodes[i];
+
+      node.name  = network.nodes[nodeIdxs[i]].name;
+      node.index = network.nodes[nodeIdxs[i]].index;
+
+      var imgurl = thumburl + "/" + zerofmt(nodeIdxs[i]) + ".png";
+      node.thumbnail = imgurl;
+    }
+
+    return subnet;
+  }
 
   /*
    * Creates a network from the given list of matrices. The 
