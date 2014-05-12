@@ -112,7 +112,7 @@ define(["lib/d3"], function(d3) {
 
     // The circle, label and thumbnail for a specific node 
     // are given css class 'node-X', where X is the node 
-    // id. For every neighbour of a particular node, that 
+    // index. For every neighbour of a particular node, that 
     // node is also given the css class  'nodenbr-Y', where 
     // Y is the index of the neighbour.
     function nodeClasses(node) {

@@ -100,11 +100,11 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
     desc = "";
     for (var i = 0; i < depth; i++) desc = desc + " ";
 
-    desc = desc + root.index + ": ";
+    desc = desc + (root.index+1) + ": ";
 
     if (!root.children) return;
 
-    childIdxs = root.children.map(function(child) {return child.index;});
+    childIdxs = root.children.map(function(child) {return child.index+1;});
     desc = desc + childIdxs.join(", ");
 
     console.log(desc);
@@ -207,7 +207,7 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
 
       treeNode.children = [left, right];
       treeNode.distance = linkages[i][2];
-      treeNode.index = i + numNodes + 1;
+      treeNode.index = i + numNodes;
 
       treeNodes.push(treeNode);
     }
@@ -215,9 +215,41 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
     network.treeNodes = treeNodes;
   }
 
-  function extractSubNetwork(network, nodeIdx) {
+
+  // function extractSubNetwork(network, rootIdx) {
+
+  //   subnet       = {}
+  //   subnet.nodes = [];
+  //   subnet.edges = [];
+
+  //   var nodeIdxs = [rootIdx];
+
+  //   // A 0-indexed mapping of node indices from the 
+  //   // new subnetwork to the old parent network
+  //   var indexMap = [];
+  //   indexMap[0] = rootIdx-1;
+
+  //   for (var i = 0; i < network.nodes[rootIdx-1].neighbours.length; i++) {
+
+  //     var nbrIdx = network.nodes[rootIdx-1].neighbours[i];
+
+  //     nodeIdxs.push(nbrIdx);
+  //     indexMap[i+1] = nbrIdx-1;
+  //   }
+
+  //   for (var i = 0; i < nodeIdxs.length; i++) {
+
+  //     oldNode        = network.nodes[indexMap[i]];
+  //     node           = {};
+  //     node.index     = idx;
+  //     node.label     = oldNode.label;
+  //     node.depth     = oldNode.depth;
+  //     node.thumbnail = oldNode.thumbnail;
+  //   });
+
+
     
-  }
+  // }
 
   /*
    * Creates a network from the given list of matrices. The 
@@ -241,8 +273,8 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
 
       var node = {};
 
-      // Node name 1-indexed
-      node.index      = i+1;
+      // Node name is 1-indexed
+      node.index      = i;
       node.name       = "" + (i+1);
       node.neighbours = [];
       node.edges      = [];
