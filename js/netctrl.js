@@ -1,8 +1,9 @@
-define(["d3"], function(d3) {
+
+define(["d3", "netvis"], function(d3, netvis) {
 
   function createNetworkControls(network, div) {
 
-    div = document.getElementById(div);
+    div = d3.select(div)[0][0];
 
     d3.html("/js/netctrl.html", function(error, html) {
 

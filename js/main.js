@@ -10,7 +10,7 @@ require(["netvis", "netctrl"], function(netvis, netctrl) {
 
   netvis.loadNetwork(urls, function(net) {
 
-    netctrl.createNetworkControls(net, "networkCtrl");
+    netctrl.createNetworkControls(net, "#networkCtrl");
     netvis.displayNetwork(net, "#fullNetwork",  800, 800);
     
   });
