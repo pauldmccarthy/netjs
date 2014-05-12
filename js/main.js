@@ -14,7 +14,7 @@ urls.thumbnails   =  "/data/dataset2/melodic_IC_sum.sum";
 
 netvis.loadNetwork(urls, function(net) {
 
-  netctrl.createNetworkControls(net, "#networkCtrl");
+  netctrl.createNetworkControls(net, "networkCtrl");
 
   netvis.displayNetwork(net, "#fullNetwork",  800, 800);
   

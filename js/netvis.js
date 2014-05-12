@@ -359,7 +359,8 @@ netvis = (function() {
 
     // This variable is used to keep track 
     // of the currently selected node. 
-    var selectedNode  = null;
+    if (!network.selectedNode)
+      network.selectedNode = null;
 
     // Here, we pre-emptively run CSS selector lookups 
     // so they don't have to be done on every mouse event.
@@ -503,12 +504,12 @@ netvis = (function() {
      */
     function mouseClickNode(node) {
 
-      var oldSelection = selectedNode;
+      var oldSelection = network.selectedNode;
 
       // Situation the first. No other node 
       // was selected. Select this node.
       if (oldSelection === null) {
-        selectedNode = node;
+        network.selectedNode = node;
 
         showNode(       node, "select");
         showNodeNetwork(node,  true);
@@ -517,7 +518,7 @@ netvis = (function() {
       // Situation the second. This node was
       // already selected. Deselect it.
       else if (oldSelection === node) {
-        selectedNode = null;
+        network.selectedNode = null;
 
         showNode(       node, false);
         showNodeNetwork(node, false); 
@@ -527,7 +528,7 @@ netvis = (function() {
       // was selected. Deselect that node,
       // and select this one.
       else {
-        selectedNode = node;
+        network.selectedNode = node;
 
         showNode(       oldSelection, false);
         showNodeNetwork(oldSelection, false);
@@ -544,7 +545,6 @@ netvis = (function() {
       showNode(node, "select");
     }
 
-
     /*
      * Called when the mouse moves off a node.
      * Removes any highlighting that was applied
@@ -554,15 +554,15 @@ netvis = (function() {
 
       // Situation the first. The node 
       // is selected. Don't touch it.
-      if (selectedNode === node) {
+      if (network.selectedNode === node) {
         return;
       }
 
       // Situation the second. The node is a 
       // neighbour of the selected node. Return 
       // it back to a 'highlight' state.
-      if (selectedNode !== null && 
-          (selectedNode.neighbours.indexOf(node) > -1)) {
+      if (network.selectedNode !== null && 
+          (network.selectedNode.neighbours.indexOf(node) > -1)) {
         showNode(node, "highlight");
       }
 
@@ -577,8 +577,7 @@ netvis = (function() {
     // Pop-up tooltip on edge paths, which displays
     // edge weights on mouse over.
     // thanks: http://stackoverflow.com/questions/16256454/d3-js-position-tooltips-using-element-position-not-mouse-position
-    var edgeLabelElem = d3.select("body")
-      .append("div")
+    var edgeLabelElem = d3.select("body #edgeWeightPopup")
       .style("position",       "absolute")
       .style("padding",        "3px")
       .style("text-align",     "center")
@@ -594,9 +593,9 @@ netvis = (function() {
      */
     function mouseOverPath(path) {
 
-      if (selectedNode === null) return;
-      if (selectedNode !== path.edge.i &&
-          selectedNode !== path.edge.j)  return;
+      if (network.selectedNode === null) return;
+      if (network.selectedNode !== path.edge.i &&
+          network.selectedNode !== path.edge.j)  return;
 
       var label = path.edge.i.name + " - " + 
                   path.edge.j.name + "<br>";
@@ -646,6 +645,13 @@ netvis = (function() {
       .on("mouseover", mouseOverNode)
       .on("mouseout",  mouseOutNode)
       .on("click",     mouseClickNode);
+
+    // initialise the selection display, if 
+    // a node has previously been selected
+    if (network.selectedNode != null) {
+      showNode(       network.selectedNode, "select");
+      showNodeNetwork(network.selectedNode, true);
+    }
   }
 
   /*
@@ -666,19 +672,30 @@ netvis = (function() {
       .style("background-color", "#fafaf0")
       .append("g")
       .attr("transform", "translate(" + radius + "," + radius + ")");
-
-    // Attach selections for nodes, labels, thumbnails and 
-    // edges to the network object, so the drawNodes and 
-    // drawEdges functions  (above) can access them to draw 
-    // their things. The order of these lines defines the 
-    // order in which the elements are displayed (last 
-    // displayed on top)
+   
+    // The network display consists of four types of things:
+    //   - <circle> elements, one for each node
+    //   - <text> elements containing the label for each node
+    //   - <image> elements containing the thumbnail for each node
+    //   - <path> elements, one for each edge
+    //
+    // In addition to this, a single div is added to the <body>,
+    // which is used as a popup to display edge weights when
+    // the mouse moves over an edge.
+    // 
+    // The order of these lines defines the order in which the 
+    // elements are displayed (last displayed on top)
     network.svg           = svg;
     network.radius        = radius;
     network.svgEdges      = svg.append("g");
     network.svgThumbnails = svg.append("g");
     network.svgNodes      = svg.append("g");
     network.svgNodeLabels = svg.append("g");
+
+    // append a div to display edge weights
+    d3.select("body")
+      .append("div")
+      .attr("id", "edgeWeightPopup");
 
     // Draw all of the things!
     drawNodes(     network);
@@ -691,10 +708,10 @@ netvis = (function() {
 
   function redrawNetwork(network) {
 
-    network.svgNodes     .exit().remove();
-    network.svgEdges     .exit().remove();
-    network.svgNodeLabels.exit().remove();
-    network.svgThumbnails.exit().remove();
+    network.svgNodes     .selectAll("circle").remove();
+    network.svgEdges     .selectAll("path")  .remove();
+    network.svgNodeLabels.selectAll("text")  .remove();
+    network.svgThumbnails.selectAll("image") .remove();
 
     drawNodes(     network);
     drawEdges(     network);
@@ -1002,8 +1019,8 @@ netvis = (function() {
     // the dendrogram in the linkages data
     makeNetworkDendrogramTree(network, network.linkage);
 
-    // flatten the tree to one cluster
-    flattenDendrogramTree(network, 1);
+    // flatten the tree to the specified number of clusters
+    flattenDendrogramTree(network, numClusts);
   }
 
   function setEdgeWidthWeightIdx(network, idx) {
@@ -1091,10 +1108,12 @@ netvis = (function() {
   }
 
   var nvPublic = {};
-  nvPublic.loadNetwork    = loadNetwork;
-  nvPublic.displayNetwork = displayNetwork;
-  nvPublic.redrawNetwork  = redrawNetwork;
-  nvPublic.setNumClusters = setNumClusters;
+  nvPublic.loadNetwork            = loadNetwork;
+  nvPublic.displayNetwork         = displayNetwork;
+  nvPublic.redrawNetwork          = redrawNetwork;
+  nvPublic.setNumClusters         = setNumClusters;
+  nvPublic.setEdgeColourWeightIdx = setEdgeColourWeightIdx;
+  nvPublic.setEdgeWidthWeightIdx  = setEdgeWidthWeightIdx;
   return nvPublic;
 
 })();
