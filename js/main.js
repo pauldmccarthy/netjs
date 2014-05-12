@@ -1,4 +1,4 @@
-require(["netvis", "netctrl"], function(netvis, netctrl) {
+require(["netjs"], function(netjs) {
 
   var urls = {};
 
@@ -8,10 +8,10 @@ require(["netvis", "netctrl"], function(netvis, netctrl) {
   urls.linkage      =  "/data/dataset2/linkages.txt";
   urls.thumbnails   =  "/data/dataset2/melodic_IC_sum.sum";
 
-  netvis.loadNetwork(urls, function(net) {
+  netjs.loadNetwork(urls, function(net) {
 
-    netctrl.createNetworkControls(net, "#networkCtrl");
-    netvis.displayNetwork(net, "#fullNetwork",  800, 800);
+    netjs.createNetworkControls(net, "#networkCtrl");
+    netjs.displayNetwork(net, "#fullNetwork",  800, 800);
     
   });
 });

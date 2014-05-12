@@ -1,5 +1,5 @@
 
-define(["d3", "netvis"], function(d3, netvis) {
+define(["lib/d3", "netdata", "netvis"], function(d3, netdata, netvis) {
 
   function createNetworkControls(network, div) {
 
@@ -26,29 +26,27 @@ define(["d3", "netvis"], function(d3, netvis) {
 
       numClustRange
         .onchange = function() {
-          netvis.setNumClusters(network, parseInt(this.value));
+          netdata.setNumClusters(network, parseInt(this.value));
           netvis.redrawNetwork(network);
         };
 
       edgeColourScale
         .onchange = function() {
-          netvis.setEdgeColourWeightIdx(network, parseInt(this.value));
+          netdata.setEdgeColourWeightIdx(network, parseInt(this.value));
           netvis.redrawNetwork(network);
         };
 
       edgeWidthScale
         .onchange = function() {
-          netvis.setEdgeWidthWeightIdx(network, parseInt(this.value));
+          netdata.setEdgeWidthWeightIdx(network, parseInt(this.value));
           netvis.redrawNetwork(network);
         };
 
       div.appendChild(html);
     });
-
   }
 
-
-  var ncPublic = {}; 
-  ncPublic.createNetworkControls = createNetworkControls;
-  return ncPublic;
+  var netctrl = {}; 
+  netctrl.createNetworkControls = createNetworkControls;
+  return netctrl;
 });
