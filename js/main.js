@@ -12,7 +12,6 @@ require(["netjs"], function(netjs) {
 
     netjs.createNetworkControls(net, "#networkCtrl");
     netjs.displayNetwork(       net, "#fullNetwork",  800, 800);
-    netjs.configDynamics(       net);
   });
 });
 
