@@ -11,7 +11,8 @@ require(["netjs"], function(netjs) {
   netjs.loadNetwork(urls, function(net) {
 
     netjs.createNetworkControls(net, "#networkCtrl");
-    netjs.displayNetwork(net, "#fullNetwork",  800, 800);
-    
+    netjs.displayNetwork(       net, "#fullNetwork",  800, 800);
+    netjs.configDynamics(       net);
   });
 });
+

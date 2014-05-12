@@ -1,5 +1,7 @@
 
-define(["lib/d3", "netdata", "netvis"], function(d3, netdata, netvis) {
+define(
+  ["lib/d3", "netdata", "netvis", "netvis_dynamics"], 
+  function(d3, netdata, netvis, dynamics) {
 
   function createNetworkControls(network, div) {
 
@@ -28,18 +30,21 @@ define(["lib/d3", "netdata", "netvis"], function(d3, netdata, netvis) {
         .onchange = function() {
           netdata.setNumClusters(network, parseInt(this.value));
           netvis.redrawNetwork(network);
+          dynamics.configDynamics(network);
         };
 
       edgeColourScale
         .onchange = function() {
           netdata.setEdgeColourWeightIdx(network, parseInt(this.value));
           netvis.redrawNetwork(network);
+          dynamics.configDynamics(network);
         };
 
       edgeWidthScale
         .onchange = function() {
           netdata.setEdgeWidthWeightIdx(network, parseInt(this.value));
-          netvis.redrawNetwork(network);
+          netvis.redrawNetwork(network)
+          dynamics.configDynamics(network);
         };
 
       div.appendChild(html);
