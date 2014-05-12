@@ -213,8 +213,6 @@ netvis = (function() {
     }
 
     // Draw the nodes
-    console.log("Putting nodes in svgnode");
-    console.log(network.svgNodes);
     network.svgNodes
       .selectAll("circle")
       .data(network.nodes)
@@ -435,7 +433,6 @@ netvis = (function() {
         .attr("opacity",      edgeOpacity)
         .each(function() {this.parentNode.appendChild(this)});
     }
-    
 
     /*
      * Show or hide the given node, label, and thumbnail. The 
@@ -576,7 +573,8 @@ netvis = (function() {
     
     // Pop-up tooltip on edge paths, which displays
     // edge weights on mouse over.
-    // thanks: http://stackoverflow.com/questions/16256454/d3-js-position-tooltips-using-element-position-not-mouse-position
+    // thanks: http://stackoverflow.com/questions/16256454/\
+    // d3-js-position-tooltips-using-element-position-not-mouse-position
     var edgeLabelElem = d3.select("body #edgeWeightPopup")
       .style("position",       "absolute")
       .style("padding",        "3px")
@@ -623,6 +621,83 @@ netvis = (function() {
         .style("opacity", 0);
     }
 
+    // The network may be rotated by dragging the mouse up/down
+    var mouseDownPos   = {}
+    var parentGroup = svg.select("#networkParentGroup");
+
+    mouseDownPos.x       = 0.0;
+    mouseDownPos.y       = 0.0;
+    mouseDownPos.angle   = 0.0;
+    mouseDownPos.origRot = 0.0;
+    mouseDownPos.newRot  = 0.0;
+    mouseDownPos.down    = false;
+
+    /*
+     * When the mouse is clicked on the svg canvas, its x/y location,
+     * and the current network rotation, are stored in an object,
+     * and the mouseDownPos variable pointed towards it.
+     */
+    function mouseDownCanvas() {
+
+      var mouseCoords = d3.mouse(this);
+
+      var x = mouseCoords[0] - network.width  / 2.0;
+      var y = mouseCoords[1] - network.height / 2.0;
+      
+      mouseDownPos.down  = true;
+      mouseDownPos.x     = x;
+      mouseDownPos.y     = y;
+      mouseDownPos.angle = (Math.atan2(y, x) * 180.0/Math.PI) % 360;
+
+      d3.event.preventDefault();
+    }
+
+    /*
+     * Clears the mouseDownPos reference.
+     */
+    function mouseUpCanvas() {
+      mouseDownPos.down    = false;
+      mouseDownPos.origRot = mouseDownPos.newRot;
+    }
+
+    /*
+     * When the mouse is dragged across the canvas, the network
+     * is rotated according to the distance between the original
+     * mouse click location, and the current mouse location.
+     */
+    function mouseMoveCanvas() {
+
+      if (mouseDownPos.down === false) return;
+
+      var mouseCoords = d3.mouse(this);
+
+      var newX     = mouseCoords[0] - network.width  / 2.0;
+      var newY     = mouseCoords[1] - network.height / 2.0;
+      var oldX     = mouseDownPos.x;
+      var oldY     = mouseDownPos.y;
+      var oldRot   = mouseDownPos.origRot;
+      var oldAngle = mouseDownPos.angle;
+      var newAngle = Math.atan2(newY, newX) * 180.0/Math.PI;
+      var newRot   = (newAngle - oldAngle + oldRot) % 360;
+
+      mouseDownPos.newRot = newRot;
+
+      parentGroup
+        .attr("transform", "translate(" + radius + "," + radius + ")" + 
+                           "rotate(" + newRot + ")");
+    }
+
+    svg
+      .on("mousedown", mouseDownCanvas)
+      .on("mousemove", mouseMoveCanvas);
+
+    // register mouse-up with the top level window, so
+    // the drag behaviour is disabled even if the mouse
+    // is released outside of tge canvas
+    d3.select(window)
+      .on("mouseup",   mouseUpCanvas)
+    
+    // configure events on edges
     svgEdges.selectAll("path")
       .on("mouseover", mouseOverPath);
     svgEdges.selectAll("path")
@@ -670,9 +745,12 @@ netvis = (function() {
       .attr("width",       width)
       .attr("height",      height)
       .style("background-color", "#fafaf0")
+
+    var parentGroup = svg
       .append("g")
+      .attr("id", "networkParentGroup")
       .attr("transform", "translate(" + radius + "," + radius + ")");
-   
+
     // The network display consists of four types of things:
     //   - <circle> elements, one for each node
     //   - <text> elements containing the label for each node
@@ -687,10 +765,12 @@ netvis = (function() {
     // elements are displayed (last displayed on top)
     network.svg           = svg;
     network.radius        = radius;
-    network.svgEdges      = svg.append("g");
-    network.svgThumbnails = svg.append("g");
-    network.svgNodes      = svg.append("g");
-    network.svgNodeLabels = svg.append("g");
+    network.width         = width;
+    network.height        = height;
+    network.svgEdges      = parentGroup.append("g");
+    network.svgThumbnails = parentGroup.append("g");
+    network.svgNodes      = parentGroup.append("g");
+    network.svgNodeLabels = parentGroup.append("g");
 
     // append a div to display edge weights
     d3.select("body")
@@ -701,8 +781,6 @@ netvis = (function() {
     drawNodes(     network);
     drawEdges(     network);
     configDynamics(network);
-
-    console.log(network);
   }
 
 
@@ -716,8 +794,6 @@ netvis = (function() {
     drawNodes(     network);
     drawEdges(     network);
     configDynamics(network);
-
-    console.log(network);
   }
 
   /*
