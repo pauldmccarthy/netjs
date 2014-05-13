@@ -8,6 +8,8 @@ define(
 
     div = d3.select(div)[0][0];
 
+    var subnet = null;
+
     if (subNetDiv !== null)
       subNetDiv = d3.select(subNetDiv)[0][0];
 
@@ -36,7 +38,6 @@ define(
           netdata.setNumClusters(network, parseInt(this.value));
           netvis.redrawNetwork(network);
           dynamics.configDynamics(network);
-          console.log(network);
         };
 
       edgeColourScale
@@ -44,6 +45,7 @@ define(
           netdata.setEdgeColourWeightIdx(network, parseInt(this.value));
           netvis.redrawNetwork(network);
           dynamics.configDynamics(network);
+          if (subnet !== null) nvSubnet.redrawSubNetwork(subnet);
         };
 
       edgeWidthScale
@@ -51,14 +53,26 @@ define(
           netdata.setEdgeWidthWeightIdx(network, parseInt(this.value));
           netvis.redrawNetwork(network)
           dynamics.configDynamics(network);
+          if (subnet !== null) nvSubnet.redrawSubNetwork(subnet);
         };
 
       showSubNetButton
         .onclick = function() {
 
           if (network.selectedNode === null) return;
-          
-          var subnet = netdata.extractSubNetwork(network, network.selectedNode.index);
+          if (subnet !== null) {
+
+            nvSubnet.clearSubNetwork(subnet);
+            showSubNetButton.value = "Show";
+            subnet = null;
+            return;
+          }
+
+          showSubNetButton.value = "Hide";
+
+          subnet = netdata.extractSubNetwork(network, network.selectedNode.index);
+          // share colour information
+          subnet.scaleInfo = network.scaleInfo;
           nvSubnet.displaySubNetwork(
             subnet, subNetDiv, subNetWidth, subNetHeight);
         };
