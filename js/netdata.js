@@ -574,7 +574,7 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
 
 
   function setEdgeColourWeightIdx(network, idx) {
-    network.edgeWidthColourIdx = idx;
+    network.edgeColourWeightIdx = idx;
     genColourScales(network);
   }
 

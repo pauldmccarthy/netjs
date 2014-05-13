@@ -25,7 +25,8 @@ define(["lib/d3", "netvis"], function(d3, netvis) {
       var edgeOpacity = netvis.DEF_EDGE_OPACITY;
       var edgeWidth   = netvis.DEF_EDGE_WIDTH;
       var edgeColour  = function(path) {
-        return network.defEdgeColourScale(path.edge.weights[0]);};
+        return network.defEdgeColourScale(
+          path.edge.weights[network.edgeColourWeightIdx]);};
       
       if (show) {
 
@@ -36,9 +37,12 @@ define(["lib/d3", "netvis"], function(d3, netvis) {
         
         edgeOpacity = netvis.HLT_EDGE_OPACITY;
         edgeWidth   = function(path) {
-          return network.edgeWidthScale(path.edge.weights[0]);}
+          return network.edgeWidthScale(
+            path.edge.weights[network.edgeWidthWeightIdx]);}
         edgeColour  = function(path) {
-          return network.hltEdgeColourScale(path.edge.weights[0]);};
+          return network.hltEdgeColourScale(
+            path.edge.weights[network.edgeColourWeightIdx]);
+        };
       }
      
       nbrElems
@@ -223,203 +227,6 @@ define(["lib/d3", "netvis"], function(d3, netvis) {
       node.nbrLabelElems = d3.selectAll("text.nodenbr-"   + node.index);
       node.nbrThumbElems = d3.selectAll("image.nodenbr-"  + node.index);
     });
-
-    /*
-     * Shows or hides the network for the given node.
-     * This includes the edges on the node and the 
-     * thumbnails of the node neighbours.
-     */
-    function showNodeNetwork(node, show) {
-
-      var pathElems     = node.pathElems;
-      var paths         = node.paths;
-      var nbrElems      = node.nbrElems;
-      var nbrLabelElems = node.nbrLabelElems;
-      var nbrThumbElems = node.nbrThumbElems;
-
-      var nodeOpacity = netvis.DEF_NODE_OPACITY;
-      var font        = netvis.DEF_LABEL_FONT;
-      var fontWeight  = netvis.DEF_LABEL_WEIGHT;
-      var thumbVis    = "hidden";
-      var thumbWidth  = netvis.HLT_THUMB_WIDTH;
-      var thumbHeight = netvis.HLT_THUMB_HEIGHT;
-
-      var edgeOpacity = netvis.DEF_EDGE_OPACITY;
-      var edgeWidth   = netvis.DEF_EDGE_WIDTH;
-      var edgeColour  = function(path) {
-        return network.defEdgeColourScale(path.edge.weights[0]);};
-      
-      if (show) {
-
-        nodeOpacity = netvis.HLT_NODE_OPACITY;
-        font        = netvis.HLT_LABEL_FONT;
-        fontWeight  = netvis.HLT_LABEL_WEIGHT;
-        thumbVis    = "visible";
-        
-        edgeOpacity = netvis.HLT_EDGE_OPACITY;
-        edgeWidth   = function(path) {
-          return network.edgeWidthScale(path.edge.weights[0]);}
-        edgeColour  = function(path) {
-          return network.hltEdgeColourScale(path.edge.weights[0]);};
-      }
-     
-      nbrElems
-        .attr("opacity",     nodeOpacity);
-
-      nbrLabelElems
-        .attr("opacity",     nodeOpacity)
-        .attr("font-family", font)
-        .attr("font-weight", fontWeight);
-
-      nbrThumbElems
-        .attr("visibility", thumbVis)
-        .attr("width",      thumbWidth)
-        .attr("height",     thumbHeight);
-      
-      pathElems
-        .data(paths)
-        .attr("stroke-width", edgeWidth)
-        .attr("stroke",       edgeColour)
-        .attr("opacity",      edgeOpacity)
-        .each(function() {this.parentNode.appendChild(this)});
-    }
-
-    /*
-     * Show or hide the given node, label, and thumbnail. The 
-     * 'show' parameter may be "highlight", in which case the 
-     * node is highlighted, "select", in which case the node 
-     * is highlighted in a slightly more emphatic manner, or 
-     * any other value, in which case the node thumbnail is 
-     * hidden, and circle/label set to a default style.
-     */
-    function showNode(node, show) {
-
-      var opacity     = netvis.DEF_NODE_OPACITY;
-      var font        = netvis.DEF_LABEL_FONT;
-      var fontWeight  = netvis.DEF_LABEL_WEIGHT;
-      var fontSize    = netvis.DEF_LABEL_SIZE;
-      var nodeSize    = netvis.DEF_NODE_SIZE;
-      var thumbVis    = "hidden";
-      var thumbWidth  = 0;
-      var thumbHeight = 0;
-
-      if (show === "highlight") {
-        opacity     = netvis.HLT_NODE_OPACITY;
-        font        = netvis.DEF_LABEL_FONT;
-        fontWeight  = netvis.HLT_LABEL_WEIGHT; 
-        fontSize    = netvis.DEF_LABEL_SIZE;
-        nodeSize    = netvis.DEF_NODE_SIZE;
-        thumbVis    = "visible";
-        thumbWidth  = netvis.HLT_THUMB_WIDTH;
-        thumbHeight = netvis.HLT_THUMB_HEIGHT;
-      }
-      else if (show === "select") {
-        opacity     = netvis.SEL_NODE_OPACITY;
-        font        = netvis.SEL_LABEL_FONT;
-        fontWeight  = netvis.SEL_LABEL_WEIGHT; 
-        fontSize    = netvis.SEL_LABEL_SIZE;
-        nodeSize    = netvis.SEL_NODE_SIZE;
-        thumbVis    = "visible";
-        thumbWidth  = netvis.SEL_THUMB_WIDTH;
-        thumbHeight = netvis.SEL_THUMB_HEIGHT;
-      }
-
-      node.labelElem.attr("opacity",     opacity);
-      node.labelElem.attr("font-family", font);
-      node.labelElem.attr("font-weight", fontWeight);
-      node.labelElem.attr("font-size",   fontSize);
-
-      node.nodeElem .attr("r",           nodeSize);
-      node.nodeElem .attr("opacity",     opacity);
-
-      node.thumbElem.attr("visibility",  thumbVis);
-      node.thumbElem.attr("width",       thumbWidth);
-      node.thumbElem.attr("height",      thumbHeight);
-
-      // move the highlighted node thumbnail element
-      // to the end of its parents' list of children,
-      // so it is displayed on top
-      var thumbNode = node.thumbElem.node();
-      thumbNode.parentNode.appendChild(thumbNode);
-    }
-
-    /*
-     * Called when a node, its label or thumbnail is clicked.
-     * Selects that node, which involves highlighting the node 
-     * and its immediate network. Or if the node was already
-     * selected, it is deselected.
-     */
-    function mouseClickNode(node) {
-
-      var oldSelection = network.selectedNode;
-
-      // Situation the first. No other node 
-      // was selected. Select this node.
-      if (oldSelection === null) {
-        network.selectedNode = node;
-
-        showNode(       node, "select");
-        showNodeNetwork(node,  true);
-      }
-      
-      // Situation the second. This node was
-      // already selected. Deselect it.
-      else if (oldSelection === node) {
-        network.selectedNode = null;
-
-        showNode(       node, false);
-        showNodeNetwork(node, false); 
-      }
-
-      // Situation the third. Another node 
-      // was selected. Deselect that node,
-      // and select this one.
-      else {
-        network.selectedNode = node;
-
-        showNode(       oldSelection, false);
-        showNodeNetwork(oldSelection, false);
-        showNode(       node,        "select");
-        showNodeNetwork(node,         true);
-      }
-    }
-    
-    /*
-     * Called when the mouse moves over a node. 
-     * Highlights that node.
-     */
-    function mouseOverNode(node) {
-      showNode(node, "select");
-    }
-
-    /*
-     * Called when the mouse moves off a node.
-     * Removes any highlighting that was applied
-     * by the mouseOverNode function.
-     */
-    function mouseOutNode(node) {
-
-      // Situation the first. The node 
-      // is selected. Don't touch it.
-      if (network.selectedNode === node) {
-        return;
-      }
-
-      // Situation the second. The node is a 
-      // neighbour of the selected node. Return 
-      // it back to a 'highlight' state.
-      if (network.selectedNode !== null && 
-          (network.selectedNode.neighbours.indexOf(node) > -1)) {
-        showNode(node, "highlight");
-      }
-
-      // Situation the third. The node 
-      // is just a node. Hide it.
-      else {
-        showNode(node, false);
-      }
-    }
-
 
     // configure mouse event callbacks on 
     // node circles, labels, and thumbnails.
