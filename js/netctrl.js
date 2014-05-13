@@ -1,7 +1,7 @@
 
 define(
-  ["lib/d3", "netdata", "netvis", "netvis_dynamics", "netvis_local"], 
-  function(d3, netdata, netvis, dynamics, nvLocal) {
+  ["lib/d3", "netdata", "netvis", "netvis_dynamics", "netvis_subnet"], 
+  function(d3, netdata, netvis, dynamics, nvSubnet) {
 
   function createNetworkControls(
     network, div, subNetDiv, subNetWidth, subNetHeight) {
@@ -59,7 +59,7 @@ define(
           if (network.selectedNode === null) return;
           
           var subnet = netdata.extractSubNetwork(network, network.selectedNode.index);
-          nvLocal.displayLocalNetwork(
+          nvSubnet.displaySubNetwork(
             subnet, subNetDiv, subNetWidth, subNetHeight);
         };
       

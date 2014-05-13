@@ -307,6 +307,8 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
       null,
       network.thumbUrl);
 
+    subnet.parentNetwork = network;
+
     // Fix node names and thumbnails, and 
     // add indices back to parent network
     var zerofmt = d3.format("04d");
@@ -439,8 +441,9 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
 
     // turn the matrix data into a network
     var network = matricesToNetwork(matrices);
-    network.linkage  = linkage;
-    network.thumbUrl = thumbUrl;
+    network.linkage      = linkage;
+    network.thumbUrl     = thumbUrl;
+    network.weightLabels = matrixLabels;
 
     // label the nodes
     for (var i = 0; i < network.nodes.length; i++) {
@@ -458,12 +461,6 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
       var imgUrl = thumbUrl + "/" + zerofmt(i) + ".png";
       network.nodes[i].thumbnail = imgUrl;
     }
-
-    // generate colour scales for network display
-    network.weightLabels        = matrixLabels;
-    network.edgeWidthWeightIdx  = 0;
-    network.edgeColourWeightIdx = 0;
-    genColourScales(network);
 
     return network;
   }
@@ -515,7 +512,12 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
       matrices[0] = thresFunc(matrices[0]);
     }
 
-    cbFunc(createNetwork(matrices, matrixLabels, nodeLabels, linkage, thumbUrl));
+    network = createNetwork(
+      matrices, matrixLabels, nodeLabels, linkage, thumbUrl);
+    network.edgeWidthWeightIdx  = 0;
+    network.edgeColourWeightIdx = 0;
+    genColourScales(network);
+    cbFunc(network);
   }
 
   /*
