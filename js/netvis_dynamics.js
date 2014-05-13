@@ -25,8 +25,8 @@ define(["lib/d3", "netvis"], function(d3, netvis) {
       var edgeOpacity = netvis.DEF_EDGE_OPACITY;
       var edgeWidth   = netvis.DEF_EDGE_WIDTH;
       var edgeColour  = function(path) {
-        return network.defEdgeColourScale(
-          path.edge.weights[network.edgeColourWeightIdx]);};
+        return network.scaleInfo.defEdgeColourScale(
+          path.edge.weights[network.scaleInfo.edgeColourWeightIdx]);};
       
       if (show) {
 
@@ -37,11 +37,11 @@ define(["lib/d3", "netvis"], function(d3, netvis) {
         
         edgeOpacity = netvis.HLT_EDGE_OPACITY;
         edgeWidth   = function(path) {
-          return network.edgeWidthScale(
-            path.edge.weights[network.edgeWidthWeightIdx]);}
+          return network.scaleInfo.edgeWidthScale(
+            path.edge.weights[network.scaleInfo.edgeWidthWeightIdx]);}
         edgeColour  = function(path) {
-          return network.hltEdgeColourScale(
-            path.edge.weights[network.edgeColourWeightIdx]);
+          return network.scaleInfo.hltEdgeColourScale(
+            path.edge.weights[network.scaleInfo.edgeColourWeightIdx]);
         };
       }
      
@@ -202,12 +202,12 @@ define(["lib/d3", "netvis"], function(d3, netvis) {
       }
     }
 
-    var svg           = network.svg;
-    var radius        = network.radius;
-    var svgNodes      = network.svgNodes;
-    var svgNodeLabels = network.svgNodeLabels;
-    var svgThumbnails = network.svgThumbnails;
-    var svgEdges      = network.svgEdges;
+    var svg           = network.display.svg;
+    var radius        = network.display.radius;
+    var svgNodes      = network.display.svgNodes;
+    var svgNodeLabels = network.display.svgNodeLabels;
+    var svgThumbnails = network.display.svgThumbnails;
+    var svgEdges      = network.display.svgEdges;
 
     // This variable is used to keep track 
     // of the currently selected node. 
@@ -256,12 +256,12 @@ define(["lib/d3", "netvis"], function(d3, netvis) {
 
   function configEdgeDynamics(network) {
 
-    var svg           = network.svg;
-    var radius        = network.radius;
-    var svgNodes      = network.svgNodes;
-    var svgNodeLabels = network.svgNodeLabels;
-    var svgThumbnails = network.svgThumbnails;
-    var svgEdges      = network.svgEdges;
+    var svg           = network.display.svg;
+    var radius        = network.display.radius;
+    var svgNodes      = network.display.svgNodes;
+    var svgNodeLabels = network.display.svgNodeLabels;
+    var svgThumbnails = network.display.svgThumbnails;
+    var svgEdges      = network.display.svgEdges;
 
     // Pop-up tooltip on edge paths, which displays
     // edge weights on mouse over.
@@ -331,12 +331,12 @@ define(["lib/d3", "netvis"], function(d3, netvis) {
    */
   function configNetworkDynamics(network) {
 
-    var svg           = network.svg;
-    var radius        = network.radius;
-    var svgNodes      = network.svgNodes;
-    var svgNodeLabels = network.svgNodeLabels;
-    var svgThumbnails = network.svgThumbnails;
-    var svgEdges      = network.svgEdges;
+    var svg           = network.display.svg;
+    var radius        = network.display.radius;
+    var svgNodes      = network.display.svgNodes;
+    var svgNodeLabels = network.display.svgNodeLabels;
+    var svgThumbnails = network.display.svgThumbnails;
+    var svgEdges      = network.display.svgEdges;
 
     // The network may be rotated by dragging the mouse up/down
     var mouseDownPos   = {}
@@ -358,8 +358,8 @@ define(["lib/d3", "netvis"], function(d3, netvis) {
       
       var mouseCoords = d3.mouse(this);
 
-      var x = mouseCoords[0] - network.width  / 2.0;
-      var y = mouseCoords[1] - network.height / 2.0;
+      var x = mouseCoords[0] - network.display.width  / 2.0;
+      var y = mouseCoords[1] - network.display.height / 2.0;
       
       mouseDownPos.down  = true;
       mouseDownPos.x     = x;
@@ -388,8 +388,8 @@ define(["lib/d3", "netvis"], function(d3, netvis) {
 
       var mouseCoords = d3.mouse(this);
 
-      var newX     = mouseCoords[0] - network.width  / 2.0;
-      var newY     = mouseCoords[1] - network.height / 2.0;
+      var newX     = mouseCoords[0] - network.display.width  / 2.0;
+      var newY     = mouseCoords[1] - network.display.height / 2.0;
       var oldX     = mouseDownPos.x;
       var oldY     = mouseDownPos.y;
       var oldRot   = mouseDownPos.origRot;
@@ -428,12 +428,12 @@ define(["lib/d3", "netvis"], function(d3, netvis) {
    */
   function configDynamics(network) {
 
-    var svg           = network.svg;
-    var radius        = network.radius;
-    var svgNodes      = network.svgNodes;
-    var svgNodeLabels = network.svgNodeLabels;
-    var svgThumbnails = network.svgThumbnails;
-    var svgEdges      = network.svgEdges;
+    var svg           = network.display.svg;
+    var radius        = network.display.radius;
+    var svgNodes      = network.display.svgNodes;
+    var svgNodeLabels = network.display.svgNodeLabels;
+    var svgThumbnails = network.display.svgThumbnails;
+    var svgEdges      = network.display.svgEdges;
 
     // This variable is used to keep track 
     // of the currently selected node. 

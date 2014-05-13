@@ -29,10 +29,10 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
    *                          to the edge weight at index 
    *                          edgeColourWeightIdx.
    */
-  function genColourScales(network) {
+  function genColourScales(network, scaleInfo) {
     
-    var ewwIdx = network.edgeWidthWeightIdx;
-    var ecwIdx = network.edgeColourWeightIdx;
+    var ewwIdx = scaleInfo.edgeWidthWeightIdx;
+    var ecwIdx = scaleInfo.edgeColourWeightIdx;
 
     // Nodes are coloured according to their label
     // TODO handle more than 10 labels?
@@ -81,10 +81,10 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
 
     // attach all those scales as 
     // attributes of the network
-    network.nodeColourScale    = nodeColourScale;
-    network.edgeWidthScale     = edgeWidthScale;
-    network.defEdgeColourScale = defEdgeColourScale;
-    network.hltEdgeColourScale = hltEdgeColourScale;
+    scaleInfo.nodeColourScale    = nodeColourScale;
+    scaleInfo.edgeWidthScale     = edgeWidthScale;
+    scaleInfo.defEdgeColourScale = defEdgeColourScale;
+    scaleInfo.hltEdgeColourScale = hltEdgeColourScale;
   }
 
   /*
@@ -462,6 +462,15 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
       network.nodes[i].thumbnail = imgUrl;
     }
 
+    var scaleInfo = {};
+    scaleInfo.edgeWidthWeightIdx  = 0;
+    scaleInfo.edgeColourWeightIdx = 0;
+
+    genColourScales(network, scaleInfo);
+    network.scaleInfo = scaleInfo;
+
+    console.log(network);
+
     return network;
   }
 
@@ -514,9 +523,6 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
 
     network = createNetwork(
       matrices, matrixLabels, nodeLabels, linkage, thumbUrl);
-    network.edgeWidthWeightIdx  = 0;
-    network.edgeColourWeightIdx = 0;
-    genColourScales(network);
     cbFunc(network);
   }
 
@@ -570,14 +576,14 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
   }
 
   function setEdgeWidthWeightIdx(network, idx) {
-    network.edgeWidthWeightIdx = idx;
-    genColourScales(network);
+    network.scaleInfo.edgeWidthWeightIdx = idx;
+    genColourScales(network, network.scaleInfo);
   }
 
 
   function setEdgeColourWeightIdx(network, idx) {
-    network.edgeColourWeightIdx = idx;
-    genColourScales(network);
+    network.scaleInfo.edgeColourWeightIdx = idx;
+    genColourScales(network, network.scaleInfo);
   }
 
   var netdata                    = {};

@@ -63,8 +63,8 @@ define(["lib/d3"], function(d3) {
    */
   function drawNodes(network) {
 
-    var svg    = network.svg;
-    var radius = network.radius;
+    var svg    = network.display.svg;
+    var radius = network.display.radius;
 
     // We use the D3 cluster layout to draw the nodes in a circle.
     // This also lays out the tree nodes (see the 
@@ -107,7 +107,7 @@ define(["lib/d3"], function(d3) {
 
     // Colour nodes according to their label value
     function colourNode(node) {
-      return network.nodeColourScale(node.label);
+      return network.scaleInfo.nodeColourScale(node.label);
     }
 
     // The circle, label and thumbnail for a specific node 
@@ -127,7 +127,7 @@ define(["lib/d3"], function(d3) {
     }
 
     // Draw the nodes
-    network.svgNodes
+    network.display.svgNodes
       .selectAll("circle")
       .data(network.nodes)
       .enter()
@@ -139,7 +139,7 @@ define(["lib/d3"], function(d3) {
       .attr("fill",      colourNode);
       
     // Draw the node labels
-    network.svgNodeLabels
+    network.display.svgNodeLabels
       .selectAll("text")
       .data(network.nodes)
       .enter()
@@ -156,7 +156,7 @@ define(["lib/d3"], function(d3) {
       .text(function(node) {return node.name; });
 
     // Draw the node thumbnails 
-    network.svgThumbnails
+    network.display.svgThumbnails
       .selectAll("image")
       .data(network.nodes)
       .enter()
@@ -179,8 +179,8 @@ define(["lib/d3"], function(d3) {
    */
   function drawEdges(network) {
 
-    var svg    = network.svg;
-    var radius = network.radius;
+    var svg    = network.display.svg;
+    var radius = network.display.radius;
 
     // For drawing network edges as splines
     var bundle = d3.layout.bundle();
@@ -210,8 +210,8 @@ define(["lib/d3"], function(d3) {
     // Colour the edges according to the edge weight
     // specified by network.edgeColourWeightIdx.
     function edgeColour(path) {
-      return network.defEdgeColourScale(
-        path.edge.weights[network.edgeColourWeightIdx]);
+      return network.scaleInfo.defEdgeColourScale(
+        path.edge.weights[network.scaleInfo.edgeColourWeightIdx]);
     }
 
     // Generate the spline paths for each edge,
@@ -235,7 +235,7 @@ define(["lib/d3"], function(d3) {
     });
 
     // draw the edges
-    network.svgEdges
+    network.display.svgEdges
       .selectAll("path")
       .data(paths)
       .enter()
@@ -250,8 +250,6 @@ define(["lib/d3"], function(d3) {
       .attr("d",               line);
   }
 
-
-
   /*
    * Takes a network created by the matricesToNetowrk 
    * function (see below), and displays it in the 
@@ -264,12 +262,15 @@ define(["lib/d3"], function(d3) {
     var radius   = diameter / 2;
 
     // put an svg element inside the networkDiv
-    var svg = network.svg;
-    if (!svg) {
+    var svg = null;
+    if (!network.display) {
       svg = d3.select(div).append("svg")
         .attr("width",       width)
         .attr("height",      height)
         .style("background-color", "#fafaf0")
+    }
+    else {
+      svg = network.display.svg;
     }
 
     var parentGroup = svg
@@ -289,14 +290,17 @@ define(["lib/d3"], function(d3) {
     // 
     // The order of these lines defines the order in which the 
     // elements are displayed (last displayed on top)
-    network.svg           = svg;
-    network.radius        = radius;
-    network.width         = width;
-    network.height        = height;
-    network.svgEdges      = parentGroup.append("g");
-    network.svgThumbnails = parentGroup.append("g");
-    network.svgNodes      = parentGroup.append("g");
-    network.svgNodeLabels = parentGroup.append("g");
+    var display = {};
+    display.svg           = svg;
+    display.radius        = radius;
+    display.width         = width;
+    display.height        = height;
+    display.svgEdges      = parentGroup.append("g");
+    display.svgThumbnails = parentGroup.append("g");
+    display.svgNodes      = parentGroup.append("g");
+    display.svgNodeLabels = parentGroup.append("g");
+
+    network.display = display;
 
 
     // Draw all of the things!
@@ -307,9 +311,11 @@ define(["lib/d3"], function(d3) {
 
   function redrawNetwork(network) {
 
-    network.svg.select("#networkParentGroup").remove();
 
-    displayNetwork(network, null, network.width, network.height);
+    network.display.svg.select("#networkParentGroup").remove();
+
+    displayNetwork(
+      network, null, network.display.width, network.display.height);
   }
 
   var netvis = {};
