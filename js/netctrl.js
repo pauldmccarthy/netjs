@@ -1,7 +1,7 @@
 
 define(
-  ["lib/d3", "netdata", "netvis", "netvis_dynamics", "netvis_subnet"], 
-  function(d3, netdata, netvis, dynamics, nvSubnet) {
+  ["lib/d3", "netdata", "netvis", "netvis_dynamics"], 
+  function(d3, netdata, netvis, dynamics) {
 
   function createNetworkControls(
     network, div, subNetDiv, subNetWidth, subNetHeight) {
@@ -45,7 +45,10 @@ define(
           netdata.setEdgeColourWeightIdx(network, parseInt(this.value));
           netvis.redrawNetwork(network);
           dynamics.configDynamics(network);
-          if (subnet !== null) nvSubnet.redrawSubNetwork(subnet);
+          if (subnet !== null)  {
+            netvis.redrawNetwork(subnet);
+            dynamics.configDynamics(subnet);
+          }
         };
 
       edgeWidthScale
@@ -53,7 +56,10 @@ define(
           netdata.setEdgeWidthWeightIdx(network, parseInt(this.value));
           netvis.redrawNetwork(network)
           dynamics.configDynamics(network);
-          if (subnet !== null) nvSubnet.redrawSubNetwork(subnet);
+          if (subnet !== null) {
+            netvis.redrawNetwork(subnet);
+            dynamics.configDynamics(subnet);
+          }
         };
 
       showSubNetButton
@@ -62,7 +68,7 @@ define(
           if (network.selectedNode === null) return;
           if (subnet !== null) {
 
-            nvSubnet.clearSubNetwork(subnet);
+            netvis.clearNetwork(subnet);
             showSubNetButton.value = "Show";
             subnet = null;
             return;
@@ -73,8 +79,9 @@ define(
           subnet = netdata.extractSubNetwork(network, network.selectedNode.index);
           // share colour information
           subnet.scaleInfo = network.scaleInfo;
-          nvSubnet.displaySubNetwork(
-            subnet, subNetDiv, subNetWidth, subNetHeight);
+
+          netvis.displayNetwork(subnet, subNetDiv, subNetWidth, subNetHeight);
+          dynamics.configDynamics(subnet);
         };
       
 

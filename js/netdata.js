@@ -323,6 +323,13 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
       node.thumbnail = imgurl;
     }
 
+
+    var root = {};
+    root.index    = subnet.nodes.length;
+    root.children = subnet.nodes;
+    subnet.nodes.forEach(function(node) {node.parent = root;});
+    subnet.treeNodes = [root];
+
     return subnet;
   }
 

@@ -214,20 +214,6 @@ define(["lib/d3", "netvis"], function(d3, netvis) {
     if (!network.selectedNode)
       network.selectedNode = null;
 
-    // Here, we pre-emptively run CSS selector lookups 
-    // so they don't have to be done on every mouse event.
-    // Makes the interaction a bit more snappy.
-    network.nodes.forEach(function(node) {
-
-      node.pathElems     = d3.selectAll(".edge-"          + node.index);
-      node.nodeElem      = d3.select(   "circle.node-"    + node.index);
-      node.labelElem     = d3.select(   "text.node-"      + node.index);
-      node.thumbElem     = d3.select(   "image.node-"     + node.index);
-      node.nbrElems      = d3.selectAll("circle.nodenbr-" + node.index);
-      node.nbrLabelElems = d3.selectAll("text.nodenbr-"   + node.index);
-      node.nbrThumbElems = d3.selectAll("image.nodenbr-"  + node.index);
-    });
-
     // configure mouse event callbacks on 
     // node circles, labels, and thumbnails.
     svgNodes
@@ -406,13 +392,9 @@ define(["lib/d3", "netvis"], function(d3, netvis) {
 
     svg
       .on("mousedown", mouseDownCanvas)
-      .on("mousemove", mouseMoveCanvas);
-
-    // register mouse-up with the top level window, so
-    // the drag behaviour is disabled even if the mouse
-    // is released outside of tge canvas
-    d3.select(window)
+      .on("mousemove", mouseMoveCanvas)
       .on("mouseup",   mouseUpCanvas)
+      .on("mouseout",  mouseUpCanvas);
     
   }
 
@@ -445,13 +427,13 @@ define(["lib/d3", "netvis"], function(d3, netvis) {
     // Makes the interaction a bit more snappy.
     network.nodes.forEach(function(node) {
 
-      node.pathElems     = d3.selectAll(".edge-"          + node.index);
-      node.nodeElem      = d3.select(   "circle.node-"    + node.index);
-      node.labelElem     = d3.select(   "text.node-"      + node.index);
-      node.thumbElem     = d3.select(   "image.node-"     + node.index);
-      node.nbrElems      = d3.selectAll("circle.nodenbr-" + node.index);
-      node.nbrLabelElems = d3.selectAll("text.nodenbr-"   + node.index);
-      node.nbrThumbElems = d3.selectAll("image.nodenbr-"  + node.index);
+      node.pathElems     = svg.selectAll(".edge-"          + node.index);
+      node.nodeElem      = svg.select(   "circle.node-"    + node.index);
+      node.labelElem     = svg.select(   "text.node-"      + node.index);
+      node.thumbElem     = svg.select(   "image.node-"     + node.index);
+      node.nbrElems      = svg.selectAll("circle.nodenbr-" + node.index);
+      node.nbrLabelElems = svg.selectAll("text.nodenbr-"   + node.index);
+      node.nbrThumbElems = svg.selectAll("image.nodenbr-"  + node.index);
     });
 
     configNodeDynamics(   network);

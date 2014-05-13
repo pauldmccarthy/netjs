@@ -318,9 +318,17 @@ define(["lib/d3"], function(d3) {
       network, null, network.display.width, network.display.height);
   }
 
+  function clearNetwork(network) {
+
+    if (!network.display) return;
+    network.display.svg.remove();
+    delete network.display;
+  }
+
   var netvis = {};
   netvis.displayNetwork   = displayNetwork;
   netvis.redrawNetwork    = redrawNetwork;
+  netvis.clearNetwork     = clearNetwork;
 
   netvis.DEF_LABEL_SIZE   = DEF_LABEL_SIZE;
   netvis.SEL_LABEL_SIZE   = SEL_LABEL_SIZE;
