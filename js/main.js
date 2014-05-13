@@ -11,9 +11,10 @@ require(["netjs", "lib/d3"], function(netjs, d3) {
       absVals   = matrix[i].map(function(val) {return Math.abs(val);});
       nodeThres = d3.max(absVals) * 0.75;
 
-      for (var j = 0; j < matrix.length; j ++) {
+      for (var j = i+1; j < matrix[i].length; j ++) {
         if (Math.abs(matrix[i][j]) < nodeThres) {
           matrix[i][j] = Number.NaN;
+          matrix[j][i] = Number.NaN;
         }
       }
     }
@@ -32,7 +33,7 @@ require(["netjs", "lib/d3"], function(netjs, d3) {
 
   netjs.loadNetwork(urls, thresholdMatrix, function(net) {
 
-    netjs.createNetworkControls(net, "#networkCtrl");
+    netjs.createNetworkControls(net, "#networkCtrl", "#subNetwork", 600, 600);
     netjs.displayNetwork(       net, "#fullNetwork",  800, 800);
   });
 });
