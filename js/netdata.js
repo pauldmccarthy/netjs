@@ -1,4 +1,4 @@
-/**
+/*
  * 
  */
 define(["lib/d3", "lib/queue"], function(d3, queue) {
@@ -112,6 +112,51 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
     root.children.forEach(function(child) {
       printTree(child, depth + 1);
     });
+  }
+
+  function printNetwork(network) {
+
+    network.nodes.forEach(function(node) {
+      var nbrs = node.neighbours.map(function(nbr) {return nbr.name;});
+      console.log(node.name + ": (" + node.neighbours.length +  ")" + nbrs.join(", "));
+    });
+  }
+
+
+  function isSymmetric(matrix) {
+
+    for (var i = 0; i < matrix.length; i++) {
+      for (var j = 0; j < matrix.length; j++) {
+
+        if (isNaN(matrix[i][j]) && isNaN(matrix[j][i])) continue;
+
+        if (matrix[i][j] !== matrix[j][i]) return false;
+      }
+    }
+
+    return true;
+  }
+
+  function printMatrix(matrix) {
+
+    var fmt = d3.format("5.2f");
+
+    var colHdrs = [];
+    for (var i = 0; i < matrix[0].length; i++) {
+      colHdrs.push(fmt(i));
+    }
+
+    console.log("      " + colHdrs.join(" "));
+
+    for (var i = 0; i < matrix.length; i++) {
+
+      var rowvals = matrix[i].map(function(val) {return fmt(val);});
+
+      console.log(fmt(i) + " " + rowvals.join(" "));
+    }
+
+    if (isSymmetric(matrix)) console.log("Symmetric");
+    else                     console.log("Not symmetric");
   }
 
   /*
@@ -234,12 +279,10 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
   }
 
 
+  /*
+   *
+   */
   function extractSubNetwork(network, rootIdx) {
-
-    if (network.linkage === null) {
-      throw "extractSubNetwork: can only extract a " + 
-            "subnetwork from a full network";
-    }
 
     var nodeIdxs = [rootIdx];
     var oldRoot  = network.nodes[rootIdx];
@@ -249,6 +292,7 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
       var nbrIdx = oldRoot.neighbours[i].index;
       nodeIdxs.push(nbrIdx);
     }
+    nodeIdxs.sort();
 
     var subMats = network.matrices.map(
       function(mat) {return extractSubMatrix(mat, nodeIdxs);});
@@ -261,18 +305,19 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
       network.weightLabels, 
       subLabels,
       null,
-      network.thumburl);
+      network.thumbUrl);
 
-    // Fix node indices, names and thumbnails
+    // Fix node names and thumbnails, and 
+    // add indices back to parent network
     var zerofmt = d3.format("04d");
     for (var i = 0; i < subnet.nodes.length; i++) {
 
       var node = subnet.nodes[i];
 
-      node.name  = network.nodes[nodeIdxs[i]].name;
-      node.index = network.nodes[nodeIdxs[i]].index;
+      node.name         = network.nodes[nodeIdxs[i]].name;
+      node.fullNetIndex = network.nodes[nodeIdxs[i]].index;
 
-      var imgurl = thumburl + "/" + zerofmt(nodeIdxs[i]) + ".png";
+      var imgurl = network.thumbUrl + "/" + zerofmt(nodeIdxs[i]) + ".png";
       node.thumbnail = imgurl;
     }
 
@@ -338,13 +383,18 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
         edge.i       = nodes[i];
         edge.j       = nodes[j];
 
-        // d3.layout.bundle (see the drawEdges function, 
-        // above) requires two attributes, 'source' and 
-        // 'target', so we add them here, purely for 
-        // convenience.
+        // d3.layout.bundle and d3.layout.force require two 
+        // attributes, 'source' and 'target', so we add them 
+        // here, purely for  convenience.
         edge.source  = nodes[i];
         edge.target  = nodes[j];
         edge.weights = matrices.map(function(mat) {return mat[i][j]; });
+
+        edges              .push(edge);
+        nodes[i].neighbours.push(nodes[j]);
+        nodes[j].neighbours.push(nodes[i]);
+        nodes[i].edges     .push(edge);
+        nodes[j].edges     .push(edge);
 
         // update weight mins/maxs
         for (var k = 0; k < edge.weights.length; k++) {
@@ -357,12 +407,6 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
           if (aw > weightAbsMaxs[k]) weightAbsMaxs[k] = aw;
           if (aw < weightAbsMins[k]) weightAbsMins[k] = aw;
         }
-
-        edges              .push(edge);
-        nodes[i].neighbours.push(nodes[j]);
-        nodes[j].neighbours.push(nodes[i]);
-        nodes[i].edges     .push(edge);
-        nodes[j].edges     .push(edge);
       }
     }
 
@@ -371,6 +415,7 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
     var network = {};
     network.nodes         = nodes;
     network.edges         = edges;
+    network.matrices      = matrices;
     network.weightMins    = weightMins;
     network.weightMaxs    = weightMaxs;
     network.weightAbsMins = weightAbsMins;
@@ -394,7 +439,8 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
 
     // turn the matrix data into a network
     var network = matricesToNetwork(matrices);
-    network.linkage = linkage;
+    network.linkage  = linkage;
+    network.thumbUrl = thumbUrl;
 
     // label the nodes
     for (var i = 0; i < network.nodes.length; i++) {
@@ -464,7 +510,7 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
     linkage    = parseTextMatrix(linkage);
     nodeLabels = parseTextMatrix(nodeLabels)[0];
     matrices   = matrices.map(parseTextMatrix);
-    
+
     if (thresFunc !== null) {
       matrices[0] = thresFunc(matrices[0]);
     }
@@ -511,6 +557,8 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
    */
   function setNumClusters(network, numClusts) {
 
+    if (network.linkage === null) return;
+
     // generate a tree of dummy nodes from 
     // the dendrogram in the linkages data
     makeNetworkDendrogramTree(network, network.linkage);
@@ -535,6 +583,7 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
   netdata.setNumClusters         = setNumClusters;
   netdata.setEdgeWidthWeightIdx  = setEdgeWidthWeightIdx;
   netdata.setEdgeColourWeightIdx = setEdgeColourWeightIdx;
+  netdata.extractSubNetwork      = extractSubNetwork;
 
   return netdata;
 });

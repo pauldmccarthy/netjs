@@ -85,7 +85,7 @@ define(["lib/d3"], function(d3) {
     }
 
     // Position labels in a slightly bigger circle.
-    function positionLabel(node, off) {
+    function positionLabel(node) {
       return "rotate("    + (node.x - 90)   + ")"  + 
              "translate(" + (node.y + 4)  + ",0)" + 
              (node.x < 180 ? "" : "rotate(180)"); 
