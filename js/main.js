@@ -43,8 +43,11 @@ require(["netjs", "lib/d3"], function(netjs, d3) {
 
   netjs.loadNetwork(urls, thresholdMatrix, function(net) {
 
-    netjs.createNetworkControls(net, "#networkCtrl", "#subNetwork", 600, 600);
-    netjs.displayNetwork(       net, "#fullNetwork",  800, 800);
+    var w = window.innerWidth - 40;
+    var h = window.innerHeight;
+
+    netjs.createNetworkControls(net, "#networkCtrl", "#subNetwork", w/2.0, h);
+    netjs.displayNetwork(       net, "#fullNetwork",  w/2.0, h);
   });
 });
 

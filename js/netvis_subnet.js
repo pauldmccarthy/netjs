@@ -1,5 +1,12 @@
 define(["netdata", "netvis", "lib/d3"], function(netdata, netvis, d3) {
 
+  var THUMB_WIDTH  = netvis.SEL_THUMB_WIDTH;
+  var THUMB_HEIGHT = netvis.SEL_THUMB_HEIGHT;
+  var LABEL_FONT   = netvis.SEL_LABEL_FONT;
+  var LABEL_SIZE   = netvis.SEL_LABEL_FONT;
+  var LABEL_WEIGHT = netvis.SEL_LABEL_WEIGHT;
+
+
   // Cite: http://marvl.infotech.monash.edu/webcola/examples/unix.html
 
   function drawNetwork(network) {
@@ -29,15 +36,19 @@ define(["netdata", "netvis", "lib/d3"], function(netdata, netvis, d3) {
       .append("text")
       .attr("text-anchor", "middle" )
       .style("pointer-events", "none")
-      .attr("fill", function(node) {return network.scaleInfo.nodeColourScale(node.label);})
-      .attr("transform", "translate(" + netvis.HLT_THUMB_WIDTH/2.0 + ",-5)")
+      .attr("font-family", LABEL_FONT)
+      .attr("font-size",   LABEL_SIZE)
+      .attr("font-weight", LABEL_WEIGHT)
+      .attr("fill", function(node) {
+        return network.scaleInfo.nodeColourScale(node.label);})
+      .attr("transform", "translate(" + THUMB_WIDTH/2.0 + ",-5)")
       .text(function(node) {return node.name;});
 
     nodeGroups
       .append("image")
       .attr("xlink:href", function(node) {return node.thumbnail;})
-      .attr("width",      netvis.HLT_THUMB_WIDTH)
-      .attr("height",     netvis.HLT_THUMB_HEIGHT);
+      .attr("width",      THUMB_WIDTH)
+      .attr("height",     THUMB_HEIGHT);
 
     nodeGroups
       .append("rect")
@@ -49,8 +60,8 @@ define(["netdata", "netvis", "lib/d3"], function(netdata, netvis, d3) {
       .attr("y", "0")
       .attr("rx", 2)
       .attr("ry", 2)
-      .attr("width",  netvis.HLT_THUMB_WIDTH)
-      .attr("height", netvis.HLT_THUMB_HEIGHT);
+      .attr("width",  THUMB_WIDTH)
+      .attr("height", THUMB_HEIGHT);
 
     var edges = svgEdges 
       .selectAll("line")
@@ -73,10 +84,10 @@ define(["netdata", "netvis", "lib/d3"], function(netdata, netvis, d3) {
           return "translate(" + node.x + "," + node.y + ")";});
 
       edges
-        .attr("x1", function(edge) {return edge.source.x + netvis.HLT_THUMB_WIDTH  / 2.0;})
-        .attr("y1", function(edge) {return edge.source.y + netvis.HLT_THUMB_HEIGHT / 2.0;})
-        .attr("x2", function(edge) {return edge.target.x + netvis.HLT_THUMB_WIDTH  / 2.0;})
-        .attr("y2", function(edge) {return edge.target.y + netvis.HLT_THUMB_HEIGHT / 2.0;})
+        .attr("x1", function(edge) {return edge.source.x + THUMB_WIDTH  / 2.0;})
+        .attr("y1", function(edge) {return edge.source.y + THUMB_HEIGHT / 2.0;})
+        .attr("x2", function(edge) {return edge.target.x + THUMB_WIDTH  / 2.0;})
+        .attr("y2", function(edge) {return edge.target.y + THUMB_HEIGHT / 2.0;})
     });
 
     force.start();
