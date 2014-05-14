@@ -114,11 +114,6 @@ define(["lib/d3"], function(d3) {
       return node.x < 180 ? "start" : "end"; 
     }
 
-    // Colour nodes according to their label value
-    function colourNode(node) {
-      return network.scaleInfo.nodeColourScale(node.label);
-    }
-
     // The circle, label and thumbnail for a specific node 
     // are given css class 'node-X', where X is the node 
     // index. For every neighbour of a particular node, that 
@@ -145,7 +140,7 @@ define(["lib/d3"], function(d3) {
       .attr("transform", positionNode)
       .attr("opacity",   network.display.DEF_NODE_OPACITY)
       .attr("r",         network.display.DEF_NODE_SIZE)
-      .attr("fill",      colourNode);
+      .attr("fill",      network.scaleInfo.nodeColour);
       
     // Draw the node labels
     network.display.svgNodeLabels
@@ -159,7 +154,7 @@ define(["lib/d3"], function(d3) {
       .attr("font-family",  network.display.DEF_LABEL_FONT)
       .attr("font-weight",  network.display.DEF_LABEL_WEIGHT)
       .attr("font-size",    network.display.DEF_LABEL_SIZE)
-      .attr("fill",         colourNode)
+      .attr("fill",         network.scaleInfo.nodeColour)
       .attr("transform",    positionLabel)
       .style("text-anchor", anchorLabel)
       .text(function(node) {return node.name; });
@@ -216,23 +211,6 @@ define(["lib/d3"], function(d3) {
       return "edge-" + idxs[0] + "-" + idxs[1];
     }
     
-    // Colour the edges according to the edge weight
-    // specified by network.edgeColourWeightIdx.
-    function defScaleEdgeColour(path) {
-      return network.scaleInfo.defEdgeColourScale(
-        path.edge.weights[network.scaleInfo.edgeColourWeightIdx]);
-    }
-
-    function hltScaleEdgeColour(path) {
-      return network.scaleInfo.defEdgeColourScale(
-        path.edge.weights[network.scaleInfo.edgeColourWeightIdx]);
-    }
-
-    function scaleEdgeWidth(path) {
-      return network.scaleInfo.edgeWidthScale(
-        path.edge.weights[network.scaleInfo.edgeWidthWeightIdx]);
-    }
-
     // Generate the spline paths for each edge,
     // and attach each edge as an attribute of
     // its path, and vice versa, to make things
@@ -256,9 +234,12 @@ define(["lib/d3"], function(d3) {
     var edgeColour = network.display.DEF_EDGE_COLOUR;
     var edgeWidth  = network.display.DEF_EDGE_WIDTH;
 
-    if      (edgeWidth  === "scale")     edgeWidth  = scaleEdgeWidth;
-    if      (edgeColour === "default")   edgeColour = defScaleEdgeColour;
-    else if (edgeColour === "highlight") edgeColour = hltScaleEdgeColour;
+    if      (edgeWidth  === "scale")     
+      edgeWidth  = network.scaleInfo.pathWidth;
+    if      (edgeColour === "default")   
+      edgeColour = network.scaleInfo.defPathColour;
+    else if (edgeColour === "highlight") 
+      edgeColour = network.scaleInfo.hltPathColour;
 
     // draw the edges
     network.display.svgEdges

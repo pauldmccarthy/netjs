@@ -30,18 +30,21 @@ require(["netjs", "lib/d3"], function(netjs, d3) {
     return thresMatrix;
   }
 
-  var args          = {};
-  args.matrices     = ["data/dataset2/Znet1.txt", "data/dataset2/Znet2.txt"];
-  args.matrixLabels = ["Znet1", "Znet2"];
-  args.nodeLabels   =  "data/dataset2/clusters.txt";
-  args.linkage      =  "data/dataset2/linkages.txt";
-  args.thumbnails   =  "data/dataset2/melodic_IC_sum.sum";
-  args.thresFunc    = thresholdMatrix;
-  args.thresVals    = [["Threshold percentage", 0.75]];
+  var args            = {};
+  args.matrices       = ["data/dataset2/Znet1.txt", "data/dataset2/Znet2.txt"];
+  args.matrixLabels   = ["Znet1", "Znet2"];
+  args.nodeData       = ["data/dataset2/clusters.txt"];
+  args.nodeDataLabels = ["Cluster number"];
+  args.linkage        =  "data/dataset2/linkages.txt";
+  args.thumbnails     =  "data/dataset2/melodic_IC_sum.sum";
+  args.thresFunc      = thresholdMatrix;
+  args.thresVals      = ["0.75"];
+  args.thresLabels    = ["Threshold percentage"];
 
   // args.matrices     = ["data/dummy/corr1.txt", "data/dummy/corr2.txt"];
   // args.matrixLabels = ["Corr1", "Corr2"];
-  // args.nodeLabels   =  "data/dummy/clusters.txt";
+  // args.nodeData     = ["data/dummy/clusters.txt"];
+  // args.nodeLabels   = ["Cluster number"];
   // args.linkage      =  "data/dummy/linkages.txt";
   // args.thumbnails   =  "data/dummy/thumbnails";
   // args.thresFunc    = thresholdMatrix;

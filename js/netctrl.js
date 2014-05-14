@@ -96,19 +96,19 @@ define(
         }
       }
 
-      for (var i = 0; i < network.weightLabels.length; i++) {
+      for (var i = 0; i < network.matrixLabels.length; i++) {
 
         var opt = document.createElement("option");
         opt.value     = "" + i;
-        opt.innerHTML = network.weightLabels[i];
+        opt.innerHTML = network.matrixLabels[i];
 
         edgeColourScale.appendChild(opt);
         edgeWidthScale .appendChild(opt.cloneNode(true));
         netThreshold   .appendChild(opt.cloneNode(true));
       }
 
-      edgeColourScale.selectedIndex = network.edgeColourWeightIdx;
-      edgeWidthScale .selectedIndex = network.edgeWidthWeightIdx;
+      edgeColourScale.selectedIndex = network.edgeColourIdx;
+      edgeWidthScale .selectedIndex = network.edgeWidthIdx;
       netThreshold   .selectedIndex = network.thresholdIdx;
 
       numClustRange
@@ -119,13 +119,13 @@ define(
 
       edgeColourScale
         .onchange = function() {
-          netdata.setEdgeColourWeightIdx(network, parseInt(this.value));
+          netdata.setEdgeColourIdx(network, parseInt(this.value));
           redraw(true);
         };
 
       edgeWidthScale
         .onchange = function() {
-          netdata.setEdgeWidthWeightIdx(network, parseInt(this.value));
+          netdata.setEdgeWidthIdx(network, parseInt(this.value));
           redraw(true);
         };
 

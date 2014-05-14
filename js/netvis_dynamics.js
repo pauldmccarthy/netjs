@@ -26,18 +26,6 @@ define(["lib/d3", "netvis"], function(d3, netvis) {
       var edgeWidth   = network.display.DEF_EDGE_WIDTH;
       var edgeColour  = network.display.DEF_EDGE_COLOUR;
 
-      var defScaleEdgeColour = function(path) {
-        return network.scaleInfo.defEdgeColourScale(
-          path.edge.weights[network.scaleInfo.edgeColourWeightIdx]);};
-
-      var hltScaleEdgeColour = function(path) {
-        return network.scaleInfo.hltEdgeColourScale(
-          path.edge.weights[network.scaleInfo.edgeColourWeightIdx]);};
-
-      var scaleEdgeWidth = function(path) {
-          return network.scaleInfo.edgeWidthScale(
-            path.edge.weights[network.scaleInfo.edgeWidthWeightIdx]);}
-      
       if (show) {
 
         nodeOpacity = network.display.HLT_NODE_OPACITY;
@@ -52,9 +40,12 @@ define(["lib/d3", "netvis"], function(d3, netvis) {
         edgeColour  = network.display.HLT_EDGE_COLOUR;
       }
 
-      if      (edgeWidth  === "scale")     edgeWidth  = scaleEdgeWidth;
-      if      (edgeColour === "default")   edgeColour = defScaleEdgeColour;
-      else if (edgeColour === "highlight") edgeColour = hltScaleEdgeColour;
+      if      (edgeWidth  === "scale")     
+        edgeWidth  = network.scaleInfo.pathWidth;
+      if      (edgeColour === "default")   
+        edgeColour = network.scaleInfo.defPathColour;
+      else if (edgeColour === "highlight") 
+        edgeColour = network.scaleInfo.hltPathColour;
 
       nbrElems
         .attr("opacity",     nodeOpacity);
@@ -292,7 +283,7 @@ define(["lib/d3", "netvis"], function(d3, netvis) {
       var label = path.edge.i.name + " - " + 
                   path.edge.j.name + "<br>";
       for (var i = 0; i < path.edge.weights.length; i++) {
-        label = label + network.weightLabels[i] + ": " 
+        label = label + network.matrixLabels[i] + ": " 
                       + path.edge.weights[i] + "<br>";
       }
 
