@@ -1,6 +1,8 @@
 require(["netjs", "lib/d3"], function(netjs, d3) {
 
-  function thresholdMatrix(matrix) {
+  function thresholdMatrix(matrix, args) {
+
+    var thresPerc = args[0];
 
     var thresMatrix = [];
 
@@ -11,7 +13,7 @@ require(["netjs", "lib/d3"], function(netjs, d3) {
       // This thresholding will break if either
       // of the above assumptions are not true.
       absVals   = matrix[i].map(function(val) {return Math.abs(val);});
-      nodeThres = d3.max(absVals) * 0.75;
+      nodeThres = d3.max(absVals) * thresPerc;
 
       thresMatrix.push([]);
 
@@ -26,22 +28,24 @@ require(["netjs", "lib/d3"], function(netjs, d3) {
     return thresMatrix;
   }
 
+  var args          = {};
+  args.matrices     = ["data/dataset2/Znet1.txt", "data/dataset2/Znet2.txt"];
+  args.matrixLabels = ["Znet1", "Znet2"];
+  args.nodeLabels   =  "data/dataset2/clusters.txt";
+  args.linkage      =  "data/dataset2/linkages.txt";
+  args.thumbnails   =  "data/dataset2/melodic_IC_sum.sum";
+  args.thresFunc    = thresholdMatrix;
+  args.thresArgs    = [["Threshold percentage", 0.75]];
 
-  var urls = {};
+  // args.matrices     = ["data/dummy/corr1.txt", "data/dummy/corr2.txt"];
+  // args.matrixLabels = ["Corr1", "Corr2"];
+  // args.nodeLabels   =  "data/dummy/clusters.txt";
+  // args.linkage      =  "data/dummy/linkages.txt";
+  // args.thumbnails   =  "data/dummy/thumbnails";
+  // args.thresFunc    = thresholdMatrix;
+  // args.thresArgs    = [["", 0.75]];
 
-  urls.matrices     = ["/data/dataset2/Znet1.txt", "/data/dataset2/Znet2.txt"];
-  urls.matrixLabels = ["Znet1", "Znet2"];
-  urls.nodeLabels   =  "/data/dataset2/clusters.txt";
-  urls.linkage      =  "/data/dataset2/linkages.txt";
-  urls.thumbnails   =  "/data/dataset2/melodic_IC_sum.sum";
-
-  // urls.matrices     = ["/data/dummy/corr1.txt", "/data/dummy/corr2.txt"];
-  // urls.matrixLabels = ["Corr1", "Corr2"];
-  // urls.nodeLabels   =  "/data/dummy/clusters.txt";
-  // urls.linkage      =  "/data/dummy/linkages.txt";
-  // urls.thumbnails   =  "/data/dummy/thumbnails";
-
-  netjs.loadNetwork(urls, thresholdMatrix, function(net) {
+  netjs.loadNetwork(args, function(net) {
 
     var w = window.innerWidth - 40;
     var h = window.innerHeight;

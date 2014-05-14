@@ -305,7 +305,12 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
       network.weightLabels, 
       subLabels,
       null,
-      network.thumbUrl);
+      network.thumbUrl,
+      network.thresholdFunc,
+      network.thresholdArgLabels,
+      network.thresholdArgs,
+      network.thresholdIdx,
+      1);
 
     subnet.parentNetwork = network;
 
@@ -341,28 +346,12 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
    * in all other matrices are added as 'weight' attributes 
    * on the corresponding network edge.
    */
-  function matricesToNetwork(matrices) {
-
-    matrix = matrices[0];
+  function thresholdNetwork(network) {
 
     // A network is simply a list of nodes and edges
-    var nodes    = [];
     var edges    = [];
-    var numNodes = matrix.length;
-
-    // Create a list of nodes
-    for (var i = 0; i < numNodes; i++) {
-
-      var node = {};
-
-      // Node name is 1-indexed
-      node.index      = i;
-      node.name       = "" + (i+1);
-      node.neighbours = [];
-      node.edges      = [];
-
-      nodes.push(node);
-    }
+    var matrix   = network.matrices[network.thresholdIdx];
+    var numNodes = network.nodes.length;
 
     // Create a list of edges. At the same time, we'll 
     // figure out the real and absolute max/min values 
@@ -372,38 +361,47 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
     var weightMaxs    = [];
     var weightAbsMins = [];
     var weightAbsMaxs = [];
+
+    // threshold the matrix
+    matrix = network.thresholdFunc(matrix, network.thresholdArgs);
     
     // initialise min/max arrays
-    for (var i = 0; i < matrices.length; i++) {
+    for (var i = 0; i < network.matrices.length; i++) {
       weightMins   .push( Number.MAX_VALUE);
       weightMaxs   .push(-Number.MAX_VALUE);
       weightAbsMins.push( Number.MAX_VALUE);
       weightAbsMaxs.push(-Number.MAX_VALUE);
     }
 
+    // initialise node neighbour/edge arrays
+    for (var i = 0; i < numNodes; i++) {
+      network.nodes[i].edges      = [];
+      network.nodes[i].neighbours = [];
+    }
+
     for (var i = 0; i < numNodes; i++) {
       for (var j = i+1; j < numNodes; j++) {
 
-        // NaN values in the first matrix
+        // NaN values in the matrix
         // are not added as edges
         if (isNaN(matrix[i][j])) continue;
 
         var edge     = {};
-        edge.i       = nodes[i];
-        edge.j       = nodes[j];
+        edge.i       = network.nodes[i];
+        edge.j       = network.nodes[j];
 
         // d3.layout.bundle and d3.layout.force require two 
         // attributes, 'source' and 'target', so we add them 
         // here, purely for  convenience.
-        edge.source  = nodes[i];
-        edge.target  = nodes[j];
-        edge.weights = matrices.map(function(mat) {return mat[i][j]; });
+        edge.source  = network.nodes[i];
+        edge.target  = network.nodes[j];
+        edge.weights = network.matrices.map(function(mat) {return mat[i][j]; });
 
         edges              .push(edge);
-        nodes[i].neighbours.push(nodes[j]);
-        nodes[j].neighbours.push(nodes[i]);
-        nodes[i].edges     .push(edge);
-        nodes[j].edges     .push(edge);
+        network.nodes[i].neighbours.push(network.nodes[j]);
+        network.nodes[j].neighbours.push(network.nodes[i]);
+        network.nodes[i].edges     .push(edge);
+        network.nodes[j].edges     .push(edge);
 
         // update weight mins/maxs
         for (var k = 0; k < edge.weights.length; k++) {
@@ -419,18 +417,11 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
       }
     }
 
-    // put all the network information 
-    // into a dictionary
-    var network = {};
-    network.nodes         = nodes;
     network.edges         = edges;
-    network.matrices      = matrices;
     network.weightMins    = weightMins;
     network.weightMaxs    = weightMaxs;
     network.weightAbsMins = weightAbsMins;
     network.weightAbsMaxs = weightAbsMaxs;
-
-    return network;
   }
 
   /*
@@ -444,41 +435,94 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
     matrixLabels,
     nodeLabels,
     linkage,
-    thumbUrl) {
+    thumbUrl,
+    thresholdFunc,
+    thresholdArgLabels,
+    thresholdArgs,
+    thresholdIdx,
+    numClusters) {
 
-    // turn the matrix data into a network
-    var network = matricesToNetwork(matrices);
-    network.linkage      = linkage;
-    network.thumbUrl     = thumbUrl;
-    network.weightLabels = matrixLabels;
+    var network  = {};
+    var nodes    = [];
+    var numNodes = matrices[0].length;
+    var zerofmt  = d3.format("04d");
 
-    // label the nodes
-    for (var i = 0; i < network.nodes.length; i++) {
-      network.nodes[i].label = nodeLabels[i];
-    }
+    // Create a list of nodes
+    for (var i = 0; i < numNodes; i++) {
 
-    // flatten the tree to one cluster
-    setNumClusters(network, 1);
+      var node = {};
 
-    // Attach a thumbnail URL to 
-    // every node in the network
-    var zerofmt = d3.format("04d");
-    for (var i = 0; i < network.nodes.length; i++) {
+      // Node name is 1-indexed
+      node.index      = i;
+      node.name       = "" + (i+1);
+      node.label      = nodeLabels[i];
 
+      // Attach a thumbnail URL to 
+      // every node in the network
       var imgUrl = thumbUrl + "/" + zerofmt(i) + ".png";
-      network.nodes[i].thumbnail = imgUrl;
+      node.thumbnail = imgUrl;
+
+      nodes.push(node);
     }
 
+    network.nodes              = nodes;
+    network.matrices           = matrices;
+    network.weightLabels       = matrixLabels;
+    network.nodeLabels         = nodeLabels;
+    network.linkage            = linkage;
+    network.thumbUrl           = thumbUrl;
+    network.thresholdFunc      = thresholdFunc;
+    network.thresholdArgs      = thresholdArgs;
+    network.thresholdArgLabels = thresholdArgLabels;
+    network.thresholdIdx       = thresholdIdx;
+
+    // create the network edges
+    thresholdNetwork(network);
+
+    // create a dendrogram, and flatten it 
+    // to the specified number of clusers
+    setNumClusters(network, numClusters);
+
+    // create scale information for 
+    // colouring/scaling nodes and edges
     var scaleInfo = {};
     scaleInfo.edgeWidthWeightIdx  = 0;
     scaleInfo.edgeColourWeightIdx = 0;
 
     genColourScales(network, scaleInfo);
+
     network.scaleInfo = scaleInfo;
 
     console.log(network);
 
     return network;
+  }
+
+  /*
+   *
+   */
+  function setNumClusters(network, numClusts) {
+
+    if (network.linkage === null) return;
+
+    // generate a tree of dummy nodes from 
+    // the dendrogram in the linkages data
+    makeNetworkDendrogramTree(network, network.linkage);
+
+    // flatten the tree to the specified number of clusters
+    flattenDendrogramTree(network, numClusts);
+  }
+
+  function setEdgeWidthWeightIdx(network, idx) {
+    console.log("width: " + idx);
+    network.scaleInfo.edgeWidthWeightIdx = idx;
+    genColourScales(network, network.scaleInfo);
+  }
+
+
+  function setEdgeColourWeightIdx(network, idx) {
+    network.scaleInfo.edgeColourWeightIdx = idx;
+    genColourScales(network, network.scaleInfo);
   }
 
   /*
@@ -502,7 +546,6 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
     return matrix;
   }
 
-
   /*
    *
    */
@@ -515,34 +558,47 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
     var matrixLabels = args[args.length-3];
     var thumbUrl     = args[args.length-4];
     var cbFunc       = args[args.length-5];
-    var thresFunc    = args[args.length-6];
+    var thresArgs    = args[args.length-6];
+    var thresFunc    = args[args.length-7];
 
-    args.splice(-6, 6);
+    args.splice(-7, 7);
     var matrices = args;
 
     linkage    = parseTextMatrix(linkage);
     nodeLabels = parseTextMatrix(nodeLabels)[0];
     matrices   = matrices.map(parseTextMatrix);
 
-    if (thresFunc !== null) {
-      matrices[0] = thresFunc(matrices[0]);
-    }
+    thresArgLabels = thresArgs.map(function(arg) {return arg[0];});
+    thresArgs      = thresArgs.map(function(arg) {return arg[1];});
+    console.log(matrices);
+    console.log(matrixLabels);
 
     network = createNetwork(
-      matrices, matrixLabels, nodeLabels, linkage, thumbUrl);
+      matrices, 
+      matrixLabels, 
+      nodeLabels, 
+      linkage, 
+      thumbUrl,
+      thresFunc,
+      thresArgLabels,
+      thresArgs,
+      0,
+      1);
     cbFunc(network);
   }
 
   /*
    *
    */
-  function loadNetwork(urls, thresFunc, cbFunc) {
+  function loadNetwork(args, cbFunc) {
 
-    var matrixUrls    = urls.matrices;
-    var matrixLabels  = urls.matrixLabels;
-    var nodeLabelsUrl = urls.nodeLabels;
-    var linkageUrl    = urls.linkage;
-    var thumbUrl      = urls.thumbnails;
+    var matrixUrls    = args.matrices;
+    var matrixLabels  = args.matrixLabels;
+    var nodeLabelsUrl = args.nodeLabels;
+    var linkageUrl    = args.linkage;
+    var thumbUrl      = args.thumbnails;
+    var thresFunc     = args.thresFunc;
+    var thresArgs     = args.thresArgs;
 
     // The qId function is an identity function 
     // which may be used to pass standard 
@@ -558,6 +614,7 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
     });
 
     q .defer(qId,     thresFunc)
+      .defer(qId,     thresArgs)
       .defer(qId,     cbFunc)
       .defer(qId,     thumbUrl)
       .defer(qId,     matrixLabels)
@@ -567,34 +624,9 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
   }
 
 
-  /*
-   *
-   */
-  function setNumClusters(network, numClusts) {
-
-    if (network.linkage === null) return;
-
-    // generate a tree of dummy nodes from 
-    // the dendrogram in the linkages data
-    makeNetworkDendrogramTree(network, network.linkage);
-
-    // flatten the tree to the specified number of clusters
-    flattenDendrogramTree(network, numClusts);
-  }
-
-  function setEdgeWidthWeightIdx(network, idx) {
-    network.scaleInfo.edgeWidthWeightIdx = idx;
-    genColourScales(network, network.scaleInfo);
-  }
-
-
-  function setEdgeColourWeightIdx(network, idx) {
-    network.scaleInfo.edgeColourWeightIdx = idx;
-    genColourScales(network, network.scaleInfo);
-  }
-
   var netdata                    = {};
   netdata.loadNetwork            = loadNetwork;
+  netdata.createNetwork          = createNetwork;
   netdata.setNumClusters         = setNumClusters;
   netdata.setEdgeWidthWeightIdx  = setEdgeWidthWeightIdx;
   netdata.setEdgeColourWeightIdx = setEdgeColourWeightIdx;
