@@ -35,7 +35,7 @@ require(["netjs", "lib/d3"], function(netjs, d3) {
   args.linkage      =  "data/dataset2/linkages.txt";
   args.thumbnails   =  "data/dataset2/melodic_IC_sum.sum";
   args.thresFunc    = thresholdMatrix;
-  args.thresArgs    = [["Threshold percentage", 0.75]];
+  args.thresVals    = [["Threshold percentage", 0.75]];
 
   // args.matrices     = ["data/dummy/corr1.txt", "data/dummy/corr2.txt"];
   // args.matrixLabels = ["Corr1", "Corr2"];

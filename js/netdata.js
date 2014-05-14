@@ -512,6 +512,7 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
 
     // flatten the tree to the specified number of clusters
     flattenDendrogramTree(network, numClusts);
+    network.numClusters = numClusts;
   }
 
   function setEdgeWidthWeightIdx(network, idx) {
@@ -552,10 +553,9 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
     }
 
     network.thresholdValues[idx] = value;
-    thresholdNetwork(      network);
-    setNumClusters(        network, network.numClusters);
-    setEdgeWidthWeightIdx( network, network.edgeWidthWeightIdx);
-    setEdgeColourWeightIdx(network, network.edgeColourWeightIdx);
+    thresholdNetwork(network);
+    setNumClusters(  network, network.numClusters);
+    genColourScales( network, network.scaleInfo);
   }
 
   /*
@@ -661,6 +661,7 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
   netdata.setNumClusters         = setNumClusters;
   netdata.setEdgeWidthWeightIdx  = setEdgeWidthWeightIdx;
   netdata.setEdgeColourWeightIdx = setEdgeColourWeightIdx;
+  netdata.setThresholdMatrix     = setThresholdMatrix;
   netdata.setThresholdValue      = setThresholdValue;
   netdata.extractSubNetwork      = extractSubNetwork;
 
