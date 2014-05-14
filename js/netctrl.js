@@ -25,8 +25,33 @@ define(
       var nodeColour       = html.querySelector("#nodeColour");
       var showSubNetButton = html.querySelector("#showSubNetwork");
 
+      function changeSubNetwork(node) {
+
+        // Situation the first. Subnetwork is 
+        // not being displayed. Do nothing.
+        if (subnet === null) 
+          return;
+
+        // Situation the second. A subnetwork
+        // is being displayed, and the selected
+        // node has been cleared. Clear the 
+        // subnetwork display
+        if (node === null && subnet !== null)
+          toggleSubNetwork();
+
+        // Situation the third. A subnetwork 
+        // is being displayed, and a new node
+        // has been selected. Show the new
+        // subnetwork.
+        else {
+          toggleSubNetwork(); // hide
+          toggleSubNetwork(); // redraw
+        }
+      }
+      dynamics.setNodeSelectCb(network, changeSubNetwork);
+
       function toggleSubNetwork() {
-        if (network.selectedNode === null) return;
+
         if (subnet !== null) {
 
           netvis.clearNetwork(subnet);
@@ -35,6 +60,8 @@ define(
           return;
         }
 
+        if (network.selectedNode === null) return;
+        
         showSubNetButton.value = "Hide";
 
         subnet = netdata.extractSubNetwork(network, network.selectedNode.index);
@@ -112,6 +139,15 @@ define(
         redraw(false);
       };
 
+      netThresVal.onchange = function() {
+        netdata.setThresholdValue(network, 0, parseFloat(this.value));
+        if (subnet !== null) {
+          toggleSubNetwork(); // hide
+          toggleSubNetwork(); // recreate and reshow
+        }
+        redraw(false);
+      };
+
       showSubNetButton.onclick = toggleSubNetwork;
 
       div.appendChild(html);
@@ -122,3 +158,4 @@ define(
   netctrl.createNetworkControls = createNetworkControls;
   return netctrl;
 });
+

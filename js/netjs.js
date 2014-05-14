@@ -2,19 +2,27 @@ define(
   ["netvis", "netdata", "netctrl", "netvis_dynamics"], 
   function(netvis, netdata, netctrl, dynamics) {
 
-  function displayNetwork(network, div, width, height) {
-    netvis.displayNetwork(network, div, width, height);
-    dynamics.configDynamics(network);
+
+  function displayNetwork(
+    network, 
+    networkDiv, 
+    subNetDiv, 
+    controlDiv,
+    networkWidth, 
+    networkHeight,
+    subNetWidth,
+    subNetHeight) {
+
+    netvis.displayNetwork(network, networkDiv, networkWidth, networkHeight);
+    dynamics.configDynamics(network); 
+
+    netctrl.createNetworkControls(
+      network, controlDiv, subNetDiv, subNetWidth, subNetHeight);
   }
 
   var netjs = {};
-  netjs.loadNetwork            = netdata.loadNetwork;
-  netjs.setNumClusters         = netdata.setNumClusters;
-  netjs.setEdgeWidthWeightIdx  = netdata.setEdgeWidthWeightIdx;
-  netjs.setEdgeColourWeightIdx = netdata.setEdgeColourWeightIdx;
-  netjs.displayNetwork         = displayNetwork;
-  netjs.redrawNetwork          = netvis.redrawNetwork;
-  netjs.createNetworkControls  = netctrl.createNetworkControls;
+  netjs.loadNetwork    = netdata.loadNetwork;
+  netjs.displayNetwork = displayNetwork;
 
   return netjs;
 });

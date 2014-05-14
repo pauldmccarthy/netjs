@@ -5,20 +5,22 @@ require(["netjs", "lib/d3"], function(netjs, d3) {
     var thresPerc = args[0];
 
     var thresMatrix = [];
+    var nodeThress  = [];
 
     for (var i = 0; i < matrix.length; i++) {
+      absVals = matrix[i].map(function(val) {return Math.abs(val);});
+      nodeThress.push(d3.max(absVals) * thresPerc); 
+    }
 
-      // TODO We are assuming here that the matrix
-      // is symmetric, and is fully populated.
-      // This thresholding will break if either
-      // of the above assumptions are not true.
-      absVals   = matrix[i].map(function(val) {return Math.abs(val);});
-      nodeThres = d3.max(absVals) * thresPerc;
+    for (var i = 0; i < matrix.length; i++) {
 
       thresMatrix.push([]);
 
       for (var j = 0; j < matrix[i].length; j++) {
-        if (Math.abs(matrix[i][j]) < nodeThres) 
+
+        if (Math.abs(matrix[i][j]) < nodeThress[i] ||
+            Math.abs(matrix[i][j]) < nodeThress[j])
+
           thresMatrix[i].push(Number.NaN);
         else 
           thresMatrix[i].push(matrix[i][j]);
@@ -43,15 +45,19 @@ require(["netjs", "lib/d3"], function(netjs, d3) {
   // args.linkage      =  "data/dummy/linkages.txt";
   // args.thumbnails   =  "data/dummy/thumbnails";
   // args.thresFunc    = thresholdMatrix;
-  // args.thresArgs    = [["", 0.75]];
+  // args.thresVals    = [["", 0.75]];
 
   netjs.loadNetwork(args, function(net) {
 
     var w = window.innerWidth - 40;
     var h = window.innerHeight;
 
-    netjs.createNetworkControls(net, "#networkCtrl", "#subNetwork", w/2.0, h);
-    netjs.displayNetwork(       net, "#fullNetwork",  w/2.0, h);
+    netjs.displayNetwork(
+      net, 
+      "#fullNetwork",
+      "#subNetwork",
+      "#networkCtrl",
+      w/2.0, h, w/2.0, h);
   });
 });
 

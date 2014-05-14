@@ -176,6 +176,10 @@ define(["lib/d3", "netvis"], function(d3, netvis) {
         showNode(       node,        "select");
         showNodeNetwork(node,         true);
       }
+
+      if (network.nodeSelectCb && network.nodeSelectCb !== null) {
+        network.nodeSelectCb(network.selectedNode);
+      }
     }
     
     /*
@@ -220,11 +224,6 @@ define(["lib/d3", "netvis"], function(d3, netvis) {
     var svgNodeLabels = network.display.svgNodeLabels;
     var svgThumbnails = network.display.svgThumbnails;
     var svgEdges      = network.display.svgEdges;
-
-    // This variable is used to keep track 
-    // of the currently selected node. 
-    if (!network.selectedNode)
-      network.selectedNode = null;
 
     // configure mouse event callbacks on 
     // node circles, labels, and thumbnails.
@@ -407,7 +406,6 @@ define(["lib/d3", "netvis"], function(d3, netvis) {
       .on("mousemove", mouseMoveCanvas)
       .on("mouseup",   mouseUpCanvas)
       .on("mouseout",  mouseUpCanvas);
-    
   }
 
   /*
@@ -429,8 +427,10 @@ define(["lib/d3", "netvis"], function(d3, netvis) {
     var svgThumbnails = network.display.svgThumbnails;
     var svgEdges      = network.display.svgEdges;
 
-    // This variable is used to keep track 
-    // of the currently selected node. 
+    // The selectedNode variable is used to keep 
+    // track of the currently selected node. When 
+    // the selected node changes, the nodeSelectCb
+    // function is called (see setNodeSelectCb)
     if (!network.selectedNode)
       network.selectedNode = null;
 
@@ -453,7 +453,12 @@ define(["lib/d3", "netvis"], function(d3, netvis) {
     configNetworkDynamics(network);
   }
 
+  function setNodeSelectCb(network, nodeSelectCb) {
+    network.nodeSelectCb = nodeSelectCb;
+  }
+
   var netvis_dynamics = {};
-  netvis_dynamics.configDynamics = configDynamics;
+  netvis_dynamics.configDynamics  = configDynamics;
+  netvis_dynamics.setNodeSelectCb = setNodeSelectCb;
   return netvis_dynamics;
 });
