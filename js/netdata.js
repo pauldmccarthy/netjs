@@ -307,8 +307,8 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
       null,
       network.thumbUrl,
       network.thresholdFunc,
-      network.thresholdArgLabels,
-      network.thresholdArgs,
+      network.thresholdValueLabels,
+      network.thresholdValues,
       network.thresholdIdx,
       1);
 
@@ -363,7 +363,7 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
     var weightAbsMaxs = [];
 
     // threshold the matrix
-    matrix = network.thresholdFunc(matrix, network.thresholdArgs);
+    matrix = network.thresholdFunc(matrix, network.thresholdValues);
     
     // initialise min/max arrays
     for (var i = 0; i < network.matrices.length; i++) {
@@ -437,8 +437,8 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
     linkage,
     thumbUrl,
     thresholdFunc,
-    thresholdArgLabels,
-    thresholdArgs,
+    thresholdValueLabels,
+    thresholdValues,
     thresholdIdx,
     numClusters) {
 
@@ -465,16 +465,17 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
       nodes.push(node);
     }
 
-    network.nodes              = nodes;
-    network.matrices           = matrices;
-    network.weightLabels       = matrixLabels;
-    network.nodeLabels         = nodeLabels;
-    network.linkage            = linkage;
-    network.thumbUrl           = thumbUrl;
-    network.thresholdFunc      = thresholdFunc;
-    network.thresholdArgs      = thresholdArgs;
-    network.thresholdArgLabels = thresholdArgLabels;
-    network.thresholdIdx       = thresholdIdx;
+    network.nodes                = nodes;
+    network.matrices             = matrices;
+    network.weightLabels         = matrixLabels;
+    network.nodeLabels           = nodeLabels;
+    network.linkage              = linkage;
+    network.thumbUrl             = thumbUrl;
+    network.thresholdFunc        = thresholdFunc;
+    network.thresholdValues      = thresholdValues;
+    network.thresholdValueLabels = thresholdValueLabels;
+    network.thresholdIdx         = thresholdIdx;
+    network.numClusters          = numClusters;
 
     // create the network edges
     thresholdNetwork(network);
@@ -514,15 +515,47 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
   }
 
   function setEdgeWidthWeightIdx(network, idx) {
-    console.log("width: " + idx);
+
+    if (idx < 0 || idx >= network.matrices.length) {
+      throw "Matrix index out of range.";
+    } 
+
     network.scaleInfo.edgeWidthWeightIdx = idx;
     genColourScales(network, network.scaleInfo);
   }
 
 
   function setEdgeColourWeightIdx(network, idx) {
+
+    if (idx < 0 || idx >= network.matrices.length) {
+      throw "Matrix index out of range.";
+    } 
+
     network.scaleInfo.edgeColourWeightIdx = idx;
     genColourScales(network, network.scaleInfo);
+  }
+
+  function setThresholdMatrix(network, idx) {
+
+    if (idx < 0 || idx >= network.matrices.length) {
+      throw "Matrix index out of range.";
+    } 
+
+    network.thresholdIdx = idx;
+    setThresholdValue(network, 0, network.thresholdValues[0]);
+  }
+
+  function setThresholdValue(network, idx, value) {
+
+    if (idx < 0 || idx >= network.thresholdValues.length) {
+      throw "Threshold value index out of range.";
+    }
+
+    network.thresholdValues[idx] = value;
+    thresholdNetwork(      network);
+    setNumClusters(        network, network.numClusters);
+    setEdgeWidthWeightIdx( network, network.edgeWidthWeightIdx);
+    setEdgeColourWeightIdx(network, network.edgeColourWeightIdx);
   }
 
   /*
@@ -558,7 +591,7 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
     var matrixLabels = args[args.length-3];
     var thumbUrl     = args[args.length-4];
     var cbFunc       = args[args.length-5];
-    var thresArgs    = args[args.length-6];
+    var thresVals    = args[args.length-6];
     var thresFunc    = args[args.length-7];
 
     args.splice(-7, 7);
@@ -568,10 +601,8 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
     nodeLabels = parseTextMatrix(nodeLabels)[0];
     matrices   = matrices.map(parseTextMatrix);
 
-    thresArgLabels = thresArgs.map(function(arg) {return arg[0];});
-    thresArgs      = thresArgs.map(function(arg) {return arg[1];});
-    console.log(matrices);
-    console.log(matrixLabels);
+    thresValLabels = thresVals.map(function(arg) {return arg[0];});
+    thresVals      = thresVals.map(function(arg) {return arg[1];});
 
     network = createNetwork(
       matrices, 
@@ -580,8 +611,8 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
       linkage, 
       thumbUrl,
       thresFunc,
-      thresArgLabels,
-      thresArgs,
+      thresValLabels,
+      thresVals,
       0,
       1);
     cbFunc(network);
@@ -598,7 +629,7 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
     var linkageUrl    = args.linkage;
     var thumbUrl      = args.thumbnails;
     var thresFunc     = args.thresFunc;
-    var thresArgs     = args.thresArgs;
+    var thresVals     = args.thresVals;
 
     // The qId function is an identity function 
     // which may be used to pass standard 
@@ -614,7 +645,7 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
     });
 
     q .defer(qId,     thresFunc)
-      .defer(qId,     thresArgs)
+      .defer(qId,     thresVals)
       .defer(qId,     cbFunc)
       .defer(qId,     thumbUrl)
       .defer(qId,     matrixLabels)
@@ -630,6 +661,7 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
   netdata.setNumClusters         = setNumClusters;
   netdata.setEdgeWidthWeightIdx  = setEdgeWidthWeightIdx;
   netdata.setEdgeColourWeightIdx = setEdgeColourWeightIdx;
+  netdata.setThresholdValue      = setThresholdValue;
   netdata.extractSubNetwork      = extractSubNetwork;
 
   return netdata;
