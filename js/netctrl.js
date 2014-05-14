@@ -111,6 +111,14 @@ define(
       edgeWidthScale .selectedIndex = network.edgeWidthIdx;
       netThreshold   .selectedIndex = network.thresholdIdx;
 
+      for (var i = 0; i < network.nodeDataLabels.length; i++) {
+        var opt = document.createElement("option");
+        opt.value = "" + i;
+        opt.innerHTML = network.nodeDataLabels[i];
+        nodeColour.appendChild(opt);
+      }
+      nodeColour.selectedIndex  = network.nodeColourIdx;
+      
       numClustRange
         .onchange = function() {
           netdata.setNumClusters(network, parseInt(this.value));
@@ -137,6 +145,11 @@ define(
         }
 
         redraw(false);
+      };
+
+      nodeColour.onchange = function() {
+        netData.setNodeColourIdx(network.parseInt(this.value));
+        redraw();
       };
 
       netThresVal.onchange = function() {
