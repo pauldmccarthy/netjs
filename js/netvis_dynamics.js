@@ -15,42 +15,54 @@ define(["lib/d3", "netvis"], function(d3, netvis) {
       var nbrLabelElems = node.nbrLabelElems;
       var nbrThumbElems = node.nbrThumbElems;
 
-      var nodeOpacity = netvis.DEF_NODE_OPACITY;
-      var font        = netvis.DEF_LABEL_FONT;
-      var fontWeight  = netvis.DEF_LABEL_WEIGHT;
-      var thumbVis    = "hidden";
-      var thumbWidth  = netvis.HLT_THUMB_WIDTH;
-      var thumbHeight = netvis.HLT_THUMB_HEIGHT;
+      var nodeOpacity = network.display.DEF_NODE_OPACITY;
+      var font        = network.display.DEF_LABEL_FONT;
+      var fontSize    = network.display.DEF_LABEL_SIZE;
+      var fontWeight  = network.display.DEF_LABEL_WEIGHT;
+      var thumbVis    = network.display.DEF_THUMB_VISIBILITY;
+      var thumbWidth  = network.display.DEF_THUMB_WIDTH;
+      var thumbHeight = network.display.DEF_THUMB_HEIGHT;
+      var edgeOpacity = network.display.DEF_EDGE_OPACITY;
+      var edgeWidth   = network.display.DEF_EDGE_WIDTH;
+      var edgeColour  = network.display.DEF_EDGE_COLOUR;
 
-      var edgeOpacity = netvis.DEF_EDGE_OPACITY;
-      var edgeWidth   = netvis.DEF_EDGE_WIDTH;
-      var edgeColour  = function(path) {
+      var defScaleEdgeColour = function(path) {
         return network.scaleInfo.defEdgeColourScale(
           path.edge.weights[network.scaleInfo.edgeColourWeightIdx]);};
+
+      var hltScaleEdgeColour = function(path) {
+        return network.scaleInfo.hltEdgeColourScale(
+          path.edge.weights[network.scaleInfo.edgeColourWeightIdx]);};
+
+      var scaleEdgeWidth = function(path) {
+          return network.scaleInfo.edgeWidthScale(
+            path.edge.weights[network.scaleInfo.edgeWidthWeightIdx]);}
       
       if (show) {
 
-        nodeOpacity = netvis.HLT_NODE_OPACITY;
-        font        = netvis.HLT_LABEL_FONT;
-        fontWeight  = netvis.HLT_LABEL_WEIGHT;
-        thumbVis    = "visible";
-        
-        edgeOpacity = netvis.HLT_EDGE_OPACITY;
-        edgeWidth   = function(path) {
-          return network.scaleInfo.edgeWidthScale(
-            path.edge.weights[network.scaleInfo.edgeWidthWeightIdx]);}
-        edgeColour  = function(path) {
-          return network.scaleInfo.hltEdgeColourScale(
-            path.edge.weights[network.scaleInfo.edgeColourWeightIdx]);
-        };
+        nodeOpacity = network.display.HLT_NODE_OPACITY;
+        font        = network.display.HLT_LABEL_FONT;
+        fontSize    = network.display.HLT_LABEL_SIZE;
+        fontWeight  = network.display.HLT_LABEL_WEIGHT;
+        thumbVis    = network.display.HLT_THUMB_VISIBILITY;
+        thumbWidth  = network.display.HLT_THUMB_WIDTH;
+        thumbHeight = network.display.HLT_THUMB_HEIGHT;
+        edgeOpacity = network.display.HLT_EDGE_OPACITY;
+        edgeWidth   = network.display.HLT_EDGE_WIDTH;
+        edgeColour  = network.display.HLT_EDGE_COLOUR;
       }
-     
+
+      if      (edgeWidth  === "scale")     edgeWidth  = scaleEdgeWidth;
+      if      (edgeColour === "default")   edgeColour = defScaleEdgeColour;
+      else if (edgeColour === "highlight") edgeColour = hltScaleEdgeColour;
+
       nbrElems
         .attr("opacity",     nodeOpacity);
 
       nbrLabelElems
         .attr("opacity",     nodeOpacity)
         .attr("font-family", font)
+        .attr("font-size",   fontSize)
         .attr("font-weight", fontWeight);
 
       nbrThumbElems
@@ -76,34 +88,34 @@ define(["lib/d3", "netvis"], function(d3, netvis) {
      */
     function showNode(node, show) {
 
-      var opacity     = netvis.DEF_NODE_OPACITY;
-      var font        = netvis.DEF_LABEL_FONT;
-      var fontWeight  = netvis.DEF_LABEL_WEIGHT;
-      var fontSize    = netvis.DEF_LABEL_SIZE;
-      var nodeSize    = netvis.DEF_NODE_SIZE;
-      var thumbVis    = "hidden";
-      var thumbWidth  = 0;
-      var thumbHeight = 0;
+      var opacity     = network.display.DEF_NODE_OPACITY;
+      var font        = network.display.DEF_LABEL_FONT;
+      var fontWeight  = network.display.DEF_LABEL_WEIGHT;
+      var fontSize    = network.display.DEF_LABEL_SIZE;
+      var nodeSize    = network.display.DEF_NODE_SIZE;
+      var thumbVis    = network.display.DEF_THUMB_VISIBILITY;
+      var thumbWidth  = network.display.DEF_THUMB_WIDTH;
+      var thumbHeight = network.display.DEF_THUMB_HEIGHT;
 
       if (show === "highlight") {
-        opacity     = netvis.HLT_NODE_OPACITY;
-        font        = netvis.DEF_LABEL_FONT;
-        fontWeight  = netvis.HLT_LABEL_WEIGHT; 
-        fontSize    = netvis.DEF_LABEL_SIZE;
-        nodeSize    = netvis.DEF_NODE_SIZE;
-        thumbVis    = "visible";
-        thumbWidth  = netvis.HLT_THUMB_WIDTH;
-        thumbHeight = netvis.HLT_THUMB_HEIGHT;
+        opacity     = network.display.HLT_NODE_OPACITY;
+        font        = network.display.HLT_LABEL_FONT;
+        fontWeight  = network.display.HLT_LABEL_WEIGHT; 
+        fontSize    = network.display.HLT_LABEL_SIZE;
+        nodeSize    = network.display.HLT_NODE_SIZE;
+        thumbVis    = network.display.HLT_THUMB_VISIBILITY;
+        thumbWidth  = network.display.HLT_THUMB_WIDTH;
+        thumbHeight = network.display.HLT_THUMB_HEIGHT;
       }
       else if (show === "select") {
-        opacity     = netvis.SEL_NODE_OPACITY;
-        font        = netvis.SEL_LABEL_FONT;
-        fontWeight  = netvis.SEL_LABEL_WEIGHT; 
-        fontSize    = netvis.SEL_LABEL_SIZE;
-        nodeSize    = netvis.SEL_NODE_SIZE;
-        thumbVis    = "visible";
-        thumbWidth  = netvis.SEL_THUMB_WIDTH;
-        thumbHeight = netvis.SEL_THUMB_HEIGHT;
+        opacity     = network.display.SEL_NODE_OPACITY;
+        font        = network.display.SEL_LABEL_FONT;
+        fontWeight  = network.display.SEL_LABEL_WEIGHT; 
+        fontSize    = network.display.SEL_LABEL_SIZE;
+        nodeSize    = network.display.SEL_NODE_SIZE;
+        thumbVis    = network.display.SEL_THUMB_VISIBILITY;
+        thumbWidth  = network.display.SEL_THUMB_WIDTH;
+        thumbHeight = network.display.SEL_THUMB_HEIGHT;
       }
 
       node.labelElem.attr("opacity",     opacity);

@@ -77,7 +77,21 @@ define(
           showSubNetButton.value = "Hide";
 
           subnet = netdata.extractSubNetwork(network, network.selectedNode.index);
-          // share colour information
+
+          // tweak the sub-network display a little bit
+          subnet.display = {};
+          subnet.display.DEF_THUMB_VISIBILITY = "visible";
+          subnet.display.DEF_NODE_OPACITY     = 1.0;
+          subnet.display.DEF_EDGE_WIDTH       = "scale";
+          subnet.display.DEF_THUMB_WIDTH      = 91  / 2.0;
+          subnet.display.DEF_THUMB_HEIGHT     = 109 / 2.0;
+          subnet.display.HLT_THUMB_WIDTH      = 91  / 2.0;
+          subnet.display.HLT_THUMB_HEIGHT     = 109 / 2.0;
+          subnet.display.SEL_THUMB_WIDTH      = 91  / 1.5;
+          subnet.display.SEL_THUMB_HEIGHT     = 109 / 1.5;
+
+          // share colour/scaling information between 
+          // the parent network and sub-network
           subnet.scaleInfo = network.scaleInfo;
 
           netvis.displayNetwork(subnet, subNetDiv, subNetWidth, subNetHeight);

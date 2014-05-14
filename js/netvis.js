@@ -11,41 +11,50 @@
 define(["lib/d3"], function(d3) {
 
   /* 
-   * Various constants for configuring how nodes,
-   * labels, thumbnails, and edges are displayed
-   * normally (DEF), when highlighted (HLT),
-   * and when selected (SEL).
+   * Various per-network constants for configuring how 
+   * nodes, labels, thumbnails, and edges are displayed
+   * normally (DEF), when highlighted (HLT), and when 
+   * selected (SEL).
    */
-  var DEF_LABEL_SIZE   = 10;
-  var SEL_LABEL_SIZE   = 16;
-  var DEF_LABEL_WEIGHT = "normal";
-  var HLT_LABEL_WEIGHT = "bold";
-  var SEL_LABEL_WEIGHT = "bold";
-  var DEF_LABEL_FONT   = "sans";
-  var HLT_LABEL_FONT   = "sans";
-  var SEL_LABEL_FONT   = "sans";
+  var visDefaults = {};
+  visDefaults.DEF_LABEL_SIZE   = 10;
+  visDefaults.HLT_LABEL_SIZE   = 10;
+  visDefaults.SEL_LABEL_SIZE   = 16;
+  visDefaults.DEF_LABEL_WEIGHT = "normal";
+  visDefaults.HLT_LABEL_WEIGHT = "bold";
+  visDefaults.SEL_LABEL_WEIGHT = "bold";
+  visDefaults.DEF_LABEL_FONT   = "sans";
+  visDefaults.HLT_LABEL_FONT   = "sans";
+  visDefaults.SEL_LABEL_FONT   = "sans";
 
-  // thumbnails are hidden by default
-  var HLT_THUMB_WIDTH  = 91 /2.0;
-  var HLT_THUMB_HEIGHT = 109/2.0;
-  var SEL_THUMB_WIDTH  = 91 /1.5;
-  var SEL_THUMB_HEIGHT = 109/1.5;
+  visDefaults.DEF_THUMB_VISIBILITY = "hidden";
+  visDefaults.HLT_THUMB_VISIBILITY = "visible";
+  visDefaults.SEL_THUMB_VISIBILITY = "visible";
+  visDefaults.DEF_THUMB_WIDTH  = 91 /2.5;
+  visDefaults.HLT_THUMB_WIDTH  = 91 /2.5;
+  visDefaults.SEL_THUMB_WIDTH  = 91 /2.0;
+  visDefaults.DEF_THUMB_HEIGHT = 109/2.5;
+  visDefaults.HLT_THUMB_HEIGHT = 109/2.5;
+  visDefaults.SEL_THUMB_HEIGHT = 109/2.0;
 
   // edge width and colour are scaled 
   // according to edge weights. Also,
   // a default edge opacity of less 
   // than 1.0 will result in a huge 
   // performance hit for large networks.
-  var DEF_EDGE_WIDTH   = 1;
-  var DEF_EDGE_OPACITY = 1.0;
-  var HLT_EDGE_OPACITY = 0.7;
+  visDefaults.DEF_EDGE_COLOUR  = "default";
+  visDefaults.HLT_EDGE_COLOUR  = "highlight";
+  visDefaults.DEF_EDGE_WIDTH   = 1;
+  visDefaults.HLT_EDGE_WIDTH   = "scale";
+  visDefaults.DEF_EDGE_OPACITY = 1.0;
+  visDefaults.HLT_EDGE_OPACITY = 0.7;
 
-  var DEF_NODE_SIZE    = 3;
-  var HLT_NODE_SIZE    = 5;
-  var SEL_NODE_SIZE    = 5;
-  var DEF_NODE_OPACITY = 0.2;
-  var HLT_NODE_OPACITY = 1.0;
-  var SEL_NODE_OPACITY = 1.0;
+  visDefaults.DEF_NODE_SIZE    = 3;
+  visDefaults.HLT_NODE_SIZE    = 3;
+  visDefaults.SEL_NODE_SIZE    = 5;
+  visDefaults.DEF_NODE_OPACITY = 0.2;
+  visDefaults.HLT_NODE_OPACITY = 1.0;
+  visDefaults.SEL_NODE_OPACITY = 1.0;
 
   /*
    * Draw the nodes of the network. It is assumed that the network
@@ -134,8 +143,8 @@ define(["lib/d3"], function(d3) {
       .append("circle")
       .attr("class",     nodeClasses)
       .attr("transform", positionNode)
-      .attr("opacity",   DEF_NODE_OPACITY)
-      .attr("r",         DEF_NODE_SIZE)
+      .attr("opacity",   network.display.DEF_NODE_OPACITY)
+      .attr("r",         network.display.DEF_NODE_SIZE)
       .attr("fill",      colourNode);
       
     // Draw the node labels
@@ -146,10 +155,10 @@ define(["lib/d3"], function(d3) {
       .append("text")
       .attr("class",        nodeClasses)
       .attr("dy",          ".31em")
-      .attr("opacity",      DEF_NODE_OPACITY)
-      .attr("font-family",  DEF_LABEL_FONT)
-      .attr("font-weight",  DEF_LABEL_WEIGHT)
-      .attr("font-size",    DEF_LABEL_SIZE)
+      .attr("opacity",      network.display.DEF_NODE_OPACITY)
+      .attr("font-family",  network.display.DEF_LABEL_FONT)
+      .attr("font-weight",  network.display.DEF_LABEL_WEIGHT)
+      .attr("font-size",    network.display.DEF_LABEL_SIZE)
       .attr("fill",         colourNode)
       .attr("transform",    positionLabel)
       .style("text-anchor", anchorLabel)
@@ -163,10 +172,10 @@ define(["lib/d3"], function(d3) {
       .append("image")
       .attr("class",       nodeClasses)
       .attr("transform",   positionThumbnail)
-      .attr("visibility", "hidden")
-      .attr("xlink:href",  function(node) {return node.thumbnail;})
-      .attr("width",       0)
-      .attr("height",      0);
+      .attr("visibility",  network.display.DEF_THUMB_VISIBILITY)
+      .attr("width",       network.display.DEF_THUMB_WIDTH)
+      .attr("height",      network.display.DEF_THUMB_HEIGHT)
+      .attr("xlink:href",  function(node) {return node.thumbnail;});
   }
 
   /*
@@ -209,9 +218,19 @@ define(["lib/d3"], function(d3) {
     
     // Colour the edges according to the edge weight
     // specified by network.edgeColourWeightIdx.
-    function edgeColour(path) {
+    function defScaleEdgeColour(path) {
       return network.scaleInfo.defEdgeColourScale(
         path.edge.weights[network.scaleInfo.edgeColourWeightIdx]);
+    }
+
+    function hltScaleEdgeColour(path) {
+      return network.scaleInfo.defEdgeColourScale(
+        path.edge.weights[network.scaleInfo.edgeColourWeightIdx]);
+    }
+
+    function scaleEdgeWidth(path) {
+      return network.scaleInfo.edgeWidthScale(
+        path.edge.weights[network.scaleInfo.edgeWidthWeightIdx]);
     }
 
     // Generate the spline paths for each edge,
@@ -234,6 +253,13 @@ define(["lib/d3"], function(d3) {
       node.paths = node.edges.map(function(edge) {return edge.path;});
     });
 
+    var edgeColour = network.display.DEF_EDGE_COLOUR;
+    var edgeWidth  = network.display.DEF_EDGE_WIDTH;
+
+    if      (edgeWidth  === "scale")     edgeWidth  = scaleEdgeWidth;
+    if      (edgeColour === "default")   edgeColour = defScaleEdgeColour;
+    else if (edgeColour === "highlight") edgeColour = hltScaleEdgeColour;
+
     // draw the edges
     network.display.svgEdges
       .selectAll("path")
@@ -243,10 +269,10 @@ define(["lib/d3"], function(d3) {
       .attr("id",              edgeId)
       .attr("class",           edgeClasses)
       .attr("stroke",          edgeColour)
-      .attr("stroke-width",    DEF_EDGE_WIDTH)
+      .attr("stroke-width",    edgeWidth)
       .attr("stroke-linecap", "round")
-      .attr("opacity",         DEF_EDGE_OPACITY)
       .attr("fill",           "none")
+      .attr("opacity",         network.display.DEF_EDGE_OPACITY)
       .attr("d",               line);
   }
 
@@ -263,7 +289,7 @@ define(["lib/d3"], function(d3) {
 
     // put an svg element inside the networkDiv
     var svg = null;
-    if (!network.display) {
+    if (!network.display || !network.display.svg) {
       svg = d3.select(div).append("svg")
         .attr("width",       width)
         .attr("height",      height)
@@ -288,20 +314,24 @@ define(["lib/d3"], function(d3) {
     // which is used as a popup to display edge weights when
     // the mouse moves over an edge.
     // 
+
+    if (!network.display) network.display = {};
+    network.display.svg           = svg;
+    network.display.radius        = radius;
+    network.display.width         = width;
+    network.display.height        = height;
+
     // The order of these lines defines the order in which the 
     // elements are displayed (last displayed on top)
-    var display = {};
-    display.svg           = svg;
-    display.radius        = radius;
-    display.width         = width;
-    display.height        = height;
-    display.svgEdges      = parentGroup.append("g");
-    display.svgThumbnails = parentGroup.append("g");
-    display.svgNodes      = parentGroup.append("g");
-    display.svgNodeLabels = parentGroup.append("g");
+    network.display.svgEdges      = parentGroup.append("g");
+    network.display.svgThumbnails = parentGroup.append("g");
+    network.display.svgNodes      = parentGroup.append("g");
+    network.display.svgNodeLabels = parentGroup.append("g");
 
-    network.display = display;
-
+    for (var prop in visDefaults) {
+      if (!network.display[prop])
+        network.display[prop] = visDefaults[prop];
+    }
 
     // Draw all of the things!
     drawNodes(network);
@@ -326,32 +356,10 @@ define(["lib/d3"], function(d3) {
   }
 
   var netvis = {};
-  netvis.displayNetwork   = displayNetwork;
-  netvis.redrawNetwork    = redrawNetwork;
-  netvis.clearNetwork     = clearNetwork;
-
-  netvis.DEF_LABEL_SIZE   = DEF_LABEL_SIZE;
-  netvis.SEL_LABEL_SIZE   = SEL_LABEL_SIZE;
-  netvis.DEF_LABEL_WEIGHT = DEF_LABEL_WEIGHT;
-  netvis.HLT_LABEL_WEIGHT = HLT_LABEL_WEIGHT;
-  netvis.SEL_LABEL_WEIGHT = SEL_LABEL_WEIGHT;
-  netvis.DEF_LABEL_FONT   = DEF_LABEL_FONT;
-  netvis.HLT_LABEL_FONT   = HLT_LABEL_FONT;
-  netvis.SEL_LABEL_FONT   = SEL_LABEL_FONT;
-  netvis.HLT_THUMB_WIDTH  = HLT_THUMB_WIDTH;
-  netvis.HLT_THUMB_HEIGHT = HLT_THUMB_HEIGHT;
-  netvis.SEL_THUMB_WIDTH  = SEL_THUMB_WIDTH;
-  netvis.SEL_THUMB_HEIGHT = SEL_THUMB_HEIGHT;
-  netvis.DEF_EDGE_WIDTH   = DEF_EDGE_WIDTH;
-  netvis.DEF_EDGE_OPACITY = DEF_EDGE_OPACITY;
-  netvis.HLT_EDGE_OPACITY = HLT_EDGE_OPACITY;
-  netvis.DEF_NODE_SIZE    = DEF_NODE_SIZE;
-  netvis.HLT_NODE_SIZE    = HLT_NODE_SIZE;
-  netvis.SEL_NODE_SIZE    = SEL_NODE_SIZE;
-  netvis.DEF_NODE_OPACITY = DEF_NODE_OPACITY;
-  netvis.HLT_NODE_OPACITY = HLT_NODE_OPACITY;
-  netvis.SEL_NODE_OPACITY = SEL_NODE_OPACITY;
-
+  netvis.displayNetwork = displayNetwork;
+  netvis.redrawNetwork  = redrawNetwork;
+  netvis.clearNetwork   = clearNetwork;
+  netvis.visDefaults    = visDefaults;
   return netvis;
 
 });
