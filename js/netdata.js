@@ -99,7 +99,8 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
     // And attach a bunch of convenience 
     // functions for use in d3 attr calls
     scaleInfo.nodeColour = function(node) {
-      return scaleInfo.nodeColourScale(node.nodeData[network.nodeColourIdx]);
+      return scaleInfo.nodeColourScale(
+        node.nodeData[network.scaleInfo.nodeColourIdx]);
     };
 
     scaleInfo.defEdgeColour = function(edge) {
