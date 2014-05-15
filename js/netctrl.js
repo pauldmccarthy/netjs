@@ -45,6 +45,7 @@ define(
       var edgeColourIdx    = div.querySelector("#edgeColourIdx");
       var edgeColourBar    = div.querySelector("#edgeColourBar");
       var edgeWidthIdx     = div.querySelector("#edgeWidthIdx");
+      var edgeWidthLegend  = div.querySelector("#edgeWidthLegend");
       var nodeColourIdx    = div.querySelector("#nodeColourIdx");
       var showSubNetwork   = div.querySelector("#showSubNetwork");
 
@@ -189,8 +190,10 @@ define(
           showSubNetwork.appendChild(showSubNetButton);
       }
 
-      // Draw a bar showing the edge colour range
-      // Thanks: http://tributary.io/tributary/3650755/
+      /*
+       * Draw a colour bar showing the edge colour range
+       * Thanks: http://tributary.io/tributary/3650755/
+       */
       function drawEdgeColourBar() {
 
         edgeColourBar.innerHTML = "";
@@ -202,35 +205,52 @@ define(
         var points  = d3.range(min, max + 1, step);
         var fmt     = d3.format("5.2f");
 
-        d3ecb.style("margin", "0 auto");
 
-        d3ecb.append("span")
-          .style("font-size", "10")
-          .html(fmt(min));
-
+        //svg canvas for colour bar (drawn below)
         var svg = d3ecb.append("svg")
-          .attr("width",  100)
+          .attr("width",  150)
           .attr("height", 15);
 
-        d3ecb.append("span")
-          .style("font-size", "10")
-          .html(fmt(max));
 
-        var rects = svg
+        var minLabel = svg.append("text")
+          .attr("x",            0)
+          .attr("y",            15)
+          .attr("font-size",    10)
+          .attr("text-anchor", "left")
+          .text(fmt(min));
+
+        var minLabelLen = minLabel.node().getComputedTextLength();
+
+        // the colour bar itself
+        svg
           .selectAll("rect")
           .data(points)
           .enter()
           .append("rect")
-          .attr("width",  5)
+          .attr("width",  4)
           .attr("height", 15)
-          .attr("x",      function(val,i) {return i*5;})
+          .attr("x",      function(val,i) {return minLabelLen + 1 + i*4;})
           .attr("y",      0)
           .attr("fill",   function(val) {
             console.log(val + " -> " + network.scaleInfo.hltEdgeColourScale(val));
             return network.scaleInfo.hltEdgeColourScale(val);});
+
+        // max value label
+        svg.append("text")
+          .attr("x",            minLabelLen + 4*21 + 1)
+          .attr("y",            15)
+          .attr("font-size",    10)
+          .attr("text-anchor", "right")
+          .text(fmt(max));
+      }
+
+      function drawEdgeWidthLegend() {
+
+        
       }
 
       drawEdgeColourBar();
+      drawEdgeWidthLegend();
 
       // Set up event handlers 
       // on all of the widgets
@@ -251,6 +271,7 @@ define(
       edgeWidthIdx
         .onchange = function() {
           netdata.setEdgeWidthIdx(network, parseInt(this.value));
+          drawEdgeWidthLegend();
           redraw(true);
         };
 
