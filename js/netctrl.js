@@ -1,5 +1,8 @@
 /*
+ * Create and manage a collection of widgets for controlling
+ * the display of a network.
  *
+ * Author: Paul McCarthy <pauldmccarthy@gmail.com>
  */
 define(
   ["lib/d3", "lib/mustache", "netdata", "netvis", "netvis_dynamics"], 
@@ -40,6 +43,7 @@ define(
       var thresholdIdx     = div.querySelector("#thresholdIdx");
       var numClusters      = div.querySelector("#numClusters");
       var edgeColourIdx    = div.querySelector("#edgeColourIdx");
+      var edgeColourBar    = div.querySelector("#edgeColourBar");
       var edgeWidthIdx     = div.querySelector("#edgeWidthIdx");
       var nodeColourIdx    = div.querySelector("#nodeColourIdx");
       var showSubNetwork   = div.querySelector("#showSubNetwork");
@@ -149,7 +153,6 @@ define(
       if (subNetDiv !== null) 
           dynamics.setNodeSelectCb(network, changeSubNetwork);
 
-
       // Populate the thresholdIdx, edgeColourIdx 
       // and edgeWidthIdx drop down boxes - they
       // all contain a list of network connectivity
@@ -186,6 +189,49 @@ define(
           showSubNetwork.appendChild(showSubNetButton);
       }
 
+      // Draw a bar showing the edge colour range
+      // Thanks: http://tributary.io/tributary/3650755/
+      function drawEdgeColourBar() {
+
+        edgeColourBar.innerHTML = "";
+
+        var d3ecb   = d3.select(edgeColourBar);
+        var min     = -network.matrixAbsMaxs[network.scaleInfo.edgeColourIdx];
+        var max     =  network.matrixAbsMaxs[network.scaleInfo.edgeColourIdx];
+        var step    = (max - min) / 20.0;
+        var points  = d3.range(min, max + 1, step);
+        var fmt     = d3.format("5.2f");
+
+        d3ecb.style("margin", "0 auto");
+
+        d3ecb.append("span")
+          .style("font-size", "10")
+          .html(fmt(min));
+
+        var svg = d3ecb.append("svg")
+          .attr("width",  100)
+          .attr("height", 15);
+
+        d3ecb.append("span")
+          .style("font-size", "10")
+          .html(fmt(max));
+
+        var rects = svg
+          .selectAll("rect")
+          .data(points)
+          .enter()
+          .append("rect")
+          .attr("width",  5)
+          .attr("height", 15)
+          .attr("x",      function(val,i) {return i*5;})
+          .attr("y",      0)
+          .attr("fill",   function(val) {
+            console.log(val + " -> " + network.scaleInfo.hltEdgeColourScale(val));
+            return network.scaleInfo.hltEdgeColourScale(val);});
+      }
+
+      drawEdgeColourBar();
+
       // Set up event handlers 
       // on all of the widgets
 
@@ -198,6 +244,7 @@ define(
       edgeColourIdx
         .onchange = function() {
           netdata.setEdgeColourIdx(network, parseInt(this.value));
+          drawEdgeColourBar();
           redraw(true);
         };
 

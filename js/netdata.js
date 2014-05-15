@@ -71,13 +71,13 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
 
     // Edge width scale
     var edgeWidthScale = d3.scale.linear()
-      .domain([-ewMax, -ewMin, 0, ewMin, ewMax])
-      .range( [    15,      2, 0,     2,    15]);
+      .domain([-ewMax, -0, ewMax])
+      .range( [    15,  0,    15]);
 
     // Colour scale for highlighted edges
     var hltEdgeColourScale = d3.scale.linear()
-      .domain([ -ecMax,    -ecMin,    0,          ecMin,     ecMax  ])
-      .range( ["#0000dd", "#ccccdd", "#ffffff", "#ddaaaa", "#dd0000"]);
+      .domain([ -ecMax,   0,          ecMax  ])
+      .range( ["#0000dd", "#ffffff", "#dd0000"]);
 
     // The colour scale for non-highlighted edges
     // is a washed out version of that used for 
