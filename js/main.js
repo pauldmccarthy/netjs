@@ -43,14 +43,15 @@ require(["netjs", "lib/d3"], function(netjs, d3) {
   args.thresholdIdx   = 0;
   args.numClusters    = 10;
 
-  // args.matrices     = ["data/dummy/corr1.txt", "data/dummy/corr2.txt"];
-  // args.matrixLabels = ["Corr1", "Corr2"];
-  // args.nodeData     = ["data/dummy/clusters.txt"];
-  // args.nodeLabels   = ["Cluster number"];
-  // args.linkage      =  "data/dummy/linkages.txt";
-  // args.thumbnails   =  "data/dummy/thumbnails";
-  // args.thresFunc    = thresholdMatrix;
-  // args.thresVals    = [["", 0.75]];
+  // args.matrices       = ["data/dummy/corr1.txt", "data/dummy/corr2.txt"];
+  // args.matrixLabels   = ["Corr1", "Corr2"];
+  // args.nodeData       = ["data/dummy/clusters.txt"];
+  // args.nodeDataLabels = ["Cluster number"];
+  // args.linkage        =  "data/dummy/linkages.txt";
+  // args.thumbnails     =  "data/dummy/thumbnails";
+  // args.thresFunc      = thresholdMatrix;
+  // args.thresVals      = [0.75];
+  // args.thresLabels    = ["Thres perc"];
 
   netjs.loadNetwork(args, function(net) {
 
