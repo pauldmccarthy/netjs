@@ -205,12 +205,10 @@ define(
         var points  = d3.range(min, max + 1, step);
         var fmt     = d3.format("5.2f");
 
-
         //svg canvas for colour bar (drawn below)
         var svg = d3ecb.append("svg")
           .attr("width",  150)
           .attr("height", 15);
-
 
         var minLabel = svg.append("text")
           .attr("x",            0)
@@ -232,7 +230,6 @@ define(
           .attr("x",      function(val,i) {return minLabelLen + 1 + i*4;})
           .attr("y",      0)
           .attr("fill",   function(val) {
-            console.log(val + " -> " + network.scaleInfo.hltEdgeColourScale(val));
             return network.scaleInfo.hltEdgeColourScale(val);});
 
         // max value label
@@ -244,9 +241,40 @@ define(
           .text(fmt(max));
       }
 
+      /*
+       * Draw a legend explaining edge widths.
+       */
       function drawEdgeWidthLegend() {
 
-        
+        edgeWidthLegend.innerHTML = "";
+        var d3ewl = d3.select(edgeWidthLegend); 
+
+        var svg = d3ewl.append("svg")
+          .attr("width",  150)
+          .attr("height", 100);
+
+        var min     = network.matrixAbsMins[network.scaleInfo.edgeWidthIdx];
+        var max     = network.matrixAbsMaxs[network.scaleInfo.edgeWidthIdx];
+        var values  = [-max, -min, min, max];
+        var fmt     = d3.format("5.2f");
+
+        values.forEach(function(value, i) {
+
+          svg.append("line")
+            .attr("x1",           0)
+            .attr("y1",           25*i + 12.5)
+            .attr("x2",           100)
+            .attr("y2",           25*i + 12.5)
+            .attr("stroke",       network.scaleInfo.hltEdgeColourScale(value))
+            .attr("stroke-width", network.scaleInfo.edgeWidthScale(    value));
+
+          svg.append("text")
+            .attr("x",         101)
+            .attr("y",         25*i + 12.5 + 5)
+            .attr("font-size", 10)
+            .attr("text-anchor", "left")
+            .text(fmt(value));
+        });
       }
 
       drawEdgeColourBar();
