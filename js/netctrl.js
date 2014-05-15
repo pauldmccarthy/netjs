@@ -107,9 +107,6 @@ define(
         netThreshold   .appendChild(opt.cloneNode(true));
       }
 
-      edgeColourScale.selectedIndex = network.edgeColourIdx;
-      edgeWidthScale .selectedIndex = network.edgeWidthIdx;
-      netThreshold   .selectedIndex = network.thresholdIdx;
 
       for (var i = 0; i < network.nodeDataLabels.length; i++) {
         var opt = document.createElement("option");
@@ -117,8 +114,8 @@ define(
         opt.innerHTML = network.nodeDataLabels[i];
         nodeColour.appendChild(opt);
       }
-      nodeColour.selectedIndex  = network.nodeColourIdx;
-      
+
+
       numClustRange
         .onchange = function() {
           netdata.setNumClusters(network, parseInt(this.value));
@@ -160,6 +157,14 @@ define(
         }
         redraw(false);
       };
+
+
+      netThreshold   .selectedIndex = network.thresholdIdx;
+      netThresVal    .value         = network.thresholdValues[0];
+      numClustRange  .value         = network.numClusters;
+      edgeColourScale.selectedIndex = network.edgeColourIdx;
+      edgeWidthScale .selectedIndex = network.edgeWidthIdx;
+      nodeColour     .selectedIndex = network.nodeColourIdx;
 
       showSubNetButton.onclick = toggleSubNetwork;
 

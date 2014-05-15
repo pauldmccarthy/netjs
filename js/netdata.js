@@ -37,6 +37,23 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
    *   - hltEdgeColourScale:  Colours edges, when highlighted, 
    *                          according to the edge weight at 
    *                          index edgeColourIdx.
+   * 
+   *   - nodeColour:          Function which takes a node object,
+   *                          and returns a colour for it.
+   *
+   *   - defEdgeColour:       Function which takes an edge object,
+   *                          and returns a default colour for it.
+   *
+   *   - hltEdgeColour:       Function which takes an edge object,
+   *                          and returns a highlight colour for it.
+   *
+   *   - edgeWidth:           Function which takes an edge object,
+   *                          and returns a width for it.
+   *
+   *   - *Path*:              Same as the above *Edge* functions, 
+   *                          except these ones accept an object
+   *                          which is assumed to have an edge 
+   *                          object as an attribute called 'edge'.
    */
   function genColourScales(network, scaleInfo) {
     
@@ -296,8 +313,8 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
       null,
       network.thumbUrl,
       network.thresholdFunc,
-      network.thresholdValueLabels,
       network.thresholdValues,
+      network.thresholdValueLabels,
       network.thresholdIdx,
       1);
 
@@ -336,7 +353,7 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
    * in the linkage data provided when the network was loaded, 
    * and flattens the tree so that it contains (at most) the 
    * specified number of clusters. If there was no linkage 
-   * data specified when the network was load, this function 
+   * data specified when the network was loaded, this function 
    * does nothing.
    */
   function setNumClusters(network, numClusts) {
@@ -353,12 +370,13 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
   }
 
   /*
-   * Creates a list of edges for the given network. 
-   * The network edges are defined by  the matrix at 
-   * network.matrices[network.thresholdIdx].  The 
-   * values in all matrices (including the one just 
-   * mentioned) are added as 'weight' attributes 
-   * on the corresponding network edge.
+   * Creates a list of edges for the given network by calling 
+   * the 'thresFunc' function provided when the network was 
+   * loaded. The network edges are defined by the matrix at 
+   * network.matrices[network.thresholdIdx].  The list of 
+   * values in all matrices (including the one just mentioned) 
+   * for a given edge is added as an attribute called 'weight'
+   * on that edge.
    */
   function thresholdNetwork(network) {
 
@@ -375,7 +393,10 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
     var matrixAbsMins = [];
     var matrixAbsMaxs = [];
 
-    // threshold the matrix
+    // threshold the matrix. It is assumed that the 
+    // provided threshold function behaves nicely
+    // by thresholding a copy of the matrix, not 
+    // the matrix itself.
     matrix = network.thresholdFunc(matrix, network.thresholdValues);
     
     // initialise min/max arrays
@@ -392,6 +413,8 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
       network.nodes[i].neighbours = [];
     }
 
+    // Currently only undirected 
+    // networks are supported
     for (var i = 0; i < numNodes; i++) {
       for (var j = i+1; j < numNodes; j++) {
 
@@ -402,13 +425,13 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
         var edge     = {};
         edge.i       = network.nodes[i];
         edge.j       = network.nodes[j];
+        edge.weights = network.matrices.map(function(mat) {return mat[i][j];});
 
         // d3.layout.bundle and d3.layout.force require two 
         // attributes, 'source' and 'target', so we add them 
-        // here, purely for  convenience.
-        edge.source  = network.nodes[i];
-        edge.target  = network.nodes[j];
-        edge.weights = network.matrices.map(function(mat) {return mat[i][j];});
+        // here purely for convenience.
+        edge.source  = edge.i;
+        edge.target  = edge.j;
 
         network.edges.push(edge);
         network.nodes[i].neighbours.push(network.nodes[j]);
@@ -512,7 +535,7 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
     genColourScales(network, scaleInfo);
     network.scaleInfo = scaleInfo;
 
-    console.log(network);
+    // console.log(network);
 
     return network;
   }
@@ -594,11 +617,19 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
   }
 
   /*
-   *
+   * The loadNetwork function (below) asynchronously loads
+   * all of the data required to create a network. When
+   * all that data is loaded, this function is called. 
+   * This function parses the data, passes it all to the 
+   * createNetwork function (above), and then passes 
+   * the resulting network to the onLoadFunc callback
+   * function which was passed to loadNetwork.
    */
   function onDataLoad(error, args) {
 
-    // TODO handle error
+    if (error !== null) {
+      throw error;
+    }
 
     var stdArgs        = args[0];
     var nodeDataLabels = stdArgs.nodeDataLabels;
@@ -607,9 +638,10 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
     var thresFunc      = stdArgs.thresFunc;
     var thresVals      = stdArgs.thresVals;
     var thresLabels    = stdArgs.thresLabels;
+    var thresholdIdx   = stdArgs.thresholdIdx;
+    var numClusters    = stdArgs.numClusters;
     var onLoadFunc     = stdArgs.onLoadFunc;
-
-    var linkage      = args[1];
+    var linkage        = args[1];
 
     var numNodeData = nodeDataLabels.length;
     var numMatrices = matrixLabels  .length;
@@ -634,15 +666,13 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
       var errorMsg =  "Matrix " + matrixLabels[i] + " has invalid size ";
       
       // number of rows
-      if (matrix.length != numNodes) {
-        console.log(matrix);
+      if (matrix.length !== numNodes) {
         throw errorMsg + "(num rows: " + matrix.length + ")";
       }
 
       // number of columns in each row
       matrix.forEach(function(row) {
-        if (row.length != numNodes) {
-          console.log(row);
+        if (row.length !== numNodes) {
           throw errorMsg + "(column length " + row.length + ")";
         }
       });
@@ -650,8 +680,7 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
 
     // node data arrays
     nodeData.forEach(function(array, i) {
-      if (array.length != numNodes) {
-        console.log(array);
+      if (array.length !== numNodes) {
         throw "Node data array " + nodeDataLabels[i] + 
               " has invalid length (" + array.length + ")";
       }
@@ -667,40 +696,107 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
       thresFunc,
       thresVals,
       thresLabels,
-      0,
-      1);
+      thresholdIdx,
+      numClusters);
 
     onLoadFunc(network);
   }
 
   /*
+   * Loads all of the network data provided in the given args
+   * object. When the network data is loaded, a network is created
+   * and passed to the onLoadFunc callback function.
+   * 
+   * The args object should have the following properties:
    *
+   *   - matrices:       Required. A list of URLS pointing to 
+   *                     connectivity matrices.
+   *
+   *   - matrixLabels:   Optional. A list of labels for each of 
+   *                     the above matrices.
+   * 
+   *   - nodeData:       Optional. A list of URLS pointing to 
+   *                     1D arrays of numerical data, to be 
+   *                     associated with the nodes in the network.
+   *
+   *   - nodeDataLabls:  Optional. A list of labels for each of 
+   *                     the above arrays.
+   *
+   *   - linkage:        Optional. A N*3 array of data describing
+   *                     the dendrogram for the network - the output
+   *                     of a call to the MATLAB linkage function.
+   * 
+   *   - thumbnails:     Optional. A URL pointing to a folder in 
+   *                     which thumbnails for each node may be 
+   *                     found. Thumbnail file names must currently 
+   *                     be named according to the format "%04d.png",
+   *                     where "%04d" is the zero-indexed node index
+   *                     in the network, padded to four characters.
+   *                     
+   *   - thresFunc:      Required. A function which accepts two 
+   *                     parameters - a connectivity matrix, and a 
+   *                     list of parameters (thresVals, see below).
+   *                     This function should create and return a 
+   *                     thresholded copy of the provided matrix - 
+   *                     this thresholded matrix is used to define
+   *                     network edges.
+   *
+   *   - thresVals:      Optional. List of parameters to be passed
+   *                     to the thresFunc.
+   * 
+   *   - thresLabels:    Optional. List of labels for the above
+   *                     threshold values.
+   * 
+   *   - thresholdIdx:   Optional. Initial index of the connectivity 
+   *                     matrix used to define the network edges.
+   * 
+   *   - numClusters:    Optional. Initial number of clusters to 
+   *                     flatten the network dendrogram tree to.
    */
   function loadNetwork(args, onLoadFunc) {
 
-    var matrixUrls     = args.matrices;
-    var matrixLabels   = args.matrixLabels;
-    var nodeDataUrls   = args.nodeData;
-    var nodeDataLabels = args.nodeDataLabels;
-    var linkageUrl     = args.linkage;
-    var thumbUrl       = args.thumbnails;
-    var thresFunc      = args.thresFunc;
-    var thresVals      = args.thresVals;
-    var thresLabels    = args.thresLabels;
+    var a = args;
 
-    args.onLoadFunc = onLoadFunc;
+    a.onLoadFunc = onLoadFunc;
 
-    if (matrixUrls.length !== matrixLabels.length) {
+    if (a.matrices === undefined) 
+      throw "A list of matrices must be specified";
+
+    if (a.matrices.length === 0) 
+      throw "At least one matrix is required";
+
+    if (a.thresFunc === undefined) 
+      throw "A thresFunc must be specified";
+
+    if (a.matrixLabels === undefined) 
+      a.matrixLabels = a.matrices.slice(0);
+    
+    if (a.nodeData === undefined) 
+      a.nodeData = [];
+
+    if (a.nodeDataLabels === undefined) 
+      a.nodeDataLabels = a.nodeData.map(function(nd,i){ return "" + i;});
+
+
+    if (a.thresVals === undefined) 
+      a.thresVals = [];
+
+    if (a.thresLabels === undefined) 
+      a.thresLabels = a.thresVals.map(function(tv,i){ return "" + i;});
+
+    if (a.linkage      === undefined) a.linkage      = null;
+    if (a.thumbnails   === undefined) a.thumbnails   = null;
+    if (a.thresholdIdx === undefined) a.thresholdIdx = 0;
+    if (a.numClusters  === undefined) a.numClusters  = 1;
+
+    if (a.matrices.length !== a.matrixLabels.length) 
       throw "Matrix URL and label lengths do not match";
-    }
 
-    if (nodeDataUrls.length !== nodeDataLabels.length) {
+    if (a.nodeData.length !== a.nodeDataLabels.length) 
       throw "Node data URL and label lengths do not match";
-    }
 
-    if (thresVals.length !== thresLabels.length) {
+    if (a.thresVals.length !== a.thresLabels.length) 
       throw "Threshold value and label lengths do not match";
-    }
 
     // The qId function is an identity function 
     // which may be used to pass standard 
@@ -714,19 +810,18 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
     var q = queue();
 
     // standard arguments
-    q = q.defer(qId, args);
+    q = q.defer(qId, a);
     
     // linkage data
-    if (linkageUrl) q = q.defer(d3.text, linkageUrl);
-    else            q = q.defer(qId,     null);
+    q = q.defer(d3.text, a.linkage);
 
     // node data
-    nodeDataUrls.forEach(function(url) {
+    a.nodeData.forEach(function(url) {
       q = q.defer(d3.text, url);
     });
 
     // matrix data
-    matrixUrls.forEach(function(url) {
+    a.matrices.forEach(function(url) {
       q = q.defer(d3.text, url);
     });
 

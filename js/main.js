@@ -38,8 +38,10 @@ require(["netjs", "lib/d3"], function(netjs, d3) {
   args.linkage        =  "data/dataset2/linkages.txt";
   args.thumbnails     =  "data/dataset2/melodic_IC_sum.sum";
   args.thresFunc      = thresholdMatrix;
-  args.thresVals      = ["0.75"];
+  args.thresVals      = [0.75];
   args.thresLabels    = ["Threshold percentage"];
+  args.thresholdIdx   = 0;
+  args.numClusters    = 10;
 
   // args.matrices     = ["data/dummy/corr1.txt", "data/dummy/corr2.txt"];
   // args.matrixLabels = ["Corr1", "Corr2"];
@@ -52,15 +54,16 @@ require(["netjs", "lib/d3"], function(netjs, d3) {
 
   netjs.loadNetwork(args, function(net) {
 
-    var w = window.innerWidth - 40;
-    var h = window.innerHeight;
-
+    var w  = window.innerWidth  - 50;
+    var h  = window.innerHeight - 50;
+    var sz = Math.min(w/2.0, h);
+    
     netjs.displayNetwork(
       net, 
       "#fullNetwork",
       "#subNetwork",
       "#networkCtrl",
-      w/2.0, h, w/2.0, h);
+      sz,sz,sz,sz);
   });
 });
 
