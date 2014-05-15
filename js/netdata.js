@@ -739,10 +739,13 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
    *                     This function should create and return a 
    *                     thresholded copy of the provided matrix - 
    *                     this thresholded matrix is used to define
-   *                     network edges.
+   *                     network edges. Currently, all accepted 
+   *                     threshold  values must be between 0.0 and 
+   *                     1.0.
    *
    *   - thresVals:      Optional. List of parameters to be passed
-   *                     to the thresFunc.
+   *                     to the thresFunc. Must currently be between
+   *                     0.0 and 1.0.
    * 
    *   - thresLabels:    Optional. List of labels for the above
    *                     threshold values.

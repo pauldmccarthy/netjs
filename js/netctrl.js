@@ -2,8 +2,8 @@
  *
  */
 define(
-  ["lib/d3", "netdata", "netvis", "netvis_dynamics"], 
-  function(d3, netdata, netvis, dynamics) {
+  ["lib/d3", "lib/mustache", "netdata", "netvis", "netvis_dynamics"], 
+  function(d3, mustache, netdata, netvis, dynamics) {
 
   function createNetworkControls(
     network, div, subNetDiv, subNetWidth, subNetHeight) {
@@ -15,24 +15,45 @@ define(
     if (subNetDiv !== null)
       subNetDiv = d3.select(subNetDiv)[0][0];
 
-    d3.html("js/netctrl.html", function(error, html) {
+    d3.text("js/netctrl.html", function(error, template) {
 
-      var netctrlTable     = html.querySelector("#netctrlTable");
-      var thresholdIdx     = html.querySelector("#thresholdIdx");
-      var numClusters      = html.querySelector("#numClusters");
-      var edgeColourIdx    = html.querySelector("#edgeColourIdx");
-      var edgeWidthIdx     = html.querySelector("#edgeWidthIdx");
-      var nodeColourIdx    = html.querySelector("#nodeColourIdx");
-      var showSubNetwork   = html.querySelector("#showSubNetwork");
+      // The file netctrl.html is a mustache template.
+      // Before setting up input event handling and whatnot,
+      // we create a template data structure, and pass it 
+      // to mustache, which renders a HTML string for us.
+      var templateData = {
+        thresholdValues : network.thresholdValues.map(function(val, i) {
+          var tv = {};
+          tv.index = i;
+          tv.label = network.thresholdValueLabels[i];
+          return tv;
+        })
+      };
+
+      // Create some HTML from the template, 
+      // and put it in the control div
+      template      = mustache.render(template, templateData);
+      div.innerHTML = template;
+
+      // Now we can retrieve all of the input 
+      // /elements from the rendered HTML
+      var netctrlTable     = div.querySelector("#netctrlTable");
+      var thresholdIdx     = div.querySelector("#thresholdIdx");
+      var numClusters      = div.querySelector("#numClusters");
+      var edgeColourIdx    = div.querySelector("#edgeColourIdx");
+      var edgeWidthIdx     = div.querySelector("#edgeWidthIdx");
+      var nodeColourIdx    = div.querySelector("#nodeColourIdx");
+      var showSubNetwork   = div.querySelector("#showSubNetwork");
 
       // a button is created and inserted 
       // into the #showSubNetwork div only 
       // if a subNetDiv was specified
       var showSubNetButton = null;
 
-      // A list of number widgets are created, 
-      // one for each threshold value
-      var thresVals = null;
+      // get the input widgets for each threshold value
+      var thresholdValues = network.thresholdValues.map(function(val, i) {
+          return div.querySelector("#thresholdValue" + i);
+      });
 
       /*
        * Refreshes the network display, and the subnetwork
@@ -205,15 +226,16 @@ define(
         redraw(false);
       };
 
-      // netThresVal.onchange = function() {
-      //   netdata.setThresholdValue(network, 0, parseFloat(this.value));
-      //   if (subnet !== null) {
-      //     toggleSubNetwork(); // hide
-      //     toggleSubNetwork(); // recreate and reshow
-      //   }
-      //   redraw(false);
-      // };
-
+      thresholdValues.forEach(function(thresVal, i) {
+        thresVal.onchange = function() {
+          netdata.setThresholdValue(network, i, parseFloat(this.value));
+          if (subnet !== null) {
+            toggleSubNetwork(); // hide
+            toggleSubNetwork(); // recreate and reshow
+          }
+          redraw(false);
+        };
+      });
 
       // Set initial widget values
       thresholdIdx .selectedIndex = network.thresholdIdx;
@@ -222,7 +244,9 @@ define(
       edgeWidthIdx .selectedIndex = network.edgeWidthIdx;
       nodeColourIdx.selectedIndex = network.nodeColourIdx;
 
-      div.appendChild(html);
+      thresholdValues.forEach(function(thresVal, i) {
+        thresVal.value = network.thresholdValues[i];
+      });
     });
   }
 
