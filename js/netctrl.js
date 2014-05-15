@@ -265,7 +265,7 @@ define(
             .attr("y1",           25*i + 12.5)
             .attr("x2",           100)
             .attr("y2",           25*i + 12.5)
-            .attr("stroke",       network.scaleInfo.hltEdgeColourScale(value))
+            .attr("stroke",       "#aaaaaa")
             .attr("stroke-width", network.scaleInfo.edgeWidthScale(    value));
 
           svg.append("text")
