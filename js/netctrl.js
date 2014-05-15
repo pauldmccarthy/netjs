@@ -17,14 +17,89 @@ define(
 
     d3.html("js/netctrl.html", function(error, html) {
 
-      var netThreshold     = html.querySelector("#netThreshold");
-      var netThresVal      = html.querySelector("#netThresVal");
-      var numClustRange    = html.querySelector("#numClusts");
-      var edgeColourScale  = html.querySelector("#edgeColourScale");
-      var edgeWidthScale   = html.querySelector("#edgeWidthScale");
-      var nodeColour       = html.querySelector("#nodeColour");
-      var showSubNetButton = html.querySelector("#showSubNetwork");
+      var netctrlTable     = html.querySelector("#netctrlTable");
+      var thresholdIdx     = html.querySelector("#thresholdIdx");
+      var numClusters      = html.querySelector("#numClusters");
+      var edgeColourIdx    = html.querySelector("#edgeColourIdx");
+      var edgeWidthIdx     = html.querySelector("#edgeWidthIdx");
+      var nodeColourIdx    = html.querySelector("#nodeColourIdx");
+      var showSubNetwork   = html.querySelector("#showSubNetwork");
 
+      // a button is created and inserted 
+      // into the #showSubNetwork div only 
+      // if a subNetDiv was specified
+      var showSubNetButton = null;
+
+      // A list of number widgets are created, 
+      // one for each threshold value
+      var thresVals = null;
+
+      /*
+       * Refreshes the network display, and the subnetwork
+       * display, if redrawSubNet is true, and a subnetwork
+       * is currently being displayed.
+       */
+      function redraw(redrawSubNet) {
+
+        netvis.redrawNetwork(network);
+        dynamics.configDynamics(network);
+
+        if (redrawSubNet && subnet !== null)  {
+          netvis.redrawNetwork(subnet);
+          dynamics.configDynamics(subnet);
+        }
+      }
+
+      /*
+       * Called when the 'showSubNetwork' button
+       * is clicked. Toggles subnetwork visibility.
+       */
+      function toggleSubNetwork() {
+          
+        // a subnetwork is already 
+        // being displayed - hide it.
+        if (subnet !== null) {
+
+          netvis.clearNetwork(subnet);
+          showSubNetButton.value = "Show";
+          subnet = null;
+          return;
+        }
+        
+        // There is no node selected.
+        // Nothing to do here.
+        if (network.selectedNode === null) return;
+
+        // Extract the subnetwork for the 
+        // selected node, and display it.
+        subnet = netdata.extractSubNetwork(network, network.selectedNode.index);
+        showSubNetButton.value = "Hide";
+
+        // tweak the sub-network display a little bit
+        subnet.display = {};
+        subnet.display.DEF_THUMB_VISIBILITY = "visible";
+        subnet.display.DEF_NODE_OPACITY     = 1.0;
+        subnet.display.DEF_EDGE_WIDTH       = "scale";
+        subnet.display.DEF_THUMB_WIDTH      = 91  / 2.0;
+        subnet.display.DEF_THUMB_HEIGHT     = 109 / 2.0;
+        subnet.display.HLT_THUMB_WIDTH      = 91  / 2.0;
+        subnet.display.HLT_THUMB_HEIGHT     = 109 / 2.0;
+        subnet.display.SEL_THUMB_WIDTH      = 91  / 1.5;
+        subnet.display.SEL_THUMB_HEIGHT     = 109 / 1.5;
+
+        // share colour/scaling information between 
+        // the parent network and sub-network
+        subnet.scaleInfo = network.scaleInfo;
+
+        // display the subnetwork
+        netvis.displayNetwork(subnet, subNetDiv, subNetWidth, subNetHeight);
+        dynamics.configDynamics(subnet);
+      }
+
+      /*
+       * Called when the selected node on the full network display
+       * changes. Updates the subnetwork display accordingly.
+       */
       function changeSubNetwork(node) {
 
         // Situation the first. Subnetwork is 
@@ -48,109 +123,81 @@ define(
           toggleSubNetwork(); // redraw
         }
       }
-      dynamics.setNodeSelectCb(network, changeSubNetwork);
 
-      function toggleSubNetwork() {
+      // Register for selected node 
+      // changes on the full network
+      if (subNetDiv !== null) 
+          dynamics.setNodeSelectCb(network, changeSubNetwork);
 
-        if (subnet !== null) {
 
-          netvis.clearNetwork(subnet);
-          showSubNetButton.value = "Show";
-          subnet = null;
-          return;
-        }
-
-        if (network.selectedNode === null) return;
-        
-        showSubNetButton.value = "Hide";
-
-        subnet = netdata.extractSubNetwork(network, network.selectedNode.index);
-
-        // tweak the sub-network display a little bit
-        subnet.display = {};
-        subnet.display.DEF_THUMB_VISIBILITY = "visible";
-        subnet.display.DEF_NODE_OPACITY     = 1.0;
-        subnet.display.DEF_EDGE_WIDTH       = "scale";
-        subnet.display.DEF_THUMB_WIDTH      = 91  / 2.0;
-        subnet.display.DEF_THUMB_HEIGHT     = 109 / 2.0;
-        subnet.display.HLT_THUMB_WIDTH      = 91  / 2.0;
-        subnet.display.HLT_THUMB_HEIGHT     = 109 / 2.0;
-        subnet.display.SEL_THUMB_WIDTH      = 91  / 1.5;
-        subnet.display.SEL_THUMB_HEIGHT     = 109 / 1.5;
-
-        // share colour/scaling information between 
-        // the parent network and sub-network
-        subnet.scaleInfo = network.scaleInfo;
-
-        netvis.displayNetwork(subnet, subNetDiv, subNetWidth, subNetHeight);
-
-        dynamics.configDynamics(subnet);
-      }
-
-      function redraw(redrawSubNet) {
-        netvis.redrawNetwork(network);
-        dynamics.configDynamics(network);
-        if (redrawSubNet && subnet !== null)  {
-          netvis.redrawNetwork(subnet);
-          dynamics.configDynamics(subnet);
-        }
-      }
-
+      // Populate the thresholdIdx, edgeColourIdx 
+      // and edgeWidthIdx drop down boxes - they
+      // all contain a list of network connectivity
+      // matrices
       for (var i = 0; i < network.matrixLabels.length; i++) {
 
         var opt = document.createElement("option");
         opt.value     = "" + i;
         opt.innerHTML = network.matrixLabels[i];
 
-        edgeColourScale.appendChild(opt);
-        edgeWidthScale .appendChild(opt.cloneNode(true));
-        netThreshold   .appendChild(opt.cloneNode(true));
+        edgeColourIdx.appendChild(opt);
+        edgeWidthIdx .appendChild(opt.cloneNode(true));
+        thresholdIdx .appendChild(opt.cloneNode(true));
       }
 
-
+      // Populate the nodeColourIdx drop down 
+      // box with the node data labels
       for (var i = 0; i < network.nodeDataLabels.length; i++) {
         var opt = document.createElement("option");
         opt.value = "" + i;
         opt.innerHTML = network.nodeDataLabels[i];
-        nodeColour.appendChild(opt);
+        nodeColourIdx.appendChild(opt);
       }
 
+      // Create a show/hide button if we have been 
+      // given a div in which to display a subnetwork
 
-      numClustRange
+      if (subNetDiv !== null) {
+          showSubNetButton = document.createElement("input");
+
+          showSubNetButton.type    = "button";
+          showSubNetButton.value   = "Show";
+          showSubNetButton.onclick = toggleSubNetwork;
+          showSubNetwork.appendChild(showSubNetButton);
+      }
+
+      // Set up event handlers 
+      // on all of the widgets
+
+      numClusters
         .onchange = function() {
           netdata.setNumClusters(network, parseInt(this.value));
           redraw();
         };
 
-      edgeColourScale
+      edgeColourIdx
         .onchange = function() {
           netdata.setEdgeColourIdx(network, parseInt(this.value));
           redraw(true);
         };
 
-      edgeWidthScale
+      edgeWidthIdx
         .onchange = function() {
           netdata.setEdgeWidthIdx(network, parseInt(this.value));
           redraw(true);
         };
 
-      netThreshold.onchange = function() {
-        netdata.setThresholdMatrix(network, parseInt(this.value));
-        if (subnet !== null) {
-          toggleSubNetwork(); // hide
-          toggleSubNetwork(); // recreate and reshow
-        }
-
-        redraw(false);
-      };
-
-      nodeColour.onchange = function() {
+      nodeColourIdx.onchange = function() {
         netData.setNodeColourIdx(network.parseInt(this.value));
         redraw();
       };
 
-      netThresVal.onchange = function() {
-        netdata.setThresholdValue(network, 0, parseFloat(this.value));
+      thresholdIdx.onchange = function() {
+        netdata.setThresholdIdx(network, parseInt(this.value));
+
+        // Network thresholding has changed, meaning
+        // that the subnetwork (if displayed) needs
+        // to be regenerated.
         if (subnet !== null) {
           toggleSubNetwork(); // hide
           toggleSubNetwork(); // recreate and reshow
@@ -158,15 +205,22 @@ define(
         redraw(false);
       };
 
+      // netThresVal.onchange = function() {
+      //   netdata.setThresholdValue(network, 0, parseFloat(this.value));
+      //   if (subnet !== null) {
+      //     toggleSubNetwork(); // hide
+      //     toggleSubNetwork(); // recreate and reshow
+      //   }
+      //   redraw(false);
+      // };
 
-      netThreshold   .selectedIndex = network.thresholdIdx;
-      netThresVal    .value         = network.thresholdValues[0];
-      numClustRange  .value         = network.numClusters;
-      edgeColourScale.selectedIndex = network.edgeColourIdx;
-      edgeWidthScale .selectedIndex = network.edgeWidthIdx;
-      nodeColour     .selectedIndex = network.nodeColourIdx;
 
-      showSubNetButton.onclick = toggleSubNetwork;
+      // Set initial widget values
+      thresholdIdx .selectedIndex = network.thresholdIdx;
+      numClusters  .value         = network.numClusters;
+      edgeColourIdx.selectedIndex = network.edgeColourIdx;
+      edgeWidthIdx .selectedIndex = network.edgeWidthIdx;
+      nodeColourIdx.selectedIndex = network.nodeColourIdx;
 
       div.appendChild(html);
     });

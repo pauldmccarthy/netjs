@@ -585,7 +585,7 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
    * matrix at the specified index, and re-thresholds the 
    * network.
    */
-  function setThresholdMatrix(network, idx) {
+  function setThresholdIdx(network, idx) {
 
     if (idx < 0 || idx >= network.matrices.length) {
       throw "Matrix index out of range.";
@@ -851,14 +851,14 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
   }
 
 
-  var netdata                = {};
-  netdata.loadNetwork        = loadNetwork;
-  netdata.extractSubNetwork  = extractSubNetwork;
-  netdata.setNumClusters     = setNumClusters;
-  netdata.setEdgeWidthIdx    = setEdgeWidthIdx;
-  netdata.setEdgeColourIdx   = setEdgeColourIdx;
-  netdata.setNodeColourIdx   = setNodeColourIdx;
-  netdata.setThresholdMatrix = setThresholdMatrix;
-  netdata.setThresholdValue  = setThresholdValue;
+  var netdata               = {};
+  netdata.loadNetwork       = loadNetwork;
+  netdata.extractSubNetwork = extractSubNetwork;
+  netdata.setNumClusters    = setNumClusters;
+  netdata.setEdgeWidthIdx   = setEdgeWidthIdx;
+  netdata.setEdgeColourIdx  = setEdgeColourIdx;
+  netdata.setNodeColourIdx  = setNodeColourIdx;
+  netdata.setThresholdIdx   = setThresholdIdx;
+  netdata.setThresholdValue = setThresholdValue;
   return netdata;
 });
