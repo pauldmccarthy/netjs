@@ -37,7 +37,6 @@ define(
 
       // Now we can retrieve all of the input 
       // /elements from the rendered HTML
-      var netctrlTable     = div.querySelector("#netctrlTable");
       var thresholdIdx     = div.querySelector("#thresholdIdx");
       var numClusters      = div.querySelector("#numClusters");
       var edgeColourIdx    = div.querySelector("#edgeColourIdx");
@@ -82,7 +81,7 @@ define(
         if (subnet !== null) {
 
           netvis.clearNetwork(subnet);
-          showSubNetButton.value = "Show";
+          showSubNetButton.value = "Show subnetwork";
           subnet = null;
           return;
         }
@@ -94,7 +93,7 @@ define(
         // Extract the subnetwork for the 
         // selected node, and display it.
         subnet = netdata.extractSubNetwork(network, network.selectedNode.index);
-        showSubNetButton.value = "Hide";
+        showSubNetButton.value = "Hide subnetwork";
 
         // tweak the sub-network display a little bit
         subnet.display = {};
@@ -182,7 +181,7 @@ define(
           showSubNetButton = document.createElement("input");
 
           showSubNetButton.type    = "button";
-          showSubNetButton.value   = "Show";
+          showSubNetButton.value   = "Show subnetwork";
           showSubNetButton.onclick = toggleSubNetwork;
           showSubNetwork.appendChild(showSubNetButton);
       }

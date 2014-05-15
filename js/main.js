@@ -54,7 +54,7 @@ require(["netjs", "lib/d3"], function(netjs, d3) {
 
   netjs.loadNetwork(args, function(net) {
 
-    var w  = window.innerWidth  - 50;
+    var w  = window.innerWidth  - 200;
     var h  = window.innerHeight - 50;
     var sz = Math.min(w/2.0, h);
     
