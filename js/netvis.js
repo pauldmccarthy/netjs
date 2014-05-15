@@ -319,16 +319,18 @@ define(["lib/d3"], function(d3) {
     drawEdges(network);
   }
 
-
+  /*
+   * Redraws the given network on its pre-existing svg canvas.
+   */
   function redrawNetwork(network) {
-
-
     network.display.svg.select("#networkParentGroup").remove();
-
     displayNetwork(
       network, null, network.display.width, network.display.height);
   }
 
+  /*
+   * Deletes the SVG canvas associated with the given network.
+   */
   function clearNetwork(network) {
 
     if (!network.display) return;

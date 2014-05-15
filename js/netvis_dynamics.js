@@ -1,3 +1,8 @@
+/*
+ * Configure mouse-based interaction with a network display.
+ *
+ * Author: Paul McCarthy <pauldmccarthy@gmail.com>
+ */
 define(["lib/d3", "netvis"], function(d3, netvis) {
 
   function configNodeDynamics(network) {
