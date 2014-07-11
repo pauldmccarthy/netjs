@@ -31,29 +31,29 @@ require(["netjs", "lib/d3"], function(netjs, d3) {
   }
 
   var args            = {};
-  args.matrices       = ["data/clustertest/Znet1.txt", "data/clustertest/Znet2.txt"];
-  args.matrixLabels   = ["Znet1", "Znet2"];
-  args.nodeData       = ["data/clustertest/clusters.txt"];
-  args.nodeDataLabels = ["Cluster number"];
-  args.linkage        =  "data/clustertest/linkages.txt";
-  args.thumbnails     =  "data/clustertest/melodic_IC_sum.sum";
-  args.thresFunc      = thresholdMatrix;
-  args.thresVals      = [0.75];
-  args.thresLabels    = ["Threshold percentage"];
-  args.thresholdIdx   = 0;
-  args.numClusters    = 16;
-
-  // args.matrices       = ["data/dummy/corr1.txt", "data/dummy/corr2.txt"];
-  // args.matrixLabels   = ["Corr1", "Corr2"];
-  // args.nodeData       = ["data/dummy/clusters.txt"];
+  // args.matrices       = ["data/clustertest/Znet1.txt", "data/clustertest/Znet2.txt"];
+  // args.matrixLabels   = ["Znet1", "Znet2"];
+  // args.nodeData       = ["data/clustertest/clusters.txt"];
   // args.nodeDataLabels = ["Cluster number"];
-  // args.linkage        =  "data/dummy/linkages.txt";
-  // args.thumbnails     =  "data/dummy/thumbnails";
+  // args.linkage        =  "data/clustertest/linkages.txt";
+  // args.thumbnails     =  "data/clustertest/melodic_IC_sum.sum";
   // args.thresFunc      = thresholdMatrix;
   // args.thresVals      = [0.75];
-  // args.thresLabels    = ["Thres perc"];
+  // args.thresLabels    = ["Threshold percentage"];
   // args.thresholdIdx   = 0;
-  // args.numClusters    = 4;
+  // args.numClusters    = 16;
+
+  args.matrices       = ["data/dataset1/Znet1.txt", "data/dataset1/Znet2.txt"];
+  args.matrixLabels   = ["Corr1", "Corr2"];
+  args.nodeData       = ["data/dataset1/clusters.txt"];
+  args.nodeDataLabels = ["Cluster number"];
+  args.linkage        =  "data/dataset1/linkages.txt";
+  args.thumbnails     =  "data/dataset1/melodic_IC_sum.sum";
+  args.thresFunc      = thresholdMatrix;
+  args.thresVals      = [0.75];
+  args.thresLabels    = ["Thres perc"];
+  args.thresholdIdx   = 0;
+  args.numClusters    = 10;
 
   netjs.loadNetwork(args, function(net) {
 
