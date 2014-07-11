@@ -188,15 +188,15 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
     while (clusters.length > maxClusters) {
 
       // Identify the cluster with the minimum 
-      // distance  between its children
-      distances = clusters.map(function(clust) {return clust.distance;});
-      minIdx    = distances.indexOf(d3.min(distances));
+      // distance between its children
+      var distances = clusters.map(function(clust) {return clust.distance;});
+      var minIdx    = distances.indexOf(d3.min(distances));
 
-      clust         = clusters[minIdx];
-      parent        = clust.parent;
-      children      = clust.children;
-      clustChildIdx = parent.children.indexOf(clust);
-      clustTreeIdx  = network.treeNodes.indexOf(clust);
+      var clust         = clusters[minIdx];
+      var parent        = clust.parent;
+      var children      = clust.children;
+      var clustChildIdx = parent.children.indexOf(clust);
+      var clustTreeIdx  = network.treeNodes.indexOf(clust);
       
       // Squeeze that cluster node out of the 
       // tree, by attaching its children to its 
@@ -205,6 +205,13 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
       network.treeNodes.splice(clustTreeIdx,  1);
 
       children.forEach(function(child) {
+
+        if (child.isLeaf) {
+          var leafIdx = network.treeNodes.indexOf(child);
+          network.treeNodes.splice(leafIdx, 1); 
+          child = child.children[0];
+        }
+
         child.parent = parent;
         parent.children.push(child);
       });
@@ -228,27 +235,42 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
     var numNodes  = network.nodes.length;
     var treeNodes = [];
 
+    var leafNodes = network.nodes.map(function(node, i) {
+      var leafNode      = {};
+      leafNode.isLeaf   = true;
+      leafNode.index    = numNodes + linkages.length + i;
+      leafNode.children = [node];
+      node.parent       = leafNode;
+
+      return leafNode;
+    });
+
     for (var i = 0; i < linkages.length; i++) {
       var treeNode = {};
-      var left     = linkages[i][0];
-      var right    = linkages[i][1];
+      var leftIdx  = linkages[i][0];
+      var rightIdx = linkages[i][1];
+      var left;
+      var right;
 
-      if (left  > numNodes) left  = treeNodes[    left  - 1 - numNodes];
-      else                  left  = network.nodes[left  - 1];
-      if (right > numNodes) right = treeNodes[    right - 1 - numNodes];
-      else                  right = network.nodes[right - 1];
+      if (leftIdx  > numNodes) left  = treeNodes[leftIdx  - 1 - numNodes];
+      else                     left  = leafNodes[leftIdx  - 1];
+      if (rightIdx > numNodes) right = treeNodes[rightIdx - 1 - numNodes];
+      else                     right = leafNodes[rightIdx - 1];
 
       left .parent = treeNode;
       right.parent = treeNode;
 
       treeNode.children = [left, right];
       treeNode.distance = linkages[i][2];
-      treeNode.index = i + numNodes;
+      treeNode.index    = i + numNodes;
+
+      if (left .isLeaf) left .distance = linkages[i][2];
+      if (right.isLeaf) right.distance = linkages[i][2];
 
       treeNodes.push(treeNode);
     }
 
-    network.treeNodes = treeNodes;
+    network.treeNodes = leafNodes.concat(treeNodes);
   }
 
   /*
