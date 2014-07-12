@@ -31,18 +31,6 @@ require(["netjs", "lib/d3"], function(netjs, d3) {
   }
 
   var args            = {};
-  // args.matrices       = ["data/clustertest/Znet1.txt", "data/clustertest/Znet2.txt"];
-  // args.matrixLabels   = ["Znet1", "Znet2"];
-  // args.nodeData       = ["data/clustertest/clusters.txt"];
-  // args.nodeDataLabels = ["Cluster number"];
-  // args.linkage        =  "data/clustertest/linkages.txt";
-  // args.thumbnails     =  "data/clustertest/melodic_IC_sum.sum";
-  // args.thresFunc      = thresholdMatrix;
-  // args.thresVals      = [0.75];
-  // args.thresLabels    = ["Threshold percentage"];
-  // args.thresholdIdx   = 0;
-  // args.numClusters    = 10;
-
   args.matrices       = ["data/dataset2/Znet1.txt", "data/dataset2/Znet2.txt"];
   args.matrixLabels   = ["Corr1", "Corr2"];
   args.nodeData       = ["data/dataset2/clusters.txt"];
