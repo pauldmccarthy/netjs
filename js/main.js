@@ -41,14 +41,14 @@ require(["netjs", "lib/d3"], function(netjs, d3) {
   // args.thresVals      = [0.75];
   // args.thresLabels    = ["Threshold percentage"];
   // args.thresholdIdx   = 0;
-  // args.numClusters    = 16;
+  // args.numClusters    = 10;
 
-  args.matrices       = ["data/dataset1/Znet1.txt", "data/dataset1/Znet2.txt"];
+  args.matrices       = ["data/dataset2/Znet1.txt", "data/dataset2/Znet2.txt"];
   args.matrixLabels   = ["Corr1", "Corr2"];
-  args.nodeData       = ["data/dataset1/clusters.txt"];
+  args.nodeData       = ["data/dataset2/clusters.txt"];
   args.nodeDataLabels = ["Cluster number"];
-  args.linkage        =  "data/dataset1/linkages.txt";
-  args.thumbnails     =  "data/dataset1/melodic_IC_sum.sum";
+  args.linkage        =  "data/dataset2/linkages.txt";
+  args.thumbnails     =  "data/dataset2/melodic_IC_sum.sum";
   args.thresFunc      = thresholdMatrix;
   args.thresVals      = [0.75];
   args.thresLabels    = ["Thres perc"];

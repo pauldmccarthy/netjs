@@ -52,7 +52,7 @@ define(["lib/d3"], function(d3) {
   visDefaults.DEF_NODE_SIZE    = 3;
   visDefaults.HLT_NODE_SIZE    = 3;
   visDefaults.SEL_NODE_SIZE    = 5;
-  visDefaults.DEF_NODE_OPACITY = 0.2;
+  visDefaults.DEF_NODE_OPACITY = 0.6;
   visDefaults.HLT_NODE_OPACITY = 1.0;
   visDefaults.SEL_NODE_OPACITY = 1.0;
 
