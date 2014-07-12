@@ -189,7 +189,12 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
 
       // Identify the cluster with the minimum 
       // distance between its children
-      var distances = clusters.map(function(clust) {return clust.distance;});
+      var distances = clusters.map(function(clust) {
+
+        // the root node has no parent
+        if (clust.parent) return clust.parent.distance;
+        else              return Number.MAX_VALUE;
+      });
       var minIdx    = distances.indexOf(d3.min(distances));
 
       var clust         = clusters[minIdx];
@@ -205,12 +210,6 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
       network.treeNodes.splice(clustTreeIdx,  1);
 
       children.forEach(function(child) {
-
-        if (child.isLeaf) {
-          var leafIdx = network.treeNodes.indexOf(child);
-          network.treeNodes.splice(leafIdx, 1); 
-          child = child.children[0];
-        }
 
         child.parent = parent;
         parent.children.push(child);
@@ -235,9 +234,9 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
     var numNodes  = network.nodes.length;
     var treeNodes = [];
 
+    // Create a dummy leaf node for every node in the network
     var leafNodes = network.nodes.map(function(node, i) {
       var leafNode      = {};
-      leafNode.isLeaf   = true;
       leafNode.index    = numNodes + linkages.length + i;
       leafNode.children = [node];
       node.parent       = leafNode;
@@ -263,9 +262,6 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
       treeNode.children = [left, right];
       treeNode.distance = linkages[i][2];
       treeNode.index    = i + numNodes;
-
-      if (left .isLeaf) left .distance = linkages[i][2];
-      if (right.isLeaf) right.distance = linkages[i][2];
 
       treeNodes.push(treeNode);
     }
