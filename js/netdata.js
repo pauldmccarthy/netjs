@@ -354,13 +354,9 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
     }
 
     // Create a dummy dendrogram with a single cluster
-    var root = {};
-    root.index    = subnet.nodes.length;
-    root.children = subnet.nodes;
-    subnet.nodes.forEach(function(node) {node.parent = root;});
-    subnet.treeNodes = [root];
-
-    // save a reference to the parent network
+    setNumClusters(subnet, 1);
+      
+    // save a reference to the parent network?
     // subnet.parentNetwork = network;
 
     return subnet;
@@ -376,7 +372,16 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
    */
   function setNumClusters(network, numClusts) {
 
-    if (network.linkage === null) return;
+    if (network.linkage === null) {
+          
+      // Create a dummy dendrogram with a single cluster
+      var root = {};
+      root.index    = network.nodes.length;
+      root.children = network.nodes;
+      network.nodes.forEach(function(node) {node.parent = root;});
+      network.treeNodes = [root];
+      return;
+    }
 
     // generate a tree of dummy nodes from 
     // the dendrogram in the linkages data
@@ -834,7 +839,8 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
     q = q.defer(qId, a);
     
     // linkage data
-    q = q.defer(d3.text, a.linkage);
+    if (a.linkage !== null) q = q.defer(d3.text, a.linkage);
+    else                    q = q.defer(qId,     a.linkage);
 
     // node data
     a.nodeData.forEach(function(url) {
