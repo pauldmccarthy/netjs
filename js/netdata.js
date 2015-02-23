@@ -10,7 +10,7 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
    * network, and attaches them as attributes of the given 
    * scaleInfo object.
    *
-   * It is assumed that the network object has the following 
+   * It is assumed that the scaleInfo object already has the following 
    * properties:
    *
    *   - edgeWidthIdx:  Index of the edge weight to be used
@@ -145,7 +145,7 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
    
     scaleInfo.edgeWidth = function(edge) {
       return scaleInfo.edgeWidthScale(
-        edge.weights[sclaeInfo.edgeWidthIdx]);
+        edge.weights[scaleInfo.edgeWidthIdx]);
     };
 
     scaleInfo.pathWidth = function(path) {
@@ -551,8 +551,8 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
     // create scale information for 
     // colouring/scaling nodes and edges
     var scaleInfo = {};
-    scaleInfo.edgeWidthIdx  = 0;
-    scaleInfo.edgeColourIdx = 0;
+    scaleInfo.edgeWidthIdx  = thresholdIdx;
+    scaleInfo.edgeColourIdx = thresholdIdx;
     scaleInfo.nodeColourIdx = 0;
 
     genColourScales(network, scaleInfo);
@@ -599,7 +599,7 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
     if (idx < 0 || idx >= network.nodeDataLabels.length) {
       throw "Node data index out of range."
     }
-    network.nodeColourIdx = idx;
+    network.scaleInfo.nodeColourIdx = idx;
     genColourScales(network, network.scaleInfo);
   }
 

@@ -335,9 +335,9 @@ define(
       // Set initial widget values
       thresholdIdx .selectedIndex = network.thresholdIdx;
       numClusters  .value         = network.numClusters;
-      edgeColourIdx.selectedIndex = network.edgeColourIdx;
-      edgeWidthIdx .selectedIndex = network.edgeWidthIdx;
-      nodeColourIdx.selectedIndex = network.nodeColourIdx;
+      edgeColourIdx.selectedIndex = network.scaleInfo.edgeColourIdx;
+      edgeWidthIdx .selectedIndex = network.scaleInfo.edgeWidthIdx;
+      nodeColourIdx.selectedIndex = network.scaleInfo.nodeColourIdx;
 
       thresholdValues.forEach(function(thresVal, i) {
         thresVal.value = network.thresholdValues[i];
