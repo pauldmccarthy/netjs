@@ -48,11 +48,12 @@ define(
       var edgeWidthLegend  = div.querySelector("#edgeWidthLegend");
       var nodeColourIdx    = div.querySelector("#nodeColourIdx");
       var showSubNetwork   = div.querySelector("#showSubNetwork");
+      var highlightNetwork = div.querySelector("#highlightNetwork");
 
-      // a button is created and inserted 
+      // a checkbox is created and inserted 
       // into the #showSubNetwork div only 
       // if a subNetDiv was specified
-      var showSubNetButton = null;
+      var showSubNetworkCtrl = null;
 
       // get the input widgets for each threshold value
       var thresholdValues = network.thresholdValues.map(function(val, i) {
@@ -76,29 +77,35 @@ define(
       }
 
       /*
-       * Called when the 'showSubNetwork' button
-       * is clicked. Toggles subnetwork visibility.
+       * Shows/hides subnetwork visibility. 
        */
       function toggleSubNetwork() {
-          
-        // a subnetwork is already 
-        // being displayed - hide it.
-        if (subnet !== null) {
 
+        // clear any previously 
+        // displayed subnetwork
+        if (subnet !== null) {
           netvis.clearNetwork(subnet);
-          showSubNetButton.value = "Show subnetwork";
           subnet = null;
-          return;
         }
-        
+
+        // There is no subnetwork div, so
+        // we cannot display a subnetwork
+        if (showSubNetworkCtrl === null)
+          return;
+
+        // Subnetwork display is 
+        // currently disabled
+        if (!(showSubNetworkCtrl.checked))
+          return;
+
         // There is no node selected.
         // Nothing to do here.
-        if (network.selectedNode === null) return;
+        if (network.selectedNode === null)
+          return;
 
         // Extract the subnetwork for the 
         // selected node, and display it.
         subnet = netdata.extractSubNetwork(network, network.selectedNode.index);
-        showSubNetButton.value = "Hide subnetwork";
 
         // tweak the sub-network display a little bit
         subnet.display = {};
@@ -121,38 +128,15 @@ define(
         dynamics.configDynamics(subnet);
       }
 
-      /*
-       * Called when the selected node on the full network display
-       * changes. Updates the subnetwork display accordingly.
-       */
-      function changeSubNetwork(node) {
+      function toggleHighlightNetwork() {
 
-        // Situation the first. Subnetwork is 
-        // not being displayed. Do nothing.
-        if (subnet === null) 
-          return;
-
-        // Situation the second. A subnetwork
-        // is being displayed, and the selected
-        // node has been cleared. Clear the 
-        // subnetwork display
-        if (node === null && subnet !== null)
-          toggleSubNetwork();
-
-        // Situation the third. A subnetwork 
-        // is being displayed, and a new node
-        // has been selected. Show the new
-        // subnetwork.
-        else {
-          toggleSubNetwork(); // hide
-          toggleSubNetwork(); // redraw
-        }
+        console.log("toggleHighlightNetwork");
       }
 
       // Register for selected node 
       // changes on the full network
       if (subNetDiv !== null) 
-          dynamics.setNodeSelectCb(network, changeSubNetwork);
+          dynamics.setNodeSelectCb(network, toggleSubNetwork);
 
       // Populate the thresholdIdx, edgeColourIdx 
       // and edgeWidthIdx drop down boxes - they
@@ -178,17 +162,6 @@ define(
         nodeColourIdx.appendChild(opt);
       }
 
-      // Create a show/hide button if we have been 
-      // given a div in which to display a subnetwork
-
-      if (subNetDiv !== null) {
-          showSubNetButton = document.createElement("input");
-
-          showSubNetButton.type    = "button";
-          showSubNetButton.value   = "Show subnetwork";
-          showSubNetButton.onclick = toggleSubNetwork;
-          showSubNetwork.appendChild(showSubNetButton);
-      }
 
       /*
        * Draw a colour bar showing the edge colour range
@@ -314,30 +287,38 @@ define(
         // Network thresholding has changed, meaning
         // that the subnetwork (if displayed) needs
         // to be regenerated.
-        if (subnet !== null) {
-          toggleSubNetwork(); // hide
-          toggleSubNetwork(); // recreate and reshow
-        }
+        toggleSubNetwork(); // recreate and reshow
         redraw(false);
       };
 
       thresholdValues.forEach(function(thresVal, i) {
         thresVal.onchange = function() {
           netdata.setThresholdValue(network, i, parseFloat(this.value));
-          if (subnet !== null) {
-            toggleSubNetwork(); // hide
-            toggleSubNetwork(); // recreate and reshow
-          }
+          toggleSubNetwork(); // recreate and reshow
           redraw(false);
         };
       });
 
+      // Create a show/hide button if we have been 
+      // given a div in which to display a subnetwork
+      if (subNetDiv !== null) {
+        showSubNetworkCtrl = document.createElement("input");
+
+        showSubNetworkCtrl.type     = "checkbox";
+        showSubNetworkCtrl.checked  = false;
+        showSubNetworkCtrl.onchange = toggleSubNetwork;
+        showSubNetwork.appendChild(showSubNetworkCtrl);
+      }      
+
+      highlightNetwork.onchange = toggleHighlightNetwork;
+
       // Set initial widget values
-      thresholdIdx .selectedIndex = network.thresholdIdx;
-      numClusters  .value         = network.numClusters;
-      edgeColourIdx.selectedIndex = network.scaleInfo.edgeColourIdx;
-      edgeWidthIdx .selectedIndex = network.scaleInfo.edgeWidthIdx;
-      nodeColourIdx.selectedIndex = network.scaleInfo.nodeColourIdx;
+      thresholdIdx    .selectedIndex = network.thresholdIdx;
+      numClusters     .value         = network.numClusters;
+      edgeColourIdx   .selectedIndex = network.scaleInfo.edgeColourIdx;
+      edgeWidthIdx    .selectedIndex = network.scaleInfo.edgeWidthIdx;
+      nodeColourIdx   .selectedIndex = network.scaleInfo.nodeColourIdx;
+      highlightNetwork.value         = false;
 
       thresholdValues.forEach(function(thresVal, i) {
         thresVal.value = network.thresholdValues[i];
