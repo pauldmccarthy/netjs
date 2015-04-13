@@ -77,7 +77,10 @@ define(
       }
 
       /*
-       * Shows/hides subnetwork visibility. 
+       * Shows/hides/refreshes the subnetwork display. 
+       *
+       * Called when the 'showSubNetwork' checkbox is clicked, and 
+       * when the subnetwork display needs to be refreshed.
        */
       function toggleSubNetwork() {
 
@@ -123,45 +126,87 @@ define(
         // the parent network and sub-network
         subnet.scaleInfo = network.scaleInfo;
 
+        // Apply highlighting, but don't redraw, as
+        // the subnetwork has not been displayed yet
+        toggleHighlightNetwork(undefined, false);
+
         // display the subnetwork
         netvis.displayNetwork(subnet, subNetDiv, subNetWidth, subNetHeight);
         dynamics.configDynamics(subnet);
       }
 
-      function toggleHighlightNetwork() {
+      /*
+       * Called when the 'highlightNetwork' checkbox is clicked.
+       * Enables/disables some 'highlighted' visibility options.
+       *
+       * If the draw parameter is true (the default), the 
+       * network (and subnetwork) display will be redrawn.
+       */
+      function toggleHighlightNetwork(ev, draw) {
 
-        console.log("toggleHighlightNetwork");
+        if (typeof draw === "undefined") {
+          draw = true;
+        }
+
+        // These functions only show nodes/thumbnails/labels
+        // in highlighted state if they have at least one
+        // adjacent edge
+        var highlightThumbVis = function(node) {
+          if (node.neighbours.length == 0)
+            return netvis.visDefaults.DEF_THUMB_VISIBILITY;
+          else
+            return netvis.visDefaults.HLT_THUMB_VISIBILITY;
+        };
+
+        var highlightNodeOpacity = function(node) {
+          if (node.neighbours.length == 0)
+            return netvis.visDefaults.DEF_NODE_OPACITY;
+          else
+            return netvis.visDefaults.HLT_NODE_OPACITY;
+        }; 
+
+        var highlightLabelWeight = function(node) {
+          if (node.neighbours.length == 0)
+            return netvis.visDefaults.DEF_LABEL_WEIGHT;
+          else
+            return netvis.visDefaults.HLT_LABEL_WEIGHT;
+        };
+
+        var displays = [network.display];
+
+        if (subnet !== null) {
+          displays.push(subnet.display);
+        }
+
+        for (var i = 0; i < displays.length; i++) {
+          
+          var d = displays[i];
+          if (highlightNetwork.checked) {
+            
+            d.DEF_THUMB_VISIBILITY = highlightThumbVis;
+            d.DEF_THUMB_WIDTH      = netvis.visDefaults.SEL_THUMB_WIDTH;
+            d.DEF_THUMB_HEIGHT     = netvis.visDefaults.SEL_THUMB_HEIGHT;
+            d.DEF_EDGE_COLOUR      = netvis.visDefaults.HLT_EDGE_COLOUR;
+            d.DEF_EDGE_OPACITY     = netvis.visDefaults.HLT_EDGE_OPACITY;
+            d.DEF_EDGE_WIDTH       = netvis.visDefaults.HLT_EDGE_WIDTH;
+            d.DEF_NODE_OPACITY     = highlightNodeOpacity;
+            d.DEF_LABEL_WEIGHT     = highlightLabelWeight;
+          }
+          else {
+            d.DEF_THUMB_VISIBILITY = netvis.visDefaults.DEF_THUMB_VISIBILITY;
+            d.DEF_THUMB_WIDTH      = netvis.visDefaults.DEF_THUMB_WIDTH;
+            d.DEF_THUMB_HEIGHT     = netvis.visDefaults.DEF_THUMB_HEIGHT; 
+            d.DEF_EDGE_COLOUR      = netvis.visDefaults.DEF_EDGE_COLOUR;
+            d.DEF_EDGE_OPACITY     = netvis.visDefaults.DEF_EDGE_OPACITY;
+            d.DEF_EDGE_WIDTH       = netvis.visDefaults.DEF_EDGE_WIDTH;
+            d.DEF_NODE_OPACITY     = netvis.visDefaults.DEF_NODE_OPACITY;
+            d.DEF_LABEL_WEIGHT     = netvis.visDefaults.DEF_LABEL_WEIGHT;
+          }
+        }
+
+        if (draw)
+          redraw(true);
       }
-
-      // Register for selected node 
-      // changes on the full network
-      if (subNetDiv !== null) 
-          dynamics.setNodeSelectCb(network, toggleSubNetwork);
-
-      // Populate the thresholdIdx, edgeColourIdx 
-      // and edgeWidthIdx drop down boxes - they
-      // all contain a list of network connectivity
-      // matrices
-      for (var i = 0; i < network.matrixLabels.length; i++) {
-
-        var opt = document.createElement("option");
-        opt.value     = "" + i;
-        opt.innerHTML = network.matrixLabels[i];
-
-        edgeColourIdx.appendChild(opt);
-        edgeWidthIdx .appendChild(opt.cloneNode(true));
-        thresholdIdx .appendChild(opt.cloneNode(true));
-      }
-
-      // Populate the nodeColourIdx drop down 
-      // box with the node data labels
-      for (var i = 0; i < network.nodeDataLabels.length; i++) {
-        var opt = document.createElement("option");
-        opt.value = "" + i;
-        opt.innerHTML = network.nodeDataLabels[i];
-        nodeColourIdx.appendChild(opt);
-      }
-
 
       /*
        * Draw a colour bar showing the edge colour range
@@ -250,6 +295,36 @@ define(
         });
       }
 
+
+      // Register for selected node 
+      // changes on the full network
+      if (subNetDiv !== null) 
+          dynamics.setNodeSelectCb(network, toggleSubNetwork);
+
+      // Populate the thresholdIdx, edgeColourIdx 
+      // and edgeWidthIdx drop down boxes - they
+      // all contain a list of network connectivity
+      // matrices
+      for (var i = 0; i < network.matrixLabels.length; i++) {
+
+        var opt = document.createElement("option");
+        opt.value     = "" + i;
+        opt.innerHTML = network.matrixLabels[i];
+
+        edgeColourIdx.appendChild(opt);
+        edgeWidthIdx .appendChild(opt.cloneNode(true));
+        thresholdIdx .appendChild(opt.cloneNode(true));
+      }
+
+      // Populate the nodeColourIdx drop down 
+      // box with the node data labels
+      for (var i = 0; i < network.nodeDataLabels.length; i++) {
+        var opt = document.createElement("option");
+        opt.value = "" + i;
+        opt.innerHTML = network.nodeDataLabels[i];
+        nodeColourIdx.appendChild(opt);
+      }      
+
       drawEdgeColourBar();
       drawEdgeWidthLegend();
 
@@ -259,7 +334,7 @@ define(
       numClusters
         .onchange = function() {
           netdata.setNumClusters(network, parseInt(this.value));
-          redraw();
+          redraw(false);
         };
 
       edgeColourIdx
@@ -278,7 +353,7 @@ define(
 
       nodeColourIdx.onchange = function() {
         netData.setNodeColourIdx(network.parseInt(this.value));
-        redraw();
+        redraw(true);
       };
 
       thresholdIdx.onchange = function() {
