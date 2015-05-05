@@ -679,7 +679,9 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
     nodeData = nodeData.map(parseTextMatrix);
 
     // node data should be 1D arrays
-    nodeData = nodeData.map(function(array) {return array[0];});
+    nodeData = nodeData.map(function(array) {
+      return array.reduce(function(a, b) {return a.concat(b);});
+    });
 
     // check all data arrays to ensure 
     // they are of compatible lengths
