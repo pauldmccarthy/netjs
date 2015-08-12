@@ -39,16 +39,17 @@ define(
       div.innerHTML = template;
 
       // Now we can retrieve all of the input 
-      // /elements from the rendered HTML
-      var thresholdIdx     = div.querySelector("#thresholdIdx");
-      var numClusters      = div.querySelector("#numClusters");
-      var edgeColourIdx    = div.querySelector("#edgeColourIdx");
-      var edgeColourBar    = div.querySelector("#edgeColourBar");
-      var edgeWidthIdx     = div.querySelector("#edgeWidthIdx");
-      var edgeWidthLegend  = div.querySelector("#edgeWidthLegend");
-      var nodeColourIdx    = div.querySelector("#nodeColourIdx");
-      var showSubNetwork   = div.querySelector("#showSubNetwork");
-      var highlightNetwork = div.querySelector("#highlightNetwork");
+      // elements from the rendered HTML
+      var thresholdIdx      = div.querySelector("#thresholdIdx");
+      var numClusters       = div.querySelector("#numClusters");
+      var edgeColourIdx     = div.querySelector("#edgeColourIdx");
+      var edgeColourBar     = div.querySelector("#edgeColourBar");
+      var edgeWidthIdx      = div.querySelector("#edgeWidthIdx");
+      var edgeWidthLegend   = div.querySelector("#edgeWidthLegend");
+      var nodeColourIdx     = div.querySelector("#nodeColourIdx");
+      var showSubNetwork    = div.querySelector("#showSubNetwork");
+      var highlightNetwork  = div.querySelector("#highlightNetwork");
+      var pruneDisconnected = div.querySelector("#pruneDisconnected");
 
       // a checkbox is created and inserted 
       // into the #showSubNetwork div only 
@@ -206,6 +207,13 @@ define(
 
         if (draw)
           redraw(true);
+      }
+
+      function togglePruneDisconnected() {
+
+        var state = pruneDisconnected.checked;
+        netdata.setPruningState(network, state);
+        redraw(false);
       }
 
       /*
@@ -385,15 +393,17 @@ define(
         showSubNetwork.appendChild(showSubNetworkCtrl);
       }      
 
-      highlightNetwork.onchange = toggleHighlightNetwork;
+      highlightNetwork .onchange = toggleHighlightNetwork;
+      pruneDisconnected.onchange = togglePruneDisconnected;
 
       // Set initial widget values
-      thresholdIdx    .selectedIndex = network.thresholdIdx;
-      numClusters     .value         = network.numClusters;
-      edgeColourIdx   .selectedIndex = network.scaleInfo.edgeColourIdx;
-      edgeWidthIdx    .selectedIndex = network.scaleInfo.edgeWidthIdx;
-      nodeColourIdx   .selectedIndex = network.scaleInfo.nodeColourIdx;
-      highlightNetwork.value         = false;
+      thresholdIdx     .selectedIndex = network.thresholdIdx;
+      numClusters      .value         = network.numClusters;
+      edgeColourIdx    .selectedIndex = network.scaleInfo.edgeColourIdx;
+      edgeWidthIdx     .selectedIndex = network.scaleInfo.edgeWidthIdx;
+      nodeColourIdx    .selectedIndex = network.scaleInfo.nodeColourIdx;
+      highlightNetwork .value         = false;
+      pruneDisconnected.value         = network.prune;
 
       thresholdValues.forEach(function(thresVal, i) {
         thresVal.value = network.thresholdValues[i];

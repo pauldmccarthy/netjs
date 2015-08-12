@@ -81,10 +81,24 @@ define(["lib/d3"], function(d3) {
     // network dendrogram. These nodes are not displayed, but their
     // locations are used to determine the path splines used to
     // display edges (see the drawEdges function).
-    var clusterLayout  = d3.layout.cluster().size([360, radius-110]);
+      
+    function sep(a, b) {
+      return a.parent == b.parent ? 1 : 1.5;
+    }
+
+    var clusterLayout  = d3.layout.cluster()
+      .size([360, radius-110])
+        .separation(sep);
+      
     var rootNode       = network.treeNodes[network.treeNodes.length - 1];
     var clusteredNodes = clusterLayout.nodes(rootNode);
-    var leafNodes      = network.nodes;
+
+    // If network pruning is enabled, pruned nodes
+    // will not have a parent - remove these nodes.
+    // See netdata.js:pruneDendrogramTree.
+    var leafNodes      = network.nodes.filter(function (n) {
+      return n.parent !== null;
+    });
 
     // Position nodes in a big circle.
     function positionNode(node) {
@@ -133,7 +147,7 @@ define(["lib/d3"], function(d3) {
     // Draw the nodes
     network.display.svgNodes
       .selectAll("circle")
-      .data(network.nodes)
+      .data(leafNodes)
       .enter()
       .append("circle")
       .attr("class",     nodeClasses)
@@ -145,7 +159,7 @@ define(["lib/d3"], function(d3) {
     // Draw the node labels
     network.display.svgNodeLabels
       .selectAll("text")
-      .data(network.nodes)
+      .data(leafNodes)
       .enter()
       .append("text")
       .attr("class",        nodeClasses)
@@ -162,7 +176,7 @@ define(["lib/d3"], function(d3) {
     // Draw the node thumbnails 
     network.display.svgThumbnails
       .selectAll("image")
-      .data(network.nodes)
+      .data(leafNodes)
       .enter()
       .append("image")
       .attr("class",       nodeClasses)

@@ -170,6 +170,7 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
     function getClusters() {
 
       var allClusts  = network.nodes.map(function(node) {return node.parent;});
+      allClusts      = allClusts.filter(function(n) { return n !== null; } );
       var uniqClusts = [];
 
       for (var i = 0; i < allClusts.length; i++) {
@@ -217,6 +218,68 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
 
       // Update the cluster list
       clusters = getClusters();
+    }
+  }
+
+  /*
+   * This function is called by the setNumClusters function. All Any nodes
+   * which are disconnected (have no neighbours) are removed from the 
+   * dendrogram tree. The nodes are kept in the network, but their 
+   * 'parent' attribute is set to null.
+   */
+  function pruneDendrogramTree(network) {
+
+    if (!network.pruningState) 
+      return
+
+    var nodes     = network.nodes;
+    var treeNodes = network.treeNodes;
+
+    // Removes the specified node 
+    // from the dendrogram tree.
+    function removeFromTree(n) {
+
+      // we've reached the root node
+      if (n.parent === undefined) {
+        return;
+      }
+
+      var parent  = n.parent;
+      var nIdx    = parent.children.indexOf(n);
+      var treeIdx = treeNodes      .indexOf(n);
+
+      if (nIdx    > -1) parent.children.splice(nIdx,    1);
+      if (treeIdx > -1) treeNodes      .splice(treeIdx, 1);
+
+      // If this node had no siblings, 
+      // then remove its parent too.
+      if (parent.children.length === 0) {
+        removeFromTree(parent);
+      }
+    }
+
+    // Search all the real nodes in the network,
+    // and remove any disconnected ones from the
+    // dendrogram tree.
+    for (var i = 0; i < nodes.length; i++) {
+
+      if (nodes[i].neighbours.length == 0) {
+
+        var node     = nodes[i];
+        var leafNode = node.parent;
+        var nIdx     = leafNode.children.indexOf(node);
+
+        // set the node parent to null -
+        // this is detected by the
+        // netvis.drawNodes function
+        node.parent  = null;
+
+        // remove the node from its
+        // parent's list of children
+        leafNode.children.splice(nIdx, 1);
+
+        removeFromTree(leafNode);
+      }
     }
   }
 
@@ -377,9 +440,15 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
       // Create a dummy dendrogram with a single cluster
       var root = {};
       root.index    = network.nodes.length;
-      root.children = network.nodes;
+      // Make sure we take a copy of the
+      // nodes array for the root node's
+      // children, as the root node children
+      // might be modified
+      root.children = network.nodes.slice();
       network.nodes.forEach(function(node) {node.parent = root;});
       network.treeNodes = [root];
+
+      pruneDendrogramTree(network);
       return;
     }
 
@@ -387,9 +456,18 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
     // the dendrogram in the linkages data
     makeNetworkDendrogramTree(network, network.linkage);
 
+    // Remove any disconnected nodes
+    pruneDendrogramTree(network);
+
     // flatten the tree to the specified number of clusters
     flattenDendrogramTree(network, numClusts);
+      
     network.numClusters = numClusts;
+  }
+
+  function setPruningState(network, prune) {
+    network.pruningState = prune;
+    setNumClusters(network, network.numClusters);
   }
 
   /*
@@ -538,6 +616,7 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
     network.thresholdValueLabels = thresholdValueLabels;
     network.thresholdIdx         = thresholdIdx;
     network.numClusters          = numClusters;
+    network.pruningState         = false;
 
     // create the network edges
     thresholdNetwork(network);
@@ -883,6 +962,7 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
   var netdata               = {};
   netdata.loadNetwork       = loadNetwork;
   netdata.extractSubNetwork = extractSubNetwork;
+  netdata.setPruningState   = setPruningState;
   netdata.setNumClusters    = setNumClusters;
   netdata.setEdgeWidthIdx   = setEdgeWidthIdx;
   netdata.setEdgeColourIdx  = setEdgeColourIdx;
