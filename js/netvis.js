@@ -49,6 +49,10 @@ define(["lib/d3"], function(d3) {
   visDefaults.DEF_EDGE_OPACITY = 1.0;
   visDefaults.HLT_EDGE_OPACITY = 0.7;
 
+  visDefaults.EDGE_MIN_COLOUR = "#0000dd";
+  visDefaults.EDGE_MID_COLOUR = "#eeeeee";
+  visDefaults.EDGE_MAX_COLOUR = "#dd0000";
+
   visDefaults.DEF_NODE_SIZE    = 3;
   visDefaults.HLT_NODE_SIZE    = 3;
   visDefaults.SEL_NODE_SIZE    = 5;
@@ -57,6 +61,156 @@ define(["lib/d3"], function(d3) {
   visDefaults.SEL_NODE_OPACITY = 1.0;
 
   visDefaults.GROUP_DISTANCE   = 1.5;
+
+  /*
+   * Generates D3 colour (and edge width) scales for the given
+   * network, and attaches them as attributes of the given 
+   * scaleInfo object.
+   *
+   * It is assumed that the scaleInfo object already has the following 
+   * properties:
+   *
+   *   - edgeWidthIdx:  Index of the edge weight to be used
+   *                    for scaling edge widths.
+   *
+   *   - edgeColourIdx: Index of the edge weight to be used
+   *                    for scaling edge colours.
+   *
+   *   - nodeColourIdx: Index of the node data to be used for
+   *                    scaling node colours.
+   *
+   * The following attributes are added to the scaleInfo object:
+   *
+   *   - nodeColourScale:     Colours nodes according to the 
+   *                          node data at nodeColourIdx.
+   *
+   *   - edgeWidthScale:      Scales edge widths according to the edge 
+   *                          weight at index edgeWidthIdx.
+   *
+   *   - defEdgeColourScale:  Colours edges, when not highlighted, 
+   *                          according to the edge weight at index 
+   *                          edgeColourIdx.
+   *
+   *   - hltEdgeColourScale:  Colours edges, when highlighted, 
+   *                          according to the edge weight at 
+   *                          index edgeColourIdx.
+   * 
+   *   - nodeColour:          Function which takes a node object,
+   *                          and returns a colour for it.
+   *
+   *   - defEdgeColour:       Function which takes an edge object,
+   *                          and returns a default colour for it.
+   *
+   *   - hltEdgeColour:       Function which takes an edge object,
+   *                          and returns a highlight colour for it.
+   *
+   *   - edgeWidth:           Function which takes an edge object,
+   *                          and returns a width for it.
+   *
+   *   - *Path*:              Same as the above *Edge* functions, 
+   *                          except these ones accept an object
+   *                          which is assumed to have an edge 
+   *                          object as an attribute called 'edge'.
+   */
+  function genColourScales(network, scaleInfo) {
+    
+    var ewwIdx = scaleInfo.edgeWidthIdx;
+    var ecwIdx = scaleInfo.edgeColourIdx;
+
+    // Nodes are coloured according to their node data.
+    // TODO handle more than 10 node labels?
+    var nodeColourScale = d3.scale.category10();
+
+    var ecMin = network.matrixAbsMins[ecwIdx];
+    var ecMax = network.matrixAbsMaxs[ecwIdx];
+    var ewMin = network.matrixAbsMins[ewwIdx];
+    var ewMax = network.matrixAbsMaxs[ewwIdx];
+
+    // Edge width scale
+    var edgeWidthScale = d3.scale.linear()
+      .domain([-ewMax, -ewMin, -0, ewMin, ewMax])
+      .range( [ 15,     1,      0, 1,     15]);
+
+    // Colour scale for highlighted edges
+    var hltEdgeColourScale = d3.scale.linear()
+      .domain([ -ecMax,   0,          ecMax  ])
+      .range( [network.display.EDGE_MIN_COLOUR,
+               network.display.EDGE_MID_COLOUR,
+               network.display.EDGE_MAX_COLOUR]);
+
+    // The colour scale for non-highlighted edges
+    // is a washed out version of that used for 
+    // highlighted edges. Could achieve the same
+    // effect with opacity, but avoiding opacity
+    // gives better performance.
+    var edgeColourHltToDef = d3.scale.linear()
+      .domain([0,   255])
+      .range( [210, 240]);
+
+    var defEdgeColourScale = function(val) {
+      var c = d3.rgb(hltEdgeColourScale(val));
+      
+      var cols = [c.r,c.g,c.b];
+      cols.sort(function(a,b) {return a-b;});
+
+      var ri = cols.indexOf(c.r);
+      var gi = cols.indexOf(c.g);
+      var bi = cols.indexOf(c.b);
+
+      c.r = Math.ceil(edgeColourHltToDef(cols[ri]));
+      c.g = Math.ceil(edgeColourHltToDef(cols[gi]));
+      c.b = Math.ceil(edgeColourHltToDef(cols[bi]));
+
+      return c;
+    }
+
+    // attach all those scales as attributes 
+    // of the provided scaleinfo object
+    scaleInfo.nodeColourScale    = nodeColourScale;
+    scaleInfo.edgeWidthScale     = edgeWidthScale;
+    scaleInfo.defEdgeColourScale = defEdgeColourScale;
+    scaleInfo.hltEdgeColourScale = hltEdgeColourScale;
+
+    // And attach a bunch of convenience 
+    // functions for use in d3 attr calls
+    scaleInfo.nodeColour = function(node) {
+      return scaleInfo.nodeColourScale(
+        node.nodeData[network.scaleInfo.nodeColourIdx]);
+    };
+
+    scaleInfo.defEdgeColour = function(edge) {
+      return scaleInfo.defEdgeColourScale(
+        edge.weights[scaleInfo.edgeColourIdx]);
+    };
+    
+    // The *Path* functions are provided, as 
+    // edges are represented as spline paths
+    // (see netvis.js)
+    scaleInfo.defPathColour = function(path) {
+      return scaleInfo.defEdgeColourScale(
+        path.edge.weights[scaleInfo.edgeColourIdx]);
+    };
+
+    scaleInfo.hltEdgeColour = function(edge) {
+      return scaleInfo.hltEdgeColourScale(
+        edge.weights[scaleInfo.edgeColourIdx]);
+    };
+
+    scaleInfo.hltPathColour = function(path) {
+      return scaleInfo.hltEdgeColourScale(
+        path.edge.weights[scaleInfo.edgeColourIdx]);
+    };
+   
+    scaleInfo.edgeWidth = function(edge) {
+      return scaleInfo.edgeWidthScale(
+        edge.weights[scaleInfo.edgeWidthIdx]);
+    };
+
+    scaleInfo.pathWidth = function(path) {
+      return scaleInfo.edgeWidthScale(
+        path.edge.weights[scaleInfo.edgeWidthIdx]);
+    };
+  }
 
   /*
    * Draw the nodes of the network. It is assumed that the network
@@ -329,6 +483,8 @@ define(["lib/d3"], function(d3) {
       if (!network.display[prop])
         network.display[prop] = visDefaults[prop];
     }
+
+    genColourScales(network, network.scaleInfo);
 
     // Draw all of the things!
     drawNodes(network);

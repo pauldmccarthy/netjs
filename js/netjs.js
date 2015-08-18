@@ -62,8 +62,13 @@ define(
    *   - defaultEdgeColour
    *   - highlightEdgeColour
    *   - edgeColour
+   *   - edgeMinColour
+   *   - edgeMidColour
+   *   - edgeMaxColour
    *
-   * edgeColour can be 'default' or 'highlight'
+   * edgeColour can be a constant colour, or 
+   * 'default' or 'highlight', in which case
+   * the min/mid/max colours are used.
    *
    *   - defaultEdgeWidth
    *   - highlightEdgeWidth
@@ -76,10 +81,6 @@ define(
    *   - edgeOpacity
    * 
    *   - groupDistance
-   *
-   * TODO thumbnails
-   * TODO edge min/max colours
-   *
    */
   function displayNetwork(network, display) {
 
@@ -92,6 +93,14 @@ define(
     var subNetHeight  = display.subNetHeight;
 
     var vd            = netvis.visDefaults;
+
+    // TODO Instead of modifying the visDefaults
+    //      object, you should probably modify
+    //      the network.display object (it may not
+    //      have been created yet - see the
+    //      netvis.displayNetwork function. This
+    //      would be more suitable if you want to
+    //      add real-time configurability.
 
     if (display.defaultLabelSize)
       vd.DEF_LABEL_SIZE = display.defaultLabelSize;
@@ -161,6 +170,11 @@ define(
       vd.DEF_EDGE_COLOUR  = display.edgeColour;
       vd.HLT_EDGE_COLOUR  = display.edgeColour;
     }
+
+    if (display.edgeMinColour) vd.EDGE_MIN_COLOUR = display.edgeMinColour;
+    if (display.edgeMidColour) vd.EDGE_MID_COLOUR = display.edgeMidColour;
+    if (display.edgeMaxColour) vd.EDGE_MAX_COLOUR = display.edgeMaxColour;
+    
     if (display.defaultEdgeWidth)
       vd.DEF_EDGE_WIDTH = display.defaultEdgeWidth;
     if (display.highlightEdgeWidth)
