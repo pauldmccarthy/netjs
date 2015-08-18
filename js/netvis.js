@@ -27,6 +27,13 @@ define(["lib/d3"], function(d3) {
   visDefaults.HLT_LABEL_FONT   = "sans";
   visDefaults.SEL_LABEL_FONT   = "sans";
 
+  visDefaults.DEF_NODE_SIZE    = 3;
+  visDefaults.HLT_NODE_SIZE    = 3;
+  visDefaults.SEL_NODE_SIZE    = 5;
+  visDefaults.DEF_NODE_OPACITY = 0.5;
+  visDefaults.HLT_NODE_OPACITY = 1.0;
+  visDefaults.SEL_NODE_OPACITY = 1.0;
+
   visDefaults.DEF_THUMB_VISIBILITY = "hidden";
   visDefaults.HLT_THUMB_VISIBILITY = "visible";
   visDefaults.SEL_THUMB_VISIBILITY = "visible";
@@ -46,19 +53,11 @@ define(["lib/d3"], function(d3) {
   visDefaults.HLT_EDGE_COLOUR  = "highlight";
   visDefaults.DEF_EDGE_WIDTH   = 1;
   visDefaults.HLT_EDGE_WIDTH   = "scale";
-  visDefaults.DEF_EDGE_OPACITY = 1.0;
-  visDefaults.HLT_EDGE_OPACITY = 0.7;
+  visDefaults.EDGE_OPACITY     = 1.0;
 
   visDefaults.EDGE_MIN_COLOUR = "#0000dd";
   visDefaults.EDGE_MID_COLOUR = "#eeeeee";
   visDefaults.EDGE_MAX_COLOUR = "#dd0000";
-
-  visDefaults.DEF_NODE_SIZE    = 3;
-  visDefaults.HLT_NODE_SIZE    = 3;
-  visDefaults.SEL_NODE_SIZE    = 5;
-  visDefaults.DEF_NODE_OPACITY = 0.5;
-  visDefaults.HLT_NODE_OPACITY = 1.0;
-  visDefaults.SEL_NODE_OPACITY = 1.0;
 
   visDefaults.GROUP_DISTANCE   = 1.5;
 

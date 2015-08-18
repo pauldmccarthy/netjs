@@ -32,55 +32,88 @@ define(
    *   - subNetWidth:  Width in pixels of subnetwork div.
    *   - subNetHeight: Height in pixels of subnetwork div.
    *
-   * The display object may also contain the following optional attributes:
+   * The display object may also contain the following optional attributes.
+   * Network nodes have three possible display 'states': default, highlighted,
+   * and selected. Edges have two possible display states: default and
+   * highlighted. You can customise the display properties individually
+   * for each state, by setting the 'def*', 'hlt*' and 'sel*' attributes,
+   * as listed below. Or you can globally set the display property. For example,
+   * setting the 'labelSize' attribute will override any of the 'defLabelSize',
+   * 'hltLabelSize' or 'selLabelSize' attributes.
    * 
-   *   - defaultLabelSize
-   *   - highlightLabelSize
-   *   - selectLabelSize
+   * Attributes controlling node label font size:
+   * 
    *   - labelSize
+   *   - defLabelSize
+   *   - hltLabelSize
+   *   - selLabelSize
    *
-   *   - defaultLabelWeight
-   *   - highlightLabelWeight
-   *   - selectLabelWeight
+   * Attributes controlling node label font weight (e.g. 'normal', 'bold', 
+   * etc):
+   *
    *   - labelWeight
+   *   - defLabelWeight
+   *   - hltLabelWeight
+   *   - selLabelWeight
    *
-   *   - defaultLabelFont
-   *   - highlightLabelFont
-   *   - selectLabelFont
+   * Attributes controlling the node label font family (e.g. 'sans'):
+   *
    *   - labelFont
+   *   - defLabelFont
+   *   - hltLabelFont
+   *   - selLabelFont
+   *
+   * Attributes controlling the node radius in pixels:
    * 
-   *   - defaultNodeSize
-   *   - highlightNodeSize
-   *   - selectNodeSize
    *   - nodeSize
+   *   - defNodeSize
+   *   - hltNodeSize
+   *   - selNodeSize
    *
-   *   - defaultNodeOpacity
-   *   - highlightNodeOpacity
-   *   - selectNodeOpacity
+   * Attributes controlling the node opacity (between 0.0 and 1.0):
+   * 
    *   - nodeOpacity
+   *   - defNodeOpacity
+   *   - hltNodeOpacity
+   *   - selNodeOpacity
    *
-   *   - defaultEdgeColour
-   *   - highlightEdgeColour
+   * Attributes controlling edge color. The edgeColour, defEdgeColour and
+   * hltEdgeColour attriutes can be a constant colour specified as a
+   * hexadecimal RGB string (e.g. "#ffffff"). alternately, they can be
+   * 'default' or 'highlight', in which case the edges are coloured 
+   * according to their corresponding network matrix value, and a colour
+   * range specified by the edgeMinColour, edgeMidColour and edgeMaxColour
+   * attributes. The 'default' colour is a pseudo-transparent version of
+   * the 'highlight' colour.
+   *
    *   - edgeColour
+   *   - defEdgeColour
+   *   - hltEdgeColour
    *   - edgeMinColour
    *   - edgeMidColour
    *   - edgeMaxColour
    *
-   * edgeColour can be a constant colour, or 
-   * 'default' or 'highlight', in which case
-   * the min/mid/max colours are used.
-   *
-   *   - defaultEdgeWidth
-   *   - highlightEdgeWidth
-   *   - edgeWidth
-   *
-   * edgeWidth can be 'scale'
-   *
-   *   - defaultEdgeOpacity
-   *   - highlightEdgeOpacity
-   *   - edgeOpacity
+   * Attributes controlling the edge width in pixels. Any of these parameters
+   * can be 'scale', in which case each edge width is scaled according to
+   * the corresponding network matrix value.
    * 
+   *   - edgeWidth
+   *   - defEdgeWidth
+   *   - hltEdgeWidth
+   * 
+   * Attribute controlling the distance between groups of nodes on the 
+   * network circumference, with the unit being node diameters:
    *   - groupDistance
+   *
+   * Attributes controlling the node thumbnail size in pixels:
+   *   - thumbWidth
+   *   - thumbHeight 
+   *   - defThumbWidth
+   *   - defThumbHeight
+   *   - hltThumbWidth
+   *   - hltThumbHeight
+   *   - selThumbWidth
+   *   - selThumbHeight
    */
   function displayNetwork(network, display) {
 
@@ -102,70 +135,53 @@ define(
     //      would be more suitable if you want to
     //      add real-time configurability.
 
-    if (display.defaultLabelSize)
-      vd.DEF_LABEL_SIZE = display.defaultLabelSize;
-    if (display.highlightLabelSize)
-      vd.HLT_LABEL_SIZE = display.highlightLabelSize;
-    if (display.selectLabelSize)
-      vd.SEL_LABEL_SIZE = display.selectLabelSize;
+    if (display.defLabelSize) vd.DEF_LABEL_SIZE = display.defLabelSize;
+    if (display.hltLabelSize) vd.HLT_LABEL_SIZE = display.hltLabelSize;
+    if (display.selLabelSize) vd.SEL_LABEL_SIZE = display.selLabelSize;
     if (display.labelSize) {
       vd.DEF_LABEL_SIZE = display.labelSize;
       vd.HLT_LABEL_SIZE = display.labelSize;
       vd.SEL_LABEL_SIZE = display.labelSize;
     }
     
-    if (display.defaultLabelWeight)
-      vd.DEF_LABEL_WEIGHT = display.defaultLabelWeight;
-    if (display.highlightLabelWeight)
-      vd.HLT_LABEL_WEIGHT = display.highlightLabelWeight;
-    if (display.selectLabelWeight)
-      vd.SEL_LABEL_WEIGHT = display.selectLabelWeight;
+    if (display.defLabelWeight) vd.DEF_LABEL_WEIGHT = display.defLabelWeight;
+    if (display.hltLabelWeight) vd.HLT_LABEL_WEIGHT = display.hltLabelWeight;
+    if (display.selLabelWeight) vd.SEL_LABEL_WEIGHT = display.selLabelWeight;
     if (display.labelWeight) {
       vd.DEF_LABEL_WEIGHT = display.labelWeight;
       vd.HLT_LABEL_WEIGHT = display.labelWeight;
       vd.SEL_LABEL_WEIGHT = display.labelWeight;
     }
 
-    if (display.defaultLabelFont)
-      vd.DEF_LABEL_FONT = display.defaultLabelFont;
-    if (display.highlightLabelFont)
-      vd.HLT_LABEL_FONT = display.highlightLabelFont;
-    if (display.selectLabelFont)
-      vd.SEL_LABEL_FONT = display.selectLabelFont;
+    if (display.defLabelFont) vd.DEF_LABEL_FONT = display.defLabelFont;
+    if (display.hltLabelFont) vd.HLT_LABEL_FONT = display.hltLabelFont;
+    if (display.selLabelFont) vd.SEL_LABEL_FONT = display.selLabelFont;
     if (display.labelFont) {
       vd.DEF_LABEL_FONT = display.labelFont;
       vd.HLT_LABEL_FONT = display.labelFont;
       vd.SEL_LABEL_FONT = display.labelFont;
     }
 
-    if (display.defaultNodeSize)
-      vd.DEF_NODE_SIZE = display.defaultNodeSize;
-    if (display.highlightNodeSize)
-      vd.HLT_NODE_SIZE = display.highligtNodeSize;
-    if (display.selectNodeSize)
-      vd.SEL_NODE_SIZE = display.selectNodeSize;
+    if (display.defNodeSize) vd.DEF_NODE_SIZE = display.defNodeSize;
+    if (display.hltNodeSize) vd.HLT_NODE_SIZE = display.hltNodeSize;
+    if (display.selNodeSize) vd.SEL_NODE_SIZE = display.selNodeSize;
     if (display.nodeSize) {
       vd.DEF_NODE_SIZE = display.nodeSize;
       vd.HLT_NODE_SIZE = display.nodeSize;
       vd.SEL_NODE_SIZE = display.nodeSize;
     }
 
-    if (display.defaultNodeOpacity)
-      vd.DEF_NODE_OPACITY = display.defaultNodeOpacity;
-    if (display.highlightNodeOpacity)
-      vd.HLT_NODE_OPACITY = display.highlightNodeOpacity;
-    if (display.selectNodeOpacity)
-      vd.SEL_NODE_OPACITY = display.selectNodeOpacity;
+    if (display.defNodeOpacity) vd.DEF_NODE_OPACITY = display.defNodeOpacity;
+    if (display.hltNodeOpacity) vd.HLT_NODE_OPACITY = display.hltNodeOpacity;
+    if (display.selNodeOpacity) vd.SEL_NODE_OPACITY = display.selNodeOpacity;
     if (display.nodeOpacity) {
       vd.DEF_NODE_OPACITY = display.nodeOpacity;
       vd.HLT_NODE_OPACITY = display.nodeOpacity;
       vd.SEL_NODE_OPACITY = display.nodeOpacity;
     }
 
-    if (display.defaultEdgeColour)
-      vd.DEF_EDGE_COLOUR = display.defaultEdgeColour;
-    if (display.highlightEdgeColour)
-      vd.HLT_EDGE_COLOUR = display.highlightEdgeColour;
+    if (display.defEdgeColour) vd.DEF_EDGE_COLOUR = display.deftEdgeColour;
+    if (display.hltEdgeColour) vd.HLT_EDGE_COLOUR = display.hltEdgeColour;
     if (display.edgeColour) {
       vd.DEF_EDGE_COLOUR  = display.edgeColour;
       vd.HLT_EDGE_COLOUR  = display.edgeColour;
@@ -175,27 +191,39 @@ define(
     if (display.edgeMidColour) vd.EDGE_MID_COLOUR = display.edgeMidColour;
     if (display.edgeMaxColour) vd.EDGE_MAX_COLOUR = display.edgeMaxColour;
     
-    if (display.defaultEdgeWidth)
-      vd.DEF_EDGE_WIDTH = display.defaultEdgeWidth;
-    if (display.highlightEdgeWidth)
-      vd.HLT_EDGE_WIDTH = display.highlightEdgeWidth;
+    if (display.defEdgeWidth) vd.DEF_EDGE_WIDTH = display.defEdgeWidth;
+    if (display.hltEdgeWidth) vd.HLT_EDGE_WIDTH = display.hltEdgeWidth;
     if (display.edgeWidth) {
       vd.DEF_EDGE_WIDTH = display.edgeWidth;
       vd.HLT_EDGE_WIDTH = display.edgeWidth;
     }
 
-    if (display.defaultEdgeOpacity)
-      vd.DEF_EDGE_OPACITY = display.defaultEdgeOpacity;
-    if (display.highlightEdgeOpacity)
-      vd.HLT_EDGE_OPACITY = display.highlightEdgeOpacity;
+    if (display.defEdgeOpacity) vd.DEF_EDGE_OPACITY = display.defEdgeOpacity;
+    if (display.hltEdgeOpacity) vd.HLT_EDGE_OPACITY = display.hltEdgeOpacity;
     if (display.edgeOpacity) {
       vd.DEF_EDGE_OPACITY = display.edgeOpacity;
       vd.HLT_EDGE_OPACITY = display.edgeOpacity;
     }
 
+    if (display.defThumbWidth)  vd.DEF_THUMB_WIDTH  = display.defThumbWidth;
+    if (display.hltThumbWidth)  vd.HLT_THUMB_WIDTH  = display.hltThumbWidth;
+    if (display.selThumbWidth)  vd.SEL_THUMB_WIDTH  = display.selThumbWidth;
+    if (display.defThumbHeight) vd.DEF_THUMB_HEIGHT = display.defThumbHeight;
+    if (display.hltThumbHeight) vd.HLT_THUMB_HEIGHT = display.hltThumbHeight;
+    if (display.selThumbHeight) vd.SEL_THUMB_HEIGHT = display.selThumbHeight;
+    if (display.thumbWidth) {
+      vd.DEF_THUMB_WIDTH  = display.thumbWidth;
+      vd.HLT_THUMB_WIDTH  = display.thumbWidth;
+      vd.SEL_THUMB_WIDTH  = display.thumbWidth;
+    }
+    if (display.thumbHeight) {
+      vd.DEF_THUMB_HEIGHT  = display.thumbHeight;
+      vd.HLT_THUMB_HEIGHT  = display.thumbHeight;
+      vd.SEL_THUMB_HEIGHT  = display.thumbHeight;
+    } 
+
     if (display.groupDistance)
       vd.GROUP_DISTANCE = display.groupDistance;
-
 
     netvis.displayNetwork(network, networkDiv, networkWidth, networkHeight);
     dynamics.configDynamics(network); 

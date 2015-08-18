@@ -1,5 +1,7 @@
 require(["netjs", "lib/d3"], function(netjs, d3) {
 
+  // Implement your own network edge
+  // thresholding algorithm here.
   function thresholdMatrix(matrix, args) {
 
     var thresPerc = args[0];
@@ -30,7 +32,23 @@ require(["netjs", "lib/d3"], function(netjs, d3) {
     return thresMatrix;
   }
 
+  // You need to populate two objects:
+  //
+  //    - The first one ('args' here) is passed to
+  //      the loadNetwork function, and specifies
+  //      data file locations, labels, and some
+  //      initial values.
+  //
+  //    - The second one ('display' here) is passed
+  //      to the displayNetwork function, and specifies
+  //      display settings. 
+  // 
+  // See https://git.fmrib.ox.ac.uk/paulmc/netjs/wikis/home
+  // for details on all required an optional arguments.
+  //
   var args            = {};
+  var display         = {};
+
   args.matrices       = ["data/dataset2/Znet1.txt", "data/dataset2/Znet2.txt"];
   args.matrixLabels   = ["Corr1", "Corr2"];
   args.nodeData       = ["data/dataset2/clusters.txt"];
@@ -43,11 +61,10 @@ require(["netjs", "lib/d3"], function(netjs, d3) {
   args.thresholdIdx   = 0;
   args.numClusters    = 10;
 
-  var w       = window.innerWidth  - 200;
-  var h       = window.innerHeight - 50;
-  var sz      = Math.min(w/2.0, h);
-  
-  var display = {};
+  // Figure out a sensible canvas size.
+  var w  = window.innerWidth  - 200;
+  var h  = window.innerHeight - 50;
+  var sz = Math.min(w/2.0, h);
 
   display.networkDiv    = "#fullNetwork";
   display.subNetDiv     = "#subNetwork";
@@ -57,11 +74,9 @@ require(["netjs", "lib/d3"], function(netjs, d3) {
   display.subNetWidth   = sz;
   display.subNetHeight  = sz;
 
-
+  // Load the network, and 
+  // display it when loaded.
   netjs.loadNetwork(args, function(net) {
-
-
-    
     netjs.displayNetwork(net, display);
   });
 });

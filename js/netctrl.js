@@ -116,12 +116,12 @@ define(
         subnet.display.DEF_THUMB_VISIBILITY = "visible";
         subnet.display.DEF_NODE_OPACITY     = 1.0;
         subnet.display.DEF_EDGE_WIDTH       = "scale";
-        subnet.display.DEF_THUMB_WIDTH      = 91  / 2.0;
-        subnet.display.DEF_THUMB_HEIGHT     = 109 / 2.0;
-        subnet.display.HLT_THUMB_WIDTH      = 91  / 2.0;
-        subnet.display.HLT_THUMB_HEIGHT     = 109 / 2.0;
-        subnet.display.SEL_THUMB_WIDTH      = 91  / 1.5;
-        subnet.display.SEL_THUMB_HEIGHT     = 109 / 1.5;
+        subnet.display.DEF_THUMB_WIDTH      = network.display.SEL_THUMB_WIDTH;
+        subnet.display.DEF_THUMB_HEIGHT     = network.display.SEL_THUMB_HEIGHT;
+        subnet.display.HLT_THUMB_WIDTH      = network.display.SEL_THUMB_WIDTH;
+        subnet.display.HLT_THUMB_HEIGHT     = network.display.SEL_THUMB_HEIGHT;
+        subnet.display.SEL_THUMB_WIDTH      = network.display.SEL_THUMB_HEIGHT * 1.33;
+        subnet.display.SEL_THUMB_HEIGHT     = network.display.SEL_THUMB_HEIGHT * 1.33;
 
         // share colour/scaling information between 
         // the parent network and sub-network
