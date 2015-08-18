@@ -43,18 +43,26 @@ require(["netjs", "lib/d3"], function(netjs, d3) {
   args.thresholdIdx   = 0;
   args.numClusters    = 10;
 
+  var w       = window.innerWidth  - 200;
+  var h       = window.innerHeight - 50;
+  var sz      = Math.min(w/2.0, h);
+  
+  var display = {};
+
+  display.networkDiv    = "#fullNetwork";
+  display.subNetDiv     = "#subNetwork";
+  display.controlDiv    = "#networkCtrl";
+  display.networkWidth  = sz;
+  display.networkHeight = sz;
+  display.subNetWidth   = sz;
+  display.subNetHeight  = sz;
+
+
   netjs.loadNetwork(args, function(net) {
 
-    var w  = window.innerWidth  - 200;
-    var h  = window.innerHeight - 50;
-    var sz = Math.min(w/2.0, h);
+
     
-    netjs.displayNetwork(
-      net, 
-      "#fullNetwork",
-      "#subNetwork",
-      "#networkCtrl",
-      sz,sz,sz,sz);
+    netjs.displayNetwork(net, display);
   });
 });
 

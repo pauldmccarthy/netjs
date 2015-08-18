@@ -56,6 +56,8 @@ define(["lib/d3"], function(d3) {
   visDefaults.HLT_NODE_OPACITY = 1.0;
   visDefaults.SEL_NODE_OPACITY = 1.0;
 
+  visDefaults.GROUP_DISTANCE   = 1.5;
+
   /*
    * Draw the nodes of the network. It is assumed that the network
    * has the following D3 selections as attributes (which are 
@@ -83,7 +85,7 @@ define(["lib/d3"], function(d3) {
     // display edges (see the drawEdges function).
       
     function sep(a, b) {
-      return a.parent == b.parent ? 1 : 1.5;
+      return a.parent == b.parent ? 1 : visDefaults.GROUP_DISTANCE;
     }
 
     var clusterLayout  = d3.layout.cluster()
