@@ -8,8 +8,19 @@ define(
   ["lib/d3", "lib/mustache", "netdata", "netvis", "netvis_dynamics"], 
   function(d3, mustache, netdata, netvis, dynamics) {
 
-  function createNetworkControls(
-    network, div, subNetDiv, subNetWidth, subNetHeight) {
+  /*
+   * Creates a collection of widgets for controlling the network display.
+   * 
+   *   - highlightOn: Initial highlighted state of the network.
+   *   - subnetOn:    Initial state of the sub-network.
+   */
+  function createNetworkControls(network,
+                                 div,
+                                 subNetDiv,
+                                 subNetWidth,
+                                 subNetHeight,
+                                 highlightOn,
+                                 subnetOn) {
 
     div = d3.select(div)[0][0];
 
@@ -408,6 +419,16 @@ define(
       thresholdValues.forEach(function(thresVal, i) {
         thresVal.value = network.thresholdValues[i];
       });
+
+      if (highlightOn) {
+        highlightNetwork.checked = true;
+        toggleHighlightNetwork();
+      }
+
+      if (subnetOn && (subNetDiv !== null)) {
+        showSubNetworkCtrl.checked = true;
+        toggleSubNetwork();
+      }
     });
   }
 

@@ -114,6 +114,10 @@ define(
    *   - hltThumbHeight
    *   - selThumbWidth
    *   - selThumbHeight
+   *
+   * Attributes controlling initial state:
+   *   - highlightOn
+   *   - subnetOn
    */
   function displayNetwork(network, display) {
 
@@ -229,7 +233,13 @@ define(
     dynamics.configDynamics(network); 
 
     netctrl.createNetworkControls(
-      network, controlDiv, subNetDiv, subNetWidth, subNetHeight);
+      network,
+      controlDiv,
+      subNetDiv,
+      subNetWidth,
+      subNetHeight,
+      display.highlightOn,
+      display.subnetOn);
   }
 
   var netjs = {};

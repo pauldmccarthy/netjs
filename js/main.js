@@ -43,8 +43,8 @@ require(["netjs", "lib/d3"], function(netjs, d3) {
   //      to the displayNetwork function, and specifies
   //      display settings. 
   // 
-  // See https://git.fmrib.ox.ac.uk/paulmc/netjs/wikis/home
-  // for details on all required an optional arguments.
+  // See the displayNetwork function in netjs.js for
+  // details on all required and optional arguments.
   //
   var args            = {};
   var display         = {};
@@ -73,6 +73,8 @@ require(["netjs", "lib/d3"], function(netjs, d3) {
   display.networkHeight = sz;
   display.subNetWidth   = sz;
   display.subNetHeight  = sz;
+
+  display.highlightOn   = true;
 
   // Load the network, and 
   // display it when loaded.
