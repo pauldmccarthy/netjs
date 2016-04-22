@@ -302,7 +302,7 @@ define(["netdata", "lib/d3"], function(netdata, d3) {
       var parent;
 
       if (node.neighbours.length === 0) parent = null;
-      else                                      parent = rootNode;
+      else                              parent = rootNode;
 
       node.x        = (i / numNodes) * 360;
       node.y        = radius - 110;

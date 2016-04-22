@@ -236,12 +236,23 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
         return array[idx];
       });
     });
-
-    // Do the same for the node orders
-    var subNodeOrders = network.nodeOrders.map(function(array) {
+    
+    // Do the same for the node names
+    var subNodeNames = network.nodeNames.map(function(array) {
       return nodeIdxs.map(function(idx) {
         return array[idx];
       });
+    });
+
+    // And for the node orders
+    var subNetMask = [];
+    for (var i = 0; i < network.nodes.length; i++) {
+      if (nodeIdxs.indexOf(i) > -1) subNetMask.push(1);
+      else                          subNetMask.push(0);
+    }
+
+    var subNodeOrders = network.nodeOrders.map(function(array) {
+      return adjustIndices(array, subNetMask);
     });
  
 
@@ -250,9 +261,13 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
       network.matrixLabels, 
       subNodeData,
       network.nodeDataLabels,
+      subNodeNames,
+      network.nodeNameLabels,
+      network.nodeNameIdx,
       null,
-      network.nodeOrders,
+      subNodeOrders,
       network.nodeOrderLabels,
+      network.nodeOrderIdx,
       network.thumbUrl,
       network.thresholdFunc,
       network.thresholdValues,
@@ -429,6 +444,9 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
     matrixLabels,
     nodeData,
     nodeDataLabels,
+    nodeNames,
+    nodeNameLabels,
+    nodeNameIdx,
     linkage,
     nodeOrders,
     nodeOrderLabels,
@@ -471,6 +489,9 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
     network.nodes                = nodes;
     network.nodeData             = nodeData;
     network.nodeDataLabels       = nodeDataLabels;
+    network.nodeNames            = nodeNames;
+    network.nodeNameLabels       = nodeNameLabels;
+    network.nodeNameIdx          = nodeNameIdx;
     network.matrices             = matrices;
     network.matrixLabels         = matrixLabels;
     network.linkage              = linkage;
@@ -619,6 +640,8 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
     var thresVals       = stdArgs.thresVals;
     var thresLabels     = stdArgs.thresLabels;
     var thresholdIdx    = stdArgs.thresholdIdx;
+    var nodeNameLabels  = stdArgs.nodeNameLabels;
+    var nodeNameIdx     = stdArgs.nodeNameIdx;
     var nodeOrderLabels = stdArgs.nodeOrderLabels;
     var nodeOrderIdx    = stdArgs.nodeOrderIdx;
     var numClusters     = stdArgs.numClusters;
@@ -626,15 +649,18 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
     var linkage         = args[1];
 
     var numNodeData   = nodeDataLabels .length;
+    var numNodeNames  = nodeNameLabels .length;
     var numMatrices   = matrixLabels   .length;
     var numNodeOrders = nodeOrderLabels.length;
 
-    var nodeData   = args.slice(2,
-                                2 + numNodeData);
-    var matrices   = args.slice(2 + numNodeData,
-                                2 + numNodeData + numMatrices);
-    var nodeOrders = args.slice(2 + numNodeData + numMatrices,
-                                2 + numNodeData + numMatrices + numNodeOrders);
+    var offset     = 2;
+    var nodeData   = args.slice(offset, offset + numNodeData);
+    offset        += numNodeData;
+    var matrices   = args.slice(offset, offset + numMatrices);
+    offset        += numMatrices;
+    var nodeNames  = args.slice(offset, offset + numNodeNames);
+    offset        += numNodeNames;
+    var nodeOrders = args.slice(offset, offset + numNodeOrders);
 
     if (linkage !== null) 
       linkage = parseTextMatrix(linkage);
@@ -642,6 +668,13 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
     matrices   = matrices  .map(parseTextMatrix);
     nodeData   = nodeData  .map(parseTextMatrix);
     nodeOrders = nodeOrders.map(parseTextMatrix);
+
+    // node names must be newline separated
+    nodeNames = nodeNames.map(function(str) {
+      
+      var lines = str.trim().split("\n");
+      return lines.map(function(l) {return l.trim();});
+    });
 
     // node data and node order files can either
     // be space separated or newline separated.
@@ -683,6 +716,14 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
       }
     });
 
+    // node name arrays
+    nodeNames.forEach(function(array, i) {
+      if (array.length !== numNodes) {
+        throw "Node names array " + nodeNameLabels[i] + 
+              " has invalid length (" + array.length + ")";
+      }
+    }); 
+
     // node order arrays
     nodeOrders.forEach(function(array, i) {
       if (array.length !== numNodes) {
@@ -695,7 +736,10 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
       matrices, 
       matrixLabels, 
       nodeData,
-      nodeDataLabels, 
+      nodeDataLabels,
+      nodeNames,
+      nodeNameLabels,
+      nodeNameIdx,
       linkage,
       nodeOrders,
       nodeOrderLabels,
@@ -729,6 +773,13 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
    *
    *   - nodeDataLabls:   Optional. A list of labels for each of 
    *                      the above arrays.
+   *
+   *   - nodeNames:       Optional. A list of URLS pointing to 
+   *                      files containing newline-separated names 
+   *                      for each node in the network.
+   *
+   *   - nodeNameLabels:  Optional. A list of names for each of the 
+   *                      above arrays.
    *
    *   - linkage:         Optional. A N*3 array of data describing
    *                      the dendrogram for the network - the output
@@ -771,10 +822,15 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
    *                      matrix used to define the network edges.
    *
    *   - nodeOrderIdx:    Optional. Initial index into the nodeOrders
-   *                      list, specifying the node didplay order to 
+   *                      list, specifying the node display order to 
    *                      use. If not provided, or set to -1, the nodes 
    *                      are displayed according to the linkage 
    *                      (dendrogram) information.
+   *
+   *   - nodeNameIdx:     Optional. Initial index into the nodeNames
+   *                      list, specifying the node names to use. If 
+   *                      not provided, or set to -1, the node indices
+   *                      (starting from 1) used as the node names.
    * 
    *   - numClusters:     Optional. Initial number of clusters to 
    *                      flatten the network dendrogram tree to.
@@ -803,6 +859,12 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
     if (a.nodeDataLabels === undefined) 
       a.nodeDataLabels = a.nodeData.map(function(nd,i){ return "" + i;});
 
+    if (a.nodeNames === undefined) 
+      a.nodeNames = [];
+    
+    if (a.nodeNameLabels === undefined) 
+      a.nodeNameLabels = a.nodeNames.map(function(no,i){ return "" + i;}); 
+    
     if (a.nodeOrders === undefined) 
       a.nodeOrders = [];
 
@@ -811,6 +873,9 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
 
     if (a.nodeOrderIdx === undefined)
       a.nodeOrderIdx = -1;
+
+    if (a.nodeNameIdx === undefined)
+      a.nodeNameIdx = -1; 
 
     if (a.thresVals === undefined) 
       a.thresVals = [];
@@ -828,6 +893,9 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
 
     if (a.nodeData.length !== a.nodeDataLabels.length) 
       throw "Node data URL and label lengths do not match";
+
+    if (a.nodeNames.length !== a.nodeNameLabels.length) 
+      throw "Node name URL and label lengths do not match"; 
 
     if (a.nodeOrders.length !== a.nodeOrderLabels.length) 
       throw "Node order URL and label lengths do not match"; 
@@ -863,6 +931,11 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
       q = q.defer(d3.text, url);
     });
 
+    // node names
+    a.nodeNames.forEach(function(url) {
+      q = q.defer(d3.text, url);
+    }); 
+    
     // node orders
     a.nodeOrders.forEach(function(url) {
       q = q.defer(d3.text, url);
@@ -892,6 +965,7 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
 
     return matrix;
   }
+
 
   /*
    * Given an array of indices, and a mask array of the same length,

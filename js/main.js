@@ -55,6 +55,8 @@ require(["netjs", "lib/d3"], function(netjs, d3) {
   args.matrixLabels    = ["Corr1", "Corr2"];
   args.nodeData        = ["data/dataset2/clusters.txt"];
   args.nodeDataLabels  = ["Cluster number"];
+  args.nodeNames       = ["data/dataset2/names.txt"];
+  args.nodeNameLabels  = ["Names"];
   args.linkage         =  "data/dataset2/linkages.txt";
   args.nodeOrders      = ["data/dataset2/order1.txt"];
   args.nodeOrderLabels = ["Order 1"];
@@ -63,6 +65,7 @@ require(["netjs", "lib/d3"], function(netjs, d3) {
   args.thresVals       = [0.75];
   args.thresLabels     = ["Thres perc"];
   args.thresholdIdx    = 0;
+  args.nodeNameIdx     = -1;
   args.nodeOrderIdx    = -1;
   args.numClusters     = 10;
 
