@@ -275,15 +275,15 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
       network.thresholdIdx,
       1);
 
-    // Fix node names and thumbnails, and add 
-    // indices for each subnetwork node back 
-    // to the corresponding parent network node
+    // Fix node thumbnails, and add 
+    // indices for each subnetwork
+    // node back to the corresponding
+    // parent network node
     var zerofmt = d3.format("04d");
     for (var i = 0; i < subnet.nodes.length; i++) {
 
       var node = subnet.nodes[i];
 
-      node.name         = network.nodes[nodeIdxs[i]].name;
       node.fullNetIndex = network.nodes[nodeIdxs[i]].index;
 
       if (subnet.thumbUrl !== null) {
@@ -466,12 +466,10 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
     // Create a list of nodes
     for (var i = 0; i < numNodes; i++) {
 
-      var node = {};
+      var node      = {};
 
-      // Node name is 1-indexed
-      node.index      = i;
-      node.name       = "" + (i+1);
-      node.nodeData   = nodeData.map(function(array) {return array[i];});
+      node.index    = i;
+      node.nodeData = nodeData.map(function(array) {return array[i];});
 
       // Attach a thumbnail URL to 
       // every node in the network

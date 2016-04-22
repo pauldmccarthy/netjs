@@ -384,6 +384,13 @@ define(["netdata", "lib/d3"], function(netdata, d3) {
       return classes.join(" ");
     }
 
+    function nodeNames(node) {
+      if (network.nodeNameIdx == -1)
+        return "" + (node.index + 1);
+
+      return network.nodeNames[network.nodeNameIdx][node.index];
+    }
+
     // Draw the nodes
     network.display.svgNodes
       .selectAll("circle")
@@ -411,7 +418,7 @@ define(["netdata", "lib/d3"], function(netdata, d3) {
       .attr("fill",         network.scaleInfo.nodeColour)
       .attr("transform",    positionLabel)
       .style("text-anchor", anchorLabel)
-      .text(function(node) {return node.name; });
+      .text(nodeNames);
 
     // Draw the node thumbnails 
     network.display.svgThumbnails
