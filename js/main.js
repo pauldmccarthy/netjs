@@ -37,29 +37,34 @@ require(["netjs", "lib/d3"], function(netjs, d3) {
   //    - The first one ('args' here) is passed to
   //      the loadNetwork function, and specifies
   //      data file locations, labels, and some
-  //      initial values.
+  //      initial values. See the loadNetwork
+  //      function in netdata.js for detail on all
+  //      arguments.
+  
   //
   //    - The second one ('display' here) is passed
   //      to the displayNetwork function, and specifies
-  //      display settings. 
-  // 
-  // See the displayNetwork function in netjs.js for
-  // details on all required and optional arguments.
+  //      display settings. See the displayNetwork
+  //      function in netjs.js for details on all
+  //      required and optional arguments.
   //
-  var args            = {};
-  var display         = {};
+  var args             = {};
+  var display          = {};
 
-  args.matrices       = ["data/dataset2/Znet1.txt", "data/dataset2/Znet2.txt"];
-  args.matrixLabels   = ["Corr1", "Corr2"];
-  args.nodeData       = ["data/dataset2/clusters.txt"];
-  args.nodeDataLabels = ["Cluster number"];
-  args.linkage        =  "data/dataset2/linkages.txt";
-  args.thumbnails     =  "data/dataset2/melodic_IC_sum.sum";
-  args.thresFunc      = thresholdMatrix;
-  args.thresVals      = [0.75];
-  args.thresLabels    = ["Thres perc"];
-  args.thresholdIdx   = 0;
-  args.numClusters    = 10;
+  args.matrices        = ["data/dataset2/Znet1.txt", "data/dataset2/Znet2.txt"];
+  args.matrixLabels    = ["Corr1", "Corr2"];
+  args.nodeData        = ["data/dataset2/clusters.txt"];
+  args.nodeDataLabels  = ["Cluster number"];
+  args.linkage         =  "data/dataset2/linkages.txt";
+  args.nodeOrders      = ["data/dataset2/order1.txt"];
+  args.nodeOrderLabels = ["Order 1"];
+  args.thumbnails      =  "data/dataset2/melodic_IC_sum.sum";
+  args.thresFunc       = thresholdMatrix;
+  args.thresVals       = [0.75];
+  args.thresLabels     = ["Thres perc"];
+  args.thresholdIdx    = 0;
+  args.orderIdx        = -1;
+  args.numClusters     = 10;
 
   // Figure out a sensible canvas size.
   var w  = window.innerWidth  - 200;
