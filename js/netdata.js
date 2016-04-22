@@ -275,6 +275,12 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
       network.thresholdIdx,
       1);
 
+    // Copy matrix min/max arrays over
+    subnet.matrixMins    = network.matrixMins;
+    subnet.matrixMaxs    = network.matrixMaxs;
+    subnet.matrixAbsMins = network.matrixAbsMins;
+    subnet.matrixAbsMaxs = network.matrixAbsMaxs;
+
     // Fix node thumbnails, and add 
     // indices for each subnetwork
     // node back to the corresponding
@@ -360,29 +366,14 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
     var matrix   = network.matrices[network.thresholdIdx];
     var numNodes = network.nodes.length;
 
-    // Create a list of edges. At the same time, we'll 
-    // figure out the real and absolute max/min values 
-    // for each weight matrix across all edges, so they 
-    // can be used to scale edge colour/width/etc properly.
-    network.edges     = [];
-    var matrixMins    = [];
-    var matrixMaxs    = [];
-    var matrixAbsMins = [];
-    var matrixAbsMaxs = [];
+    // Create a list of edges
+    network.edges = [];
 
     // threshold the matrix. It is assumed that the 
     // provided threshold function behaves nicely
     // by thresholding a copy of the matrix, not 
     // the matrix itself.
     matrix = network.thresholdFunc(matrix, network.thresholdValues);
-    
-    // initialise min/max arrays
-    for (var i = 0; i < network.matrices.length; i++) {
-      matrixMins   .push( Number.MAX_VALUE);
-      matrixMaxs   .push(-Number.MAX_VALUE);
-      matrixAbsMins.push( Number.MAX_VALUE);
-      matrixAbsMaxs.push(-Number.MAX_VALUE);
-    }
 
     // initialise node neighbour/edge arrays
     for (var i = 0; i < numNodes; i++) {
@@ -415,25 +406,8 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
         network.nodes[j].neighbours.push(network.nodes[i]);
         network.nodes[i].edges     .push(edge);
         network.nodes[j].edges     .push(edge);
-
-        // update weight mins/maxs
-        for (var k = 0; k < edge.weights.length; k++) {
-
-          var w  =          edge.weights[k];
-          var aw = Math.abs(edge.weights[k]);
-
-          if (w  > matrixMaxs[k])    matrixMaxs[k]    = w;
-          if (w  < matrixMins[k])    matrixMins[k]    = w;
-          if (aw > matrixAbsMaxs[k]) matrixAbsMaxs[k] = aw;
-          if (aw < matrixAbsMins[k]) matrixAbsMins[k] = aw;
-        }
       }
     }
-
-    network.matrixMins    = matrixMins;
-    network.matrixMaxs    = matrixMaxs;
-    network.matrixAbsMins = matrixAbsMins;
-    network.matrixAbsMaxs = matrixAbsMaxs;
   }
 
   /*
@@ -741,6 +715,7 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
       }
     });
 
+    // create the network
     network = createNetwork(
       matrices, 
       matrixLabels, 
@@ -759,6 +734,40 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
       thresLabels,
       thresholdIdx,
       numClusters);
+
+    // calculate matrix minimums/maximums
+    network.matrixMins    = [];
+    network.matrixMaxs    = [];
+    network.matrixAbsMins = [];
+    network.matrixAbsMaxs = [];
+
+    for (var mi = 0; mi < network.matrices.length; mi++) {
+
+      var min    =  Number.MAX_VALUE;
+      var max    = -Number.MAX_VALUE;
+      var absMin =  Number.MAX_VALUE;
+      var absMax = -Number.MAX_VALUE;
+
+      var mat = network.matrices[mi];
+
+      for (var i = 0; i < mat.length; i++) {
+        for (var j = 0; j < mat[i].length; j++) {
+
+          var v  =          mat[i][j];
+          var av = Math.abs(mat[i][j]);
+
+          if (v  < min)    min    = v;
+          if (v  > max)    max    = v;
+          if (av < absMin) absMin = v;
+          if (av > absMax) absMax = v;
+        }
+      }
+
+      network.matrixMins   .push(min);
+      network.matrixMaxs   .push(max);
+      network.matrixAbsMins.push(absMin);
+      network.matrixAbsMaxs.push(absMax); 
+    }
 
     onLoadFunc(network);
   }
