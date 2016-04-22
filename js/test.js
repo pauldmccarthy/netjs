@@ -1,7 +1,7 @@
 /*
  * Utility functions for testing various things (on a manual basis).
  */
-(function() {
+define(["netdata", "lib/d3"], function(netdata, d3) {
 
   function isSymmetric(matrix) {
     
@@ -209,5 +209,33 @@
     console.log("Network is grand");
   }
 
+  function testAdjustIndices() {
 
+    var indices = [];
+    var mask    = []
+
+    for (var i = 0; i < 10; i++)  {
+      indices.push(i);
+
+      if (Math.random() >= 0.5) mask.push(1);
+      else                      mask.push(0);
+    }
+
+    d3.shuffle(indices);
+
+    var adjusted = netdata.adjustIndices(indices, mask);
+
+    console.log("Initial ordering: " + indices);
+    console.log("Mask:             " + mask);
+    console.log("Adjusted:         " + adjusted);
+  }
+
+  var test = {};
+  test.isSymmetric       = isSymmetric;
+  test.testSubNetwork    = testSubNetwork;
+  test.printMatrix       = printMatrix
+  test.testNetwork       = testNetwork;
+  test.testAdjustIndices = testAdjustIndices;
+
+  return test;
 });

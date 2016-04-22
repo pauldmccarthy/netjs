@@ -8,7 +8,7 @@
  *   - http://d3js.org/
  *   - http://bl.ocks.org/mbostock/7607999
  */
-define(["lib/d3"], function(d3) {
+define(["netdata", "lib/d3"], function(netdata, d3) {
 
   /* 
    * Various per-network constants for configuring how 
@@ -211,23 +211,13 @@ define(["lib/d3"], function(d3) {
     };
   }
 
-  /*
-   * Draw the nodes of the network. It is assumed that the network
-   * has the following D3 selections as attributes (which are 
-   * created and attached to the network in the displayNetwork 
-   * function):
-   *
-   *   - network.svgNodes:      Place to draw circles representing nodes
-   *   - network.svgNodeLabels: Place to draw node labels
-   *   - network.svgThumbnails: Place to draw node thumbnails
-   *
-   * And that the network also has a 'treeNodes' attribute, containing 
-   * node in the dendrogram tree (see the makeNetworkDendrogramTree 
-   * function).
-   */
-  function drawNodes(network) {
 
-    var svg    = network.display.svg;
+  /*
+   * Positions the network nodes according to the 
+   * linkags/dendrogram information
+   */
+  function dendrogramLayout(network) {
+
     var radius = network.display.radius;
 
     // We use the D3 cluster layout to draw the nodes in a circle.
@@ -244,7 +234,7 @@ define(["lib/d3"], function(d3) {
     var clusterLayout  = d3.layout.cluster()
       .size([360, radius-110])
         .separation(sep);
-      
+
     var rootNode       = network.treeNodes[network.treeNodes.length - 1];
     var clusteredNodes = clusterLayout.nodes(rootNode);
 
@@ -255,6 +245,101 @@ define(["lib/d3"], function(d3) {
       return n.parent !== null;
     });
 
+    return leafNodes;
+  }
+
+  /* 
+   * Positions the nodes according to a fixed ordering.
+   */
+  function fixedLayout(network) {
+    
+    var radius    = network.display.radius;
+    var rootNode  = network.treeNodes[network.treeNodes.length - 1];
+    var nodes     = network.nodes;
+    var nodeOrder = network.nodeOrders[network.nodeOrderIdx];
+
+    // If pruningState is true, we need
+    // to hide disconnected nodes. So
+    // we filter the node list, and
+    // adjust the node ordering accordingly.
+    if (network.pruningState) {
+
+      var mask = [];
+
+      for (var i = 0; i < nodes.length; i++) {
+
+        if (nodes[i].neighbours.length > 0) mask.push(1);
+        else                                mask.push(0);
+      }
+
+      nodeOrder = netdata.adjustIndices(nodeOrder, mask);
+      nodes     = nodes.filter(function(n, i) {
+        return mask[i] > 0;
+      });
+    }
+
+    var numNodes = nodes.length;
+
+    // We are constructing a dendrogram
+    // of depth 1 i.e. with a single root
+    // node, and [numNodes] leaf nodes.
+    //
+    // We need to add all of these attributes
+    // to each node in the dendrogram tree
+    // so that edge paths can be calculated.
+    // 
+    // See the documentation for
+    // the d3.layout.cluster and
+    // d3.layout.bundle functions.
+    rootNode.x        = 0;
+    rootNode.y        = 0;
+    rootNode.depth    = 0;
+    rootNode.children = nodes;
+
+    for (var i = 0; i < numNodes; i++) {
+
+      var node = nodes[nodeOrder[i]];
+      var parent;
+
+      if (node.neighbours.length === 0) parent = null;
+      else                                      parent = rootNode;
+
+      node.x        = (i / numNodes) * 360;
+      node.y        = radius - 110;
+      node.parent   = parent;
+      node.depth    = 1;
+      node.children = null;
+    }
+
+    return nodes;
+  }
+
+  /*
+   * Draw the nodes of the network. It is assumed that the network
+   * has the following D3 selections as attributes (which are 
+   * created and attached to the network in the displayNetwork 
+   * function):
+   *
+   *   - network.svgNodes:      Place to draw circles representing nodes
+   *   - network.svgNodeLabels: Place to draw node labels
+   *   - network.svgThumbnails: Place to draw node thumbnails
+   *
+   * And that the network also has a 'treeNodes' attribute, containing 
+   * node in the dendrogram tree (see the makeNetworkDendrogramTree 
+   * function).
+   */
+  function drawNodes(network) {
+
+    var svg = network.display.svg;
+    var nodes;
+
+    // Layout the nodes according to
+    // the dendrogram, or use a fixed
+    // node ordering, depending upon
+    // the value of nodeOrderIdx.
+    if (network.nodeOrderIdx === -1) nodes = dendrogramLayout(network);
+    else                             nodes = fixedLayout(     network);
+      
     // Position nodes in a big circle.
     function positionNode(node) {
       return "rotate("    + (node.x - 90) + ")"   + 
@@ -302,7 +387,7 @@ define(["lib/d3"], function(d3) {
     // Draw the nodes
     network.display.svgNodes
       .selectAll("circle")
-      .data(leafNodes)
+      .data(nodes)
       .enter()
       .append("circle")
       .attr("class",     nodeClasses)
@@ -314,7 +399,7 @@ define(["lib/d3"], function(d3) {
     // Draw the node labels
     network.display.svgNodeLabels
       .selectAll("text")
-      .data(leafNodes)
+      .data(nodes)
       .enter()
       .append("text")
       .attr("class",        nodeClasses)
@@ -331,7 +416,7 @@ define(["lib/d3"], function(d3) {
     // Draw the node thumbnails 
     network.display.svgThumbnails
       .selectAll("image")
-      .data(leafNodes)
+      .data(nodes)
       .enter()
       .append("image")
       .attr("class",       nodeClasses)

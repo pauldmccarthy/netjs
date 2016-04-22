@@ -893,6 +893,31 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
     return matrix;
   }
 
+  /*
+   * Given an array of indices, and a mask array of the same length,
+   * where 1 indicates inclusion and 0 indicates exclusion, extracts
+   * the included indices, and adjusts them with respect to the
+   * excluded indices.
+   */
+  function adjustIndices(indices, mask) {
+
+    var newIndices = [];
+
+    var include = indices.filter(function(n, i) {
+      return mask[i] > 0;
+    });
+
+    var sorted = include.slice(0);
+    sorted.sort()
+
+    for (var i = 0; i < include.length; i++) {
+      newIndices.push(sorted.indexOf(include[i]));
+    }
+
+    return newIndices;
+  }
+  
+
 
   var netdata               = {};
   netdata.loadNetwork       = loadNetwork;
@@ -905,5 +930,6 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
   netdata.setNodeOrderIdx   = setNodeOrderIdx;
   netdata.setThresholdIdx   = setThresholdIdx;
   netdata.setThresholdValue = setThresholdValue;
+  netdata.adjustIndices     = adjustIndices;
   return netdata;
 });
