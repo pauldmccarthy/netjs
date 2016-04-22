@@ -59,6 +59,7 @@ define(
       var edgeWidthIdx      = div.querySelector("#edgeWidthIdx");
       var edgeWidthLegend   = div.querySelector("#edgeWidthLegend");
       var nodeColourIdx     = div.querySelector("#nodeColourIdx");
+      var nodeNameIdx       = div.querySelector("#nodeNameIdx");
       var showSubNetwork    = div.querySelector("#showSubNetwork");
       var highlightNetwork  = div.querySelector("#highlightNetwork");
       var pruneDisconnected = div.querySelector("#pruneDisconnected");
@@ -345,6 +346,21 @@ define(
         nodeColourIdx.appendChild(opt);
       }
 
+      // Populate the nodeNameIdx drop down box -
+      // -1 results in node indices being used
+      // as the node names
+      var opt       = document.createElement("option");
+      opt.value     = "-1";
+      opt.innerHTML = "Use node indices";
+      nodeNameIdx.appendChild(opt); 
+      
+      for (var i = 0; i < network.nodeNameLabels.length; i++) {
+        var opt       = document.createElement("option");
+        opt.value     = "" + i;
+        opt.innerHTML = network.nodeNameLabels[i];
+        nodeNameIdx.appendChild(opt);
+      }
+
       // Populate the nodeOrderIdx drop down box -
       // it allows the user to choose between
       // displaying the network dendrogram, or
@@ -390,9 +406,14 @@ define(
           drawEdgeWidthLegend();
           redraw(true);
         };
+      
+      nodeNameIdx.onchange = function() {
+        netdata.setNodeNameIdx(network, parseInt(this.value));
+        redraw(true);
+      }; 
 
       nodeColourIdx.onchange = function() {
-        netData.setNodeColourIdx(network.parseInt(this.value));
+        netdata.setNodeColourIdx(network, parseInt(this.value));
         redraw(true);
       };
 

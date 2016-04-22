@@ -568,6 +568,17 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
   }
 
   /*
+   * Sets the node name - -1 corresponds to using
+   * node indices as their names.
+   */
+  function setNodeNameIdx(network, idx) {
+    if (idx < 0 || idx >= network.nodeNameLabels.length) {
+      throw "Node name index out of range."
+    }
+    network.nodeNameIdx = idx;
+  }
+
+  /*
    * Sets the node ordering - -1 corresponds to using
    * the linkage/dendrogram information.
    */
@@ -999,6 +1010,7 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
   netdata.setEdgeWidthIdx   = setEdgeWidthIdx;
   netdata.setEdgeColourIdx  = setEdgeColourIdx;
   netdata.setNodeColourIdx  = setNodeColourIdx;
+  netdata.setNodeNameIdx    = setNodeNameIdx;
   netdata.setNodeOrderIdx   = setNodeOrderIdx;
   netdata.setThresholdIdx   = setThresholdIdx;
   netdata.setThresholdValue = setThresholdValue;
