@@ -52,6 +52,7 @@ define(
       // Now we can retrieve all of the input 
       // elements from the rendered HTML
       var thresholdIdx      = div.querySelector("#thresholdIdx");
+      var nodeOrderIdx      = div.querySelector("#nodeOrderIdx");
       var numClusters       = div.querySelector("#numClusters");
       var edgeColourIdx     = div.querySelector("#edgeColourIdx");
       var edgeColourBar     = div.querySelector("#edgeColourBar");
@@ -338,11 +339,31 @@ define(
       // Populate the nodeColourIdx drop down 
       // box with the node data labels
       for (var i = 0; i < network.nodeDataLabels.length; i++) {
-        var opt = document.createElement("option");
-        opt.value = "" + i;
+        var opt       = document.createElement("option");
+        opt.value     = "" + i;
         opt.innerHTML = network.nodeDataLabels[i];
         nodeColourIdx.appendChild(opt);
-      }      
+      }
+
+      // Populate the nodeOrderIdx drop down box -
+      // it allows the user to choose between
+      // displaying the network dendrogram, or
+      // displaying the nodes in a fixed order ...
+      //
+      // -1 corresponds to displaying
+      // the network dendrogram
+      
+      var opt       = document.createElement("option");
+      opt.value     = "-1";
+      opt.innerHTML = "Display network dendrogram";
+      nodeOrderIdx.appendChild(opt); 
+      
+      for (var i = 0; i < network.nodeOrderLabels.length; i++) {
+        var opt       = document.createElement("option");
+        opt.value     = "" + i;
+        opt.innerHTML = network.nodeOrderLabels[i];
+        nodeOrderIdx.appendChild(opt);
+      }
 
       drawEdgeColourBar();
       drawEdgeWidthLegend();
@@ -383,6 +404,22 @@ define(
         // to be regenerated.
         toggleSubNetwork(); // recreate and reshow
         redraw(false);
+      };
+
+      nodeOrderIdx.onchange = function() {
+
+        var idx = parseInt(this.value);
+
+        // If the user has chosen a fixed node
+        // ordering, then we are not going to
+        // use dendrogram information to draw
+        // the network. So dendrogram-related
+        // controls are enabled/disabled
+        // accordingly.
+        numClusters.disabled = idx > -1;
+        
+        netdata.setNodeOrderIdx(network, idx);
+        redraw(true);
       };
 
       thresholdValues.forEach(function(thresVal, i) {

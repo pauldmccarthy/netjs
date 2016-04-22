@@ -63,7 +63,7 @@ require(["netjs", "lib/d3"], function(netjs, d3) {
   args.thresVals       = [0.75];
   args.thresLabels     = ["Thres perc"];
   args.thresholdIdx    = 0;
-  args.orderIdx        = -1;
+  args.nodeOrderIdx    = -1;
   args.numClusters     = 10;
 
   // Figure out a sensible canvas size.

@@ -432,6 +432,7 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
     linkage,
     nodeOrders,
     nodeOrderLabels,
+    nodeOrderIdx,
     thumbUrl,
     thresholdFunc,
     thresholdValues,
@@ -475,6 +476,7 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
     network.linkage              = linkage;
     network.nodeOrders           = nodeOrders;
     network.nodeOrderLabels      = nodeOrderLabels;
+    network.nodeOrderIdx         = nodeOrderIdx;
     network.thumbUrl             = thumbUrl;
     network.thresholdFunc        = thresholdFunc;
     network.thresholdValues      = thresholdValues;
@@ -547,6 +549,19 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
   }
 
   /*
+   * Sets the node ordering - -1 corresponds to using
+   * the linkage/dendrogram information.
+   */
+  function setNodeOrderIdx(network, idx) {
+
+    if (idx < -1 || idx >= network.nodeOrderLabels.length) {
+      throw "Node order index out of range";
+    }
+
+    network.nodeOrderIdx = idx;
+  }
+
+  /*
    * Sets the matrix used to threshold the network to the 
    * matrix at the specified index, and re-thresholds the 
    * network.
@@ -605,7 +620,7 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
     var thresLabels     = stdArgs.thresLabels;
     var thresholdIdx    = stdArgs.thresholdIdx;
     var nodeOrderLabels = stdArgs.nodeOrderLabels;
-    var orderIdx        = stdArgs.orderIdx;
+    var nodeOrderIdx    = stdArgs.nodeOrderIdx;
     var numClusters     = stdArgs.numClusters;
     var onLoadFunc      = stdArgs.onLoadFunc;
     var linkage         = args[1];
@@ -684,6 +699,7 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
       linkage,
       nodeOrders,
       nodeOrderLabels,
+      nodeOrderIdx,
       thumbUrl,
       thresFunc,
       thresVals,
@@ -754,7 +770,7 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
    *   - thresholdIdx:    Optional. Initial index of the connectivity 
    *                      matrix used to define the network edges.
    *
-   *   - orderIdx:        Optional. Initial index into the nodeOrders
+   *   - nodeOrderIdx:    Optional. Initial index into the nodeOrders
    *                      list, specifying the node didplay order to 
    *                      use. If not provided, or set to -1, the nodes 
    *                      are displayed according to the linkage 
@@ -793,8 +809,8 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
     if (a.nodeOrderLabels === undefined) 
       a.nodeOrderLabels = a.nodeOrders.map(function(no,i){ return "" + i;});
 
-    if (a.orderIdx === undefined)
-      a.orderIdx = -1;
+    if (a.nodeOrderIdx === undefined)
+      a.nodeOrderIdx = -1;
 
     if (a.thresVals === undefined) 
       a.thresVals = [];
@@ -886,6 +902,7 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
   netdata.setEdgeWidthIdx   = setEdgeWidthIdx;
   netdata.setEdgeColourIdx  = setEdgeColourIdx;
   netdata.setNodeColourIdx  = setNodeColourIdx;
+  netdata.setNodeOrderIdx   = setNodeOrderIdx;
   netdata.setThresholdIdx   = setThresholdIdx;
   netdata.setThresholdValue = setThresholdValue;
   return netdata;
