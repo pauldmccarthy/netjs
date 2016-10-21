@@ -5,8 +5,8 @@
  * Author: Paul McCarthy <pauldmccarthy@gmail.com>
  */
 define(
-  ["lib/d3", "lib/mustache", "netdata", "netvis", "netvis_dynamics"], 
-  function(d3, mustache, netdata, netvis, dynamics) {
+  ["lib/d3", "lib/mustache", "lib/queue", "netdata", "netvis", "netvis_dynamics"], 
+  function(d3, mustache, queue, netdata, netvis, dynamics) {
 
   /*
    * Creates a collection of widgets for controlling the network display.
@@ -15,6 +15,7 @@ define(
    *   - subnetOn:    Initial state of the sub-network.
    */
   function createNetworkControls(network,
+                                 networkDiv,
                                  div,
                                  subNetDiv,
                                  subNetWidth,
@@ -63,6 +64,7 @@ define(
       var showSubNetwork    = div.querySelector("#showSubNetwork");
       var highlightNetwork  = div.querySelector("#highlightNetwork");
       var pruneDisconnected = div.querySelector("#pruneDisconnected");
+      var openAsSVG         = div.querySelector("#openAsSVG");
 
       // a checkbox is created and inserted 
       // into the #showSubNetwork div only 
@@ -464,6 +466,81 @@ define(
 
       highlightNetwork .onchange = toggleHighlightNetwork;
       pruneDisconnected.onchange = togglePruneDisconnected;
+
+      /*
+       * Open the network svg in a new window 
+       * when the 'Open SVG' link is clicked
+       */
+      openAsSVG.onclick = function() {
+
+        // Thanks http://stackoverflow.com/a/26595628
+        var b64encode = function (input) {
+          var uInt8Array = new Uint8Array(input),
+              i = uInt8Array.length;
+          var biStr = []; //new Array(i);
+          while (i--) { biStr[i] = String.fromCharCode(uInt8Array[i]);  }
+          var base64 = window.btoa(biStr.join(''));
+          return base64;
+        }; 
+ 
+
+        var div       = d3.select(networkDiv);
+        var zerofmt   = d3.format("04d");
+        var svgWindow = window.open();
+        var q         = queue();
+        var imgSelect = div.selectAll("image");
+        var imgElems  = [];
+
+        // This is a bit fiddly, because the network svg
+        // has been created using links to the thumbnails.
+        // In order to create a standalone svg scene, we
+        // need to download all of those thumbnails and
+        // insert them into the svg, in place of the
+        // original links.
+
+        // Function which downloads the thumbnail
+        // for the specified node.
+        var getthumb = function(nodeIdx, callback) {
+
+          var url = network.thumbUrl + "/" + zerofmt(nodeIdx) + ".png";
+          d3.xhr(url)
+            .mimeType("image/png")
+            .responseType("arraybuffer")
+            .get(callback);
+        };
+
+        // Queue a request to download all the thumbnails
+        for (var i = 0; i < network.nodes.length; i++) {
+          
+          var imgElem = imgSelect.filter(".node-" + i);
+
+          if (imgElem !== undefined) {
+            imgElems.push(imgElem);
+            q = q.defer(getthumb, i);
+          }
+        }
+
+        // When all the thumbs have been downloaded,
+        q.awaitAll(function(error, thumbs) {
+          
+          thumbs.map(function(thumb, idx) {
+
+            // b64 encode them, and insert 
+            // them into the svg
+            var encoded = b64encode(thumb.response);
+            imgElems[idx].attr("xlink:href", "data:image/png+xml;base64,\n" + encoded);
+
+          });
+
+          // Load the full SVG in a new window
+          var encoded = btoa(div.html());
+          var url     = "data:image/svg+xml;base64,\n" + encoded;
+
+          svgWindow.location = url;
+        });
+        
+        return false;
+      };
 
       // Set initial widget values
       thresholdIdx     .selectedIndex = network.thresholdIdx;

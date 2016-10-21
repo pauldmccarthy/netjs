@@ -234,6 +234,7 @@ define(
 
     netctrl.createNetworkControls(
       network,
+      networkDiv,
       controlDiv,
       subNetDiv,
       subNetWidth,

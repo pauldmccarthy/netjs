@@ -533,6 +533,8 @@ define(["netdata", "lib/d3"], function(netdata, d3) {
     var svg = null;
     if (!network.display || !network.display.svg) {
       svg = d3.select(div).append("svg")
+        .attr("version",     "1.1")
+        .attr("xmlns",       "http://www.w3.org/2000/svg")
         .attr("width",       width)
         .attr("height",      height)
         .style("background-color", "#fafaf0")
