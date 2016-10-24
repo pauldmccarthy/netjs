@@ -40,6 +40,11 @@ define(
    * as listed below. Or you can globally set the display property. For example,
    * setting the 'labelSize' attribute will override any of the 'defLabelSize',
    * 'hltLabelSize' or 'selLabelSize' attributes.
+   *
+   * Attributes controlling general settings:
+   *
+   *  - showLabels
+   *  - backgroundColour
    * 
    * Attributes controlling node label font size:
    * 
@@ -228,6 +233,12 @@ define(
 
     if (display.groupDistance)
       vd.GROUP_DISTANCE = display.groupDistance;
+
+    if (display.backgroundColour)
+      vd.BACKGROUND_COLOUR = display.backgroundColour;
+
+    if (display.showLabels !== undefined)
+      vd.SHOW_LABELS = display.showLabels; 
 
     netvis.displayNetwork(network, networkDiv, networkWidth, networkHeight);
     dynamics.configDynamics(network); 

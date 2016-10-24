@@ -17,6 +17,9 @@ define(["netdata", "lib/d3"], function(netdata, d3) {
    * selected (SEL).
    */
   var visDefaults = {};
+  visDefaults.BACKGROUND_COLOUR = '#fafaf0';
+
+  visDefaults.SHOW_LABELS      = true;
   visDefaults.DEF_LABEL_SIZE   = 10;
   visDefaults.HLT_LABEL_SIZE   = 10;
   visDefaults.SEL_LABEL_SIZE   = 16;
@@ -356,11 +359,18 @@ define(["netdata", "lib/d3"], function(netdata, d3) {
 
     // Position thumbnails in an even slightly bigger 
     // circle, ensuring that they are upright.
+    var halfThumbW = network.display.DEF_THUMB_WIDTH  / 2.0;
+    var halfThumbH = network.display.DEF_THUMB_HEIGHT / 2.0;
+    var yoff       = 70;
+    if (network.display.SHOW_LABELS === false) {
+      yoff = 40;
+    }
+ 
     function positionThumbnail(node) {
       return "rotate("    + ( node.x - 90) + ")"   + 
-             "translate(" + ( node.y + 70) + ",0)" + 
-             "rotate("    + (-node.x + 90) + ")"   +
-             "translate(-23,-28)";
+             "translate(" + ( node.y + yoff) + ",0)" + 
+             "rotate("    + (-node.x + 90) + ")" +
+             "translate(-" + halfThumbW + ",-" + halfThumbH + ")";
     }
 
     // Position node names nicely.
@@ -404,21 +414,23 @@ define(["netdata", "lib/d3"], function(netdata, d3) {
       .attr("fill",      network.scaleInfo.nodeColour);
       
     // Draw the node labels
-    network.display.svgNodeLabels
-      .selectAll("text")
-      .data(nodes)
-      .enter()
-      .append("text")
-      .attr("class",        nodeClasses)
-      .attr("dy",          ".31em")
-      .attr("opacity",      network.display.DEF_NODE_OPACITY)
-      .attr("font-family",  network.display.DEF_LABEL_FONT)
-      .attr("font-weight",  network.display.DEF_LABEL_WEIGHT)
-      .attr("font-size",    network.display.DEF_LABEL_SIZE)
-      .attr("fill",         network.scaleInfo.nodeColour)
-      .attr("transform",    positionLabel)
-      .style("text-anchor", anchorLabel)
-      .text(nodeNames);
+    if (network.display.SHOW_LABELS === true) {
+      network.display.svgNodeLabels
+        .selectAll("text")
+        .data(nodes)
+        .enter()
+        .append("text")
+        .attr("class",        nodeClasses)
+        .attr("dy",          ".31em")
+        .attr("opacity",      network.display.DEF_NODE_OPACITY)
+        .attr("font-family",  network.display.DEF_LABEL_FONT)
+        .attr("font-weight",  network.display.DEF_LABEL_WEIGHT)
+        .attr("font-size",    network.display.DEF_LABEL_SIZE)
+        .attr("fill",         network.scaleInfo.nodeColour)
+        .attr("transform",    positionLabel)
+        .style("text-anchor", anchorLabel)
+        .text(nodeNames);
+  }
 
     // Draw the node thumbnails 
     network.display.svgThumbnails
@@ -533,11 +545,11 @@ define(["netdata", "lib/d3"], function(netdata, d3) {
     var svg = null;
     if (!network.display || !network.display.svg) {
       svg = d3.select(div).append("svg")
-        .attr("version",     "1.1")
-        .attr("xmlns",       "http://www.w3.org/2000/svg")
-        .attr("width",       width)
-        .attr("height",      height)
-        .style("background-color", "#fafaf0")
+        .attr("version",           "1.1")
+        .attr("xmlns",             "http://www.w3.org/2000/svg")
+        .attr("width",             width)
+        .attr("height",            height)
+        .style("background-color", visDefaults.BACKGROUND_COLOUR);
     }
     else {
       svg = network.display.svg;
