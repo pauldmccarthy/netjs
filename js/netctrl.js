@@ -510,13 +510,15 @@ define(
         };
 
         // Queue a request to download all the thumbnails
-        for (var i = 0; i < network.nodes.length; i++) {
-          
-          var imgElem = imgSelect.filter(".node-" + i);
+        if (network.thumbUrl !== null) {
+          for (var i = 0; i < network.nodes.length; i++) {
+            
+            var imgElem = imgSelect.filter(".node-" + i);
 
-          if (imgElem !== undefined) {
-            imgElems.push(imgElem);
-            q = q.defer(getthumb, i);
+            if (imgElem !== undefined) {
+              imgElems.push(imgElem);
+              q = q.defer(getthumb, i);
+            }
           }
         }
 
