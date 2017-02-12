@@ -239,9 +239,15 @@ define(
 
         edgeColourBar.innerHTML = "";
 
-        var d3ecb   = d3.select(edgeColourBar);
         var min     = -network.matrixAbsMaxs[network.scaleInfo.edgeColourIdx];
         var max     =  network.matrixAbsMaxs[network.scaleInfo.edgeColourIdx];
+
+        if (network.display.EDGE_COLOUR_MAX !== null) {
+          min = -network.display.EDGE_COLOUR_MAX; 
+          max =  network.display.EDGE_COLOUR_MAX;
+        }
+
+        var d3ecb   = d3.select(edgeColourBar);
         var step    = (max - min) / 20.0;
         var points  = d3.range(min, max + 1, step);
         var fmt     = d3.format("5.2f");
@@ -296,6 +302,14 @@ define(
 
         var min     = network.matrixAbsMins[network.scaleInfo.edgeWidthIdx];
         var max     = network.matrixAbsMaxs[network.scaleInfo.edgeWidthIdx];
+
+        if (network.display.EDGE_WIDTH_MIN !== null) {
+          min = network.display.EDGE_WIDTH_MIN;
+        }
+        if (network.display.EDGE_WIDTH_MAX !== null) {
+          max = network.display.EDGE_WIDTH_MAX;
+        } 
+        
         var values  = [-max, -min, min, max];
         var fmt     = d3.format("5.2f");
 

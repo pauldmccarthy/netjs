@@ -546,7 +546,7 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
    * node indices as their names.
    */
   function setNodeNameIdx(network, idx) {
-    if (idx < 0 || idx >= network.nodeNameLabels.length) {
+    if (idx < -1 || idx >= network.nodeNameLabels.length) {
       throw "Node name index out of range."
     }
     network.nodeNameIdx = idx;

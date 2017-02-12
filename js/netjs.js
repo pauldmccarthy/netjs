@@ -85,11 +85,22 @@ define(
    * Attributes controlling edge color. The edgeColour, defEdgeColour and
    * hltEdgeColour attriutes can be a constant colour specified as a
    * hexadecimal RGB string (e.g. "#ffffff"). alternately, they can be
-   * 'default' or 'highlight', in which case the edges are coloured 
-   * according to their corresponding network matrix value, and a colour
-   * range specified by the edgeMinColour, edgeMidColour and edgeMaxColour
-   * attributes. The 'default' colour is a pseudo-transparent version of
-   * the 'highlight' colour.
+   * 'default' or 'highlight', in which case the edges are coloured according
+   * to their corresponding network matrix value, and a colour range specified
+   * by the edgeMinColour, edgeMidColour and edgeMaxColour attributes.  Or,
+   * the edgeColourMap parameter may be a list of colours, which will be
+   * mapped to, and interpolated across, the data range. If edgeColourMap is 
+   * provided, it must contain an odd number of colours, so that a single
+   * colour is able to be mapped to the minimum edge strength.  The 'default' 
+   * colour is a pseudo-transparent version of the 'highlight' colour.
+   * 
+   * By default, the minimum colour will be mapped to the negative of the 
+   * maximum absolute edge strength, and the maximum colour mapped to the 
+   * positive of the maximum absolute edge strength (i.e. so the colour map
+   * will be centered at 0). This can be overridden with the edgeColourMin
+   * and edgeColourMax parameters, which specify the edge strength values that 
+   * correspond to the minimum and maximum edge colours - these are applied
+   * symmetrically to positive and negative edge strengths.
    *
    *   - edgeColour
    *   - defEdgeColour
@@ -97,14 +108,26 @@ define(
    *   - edgeMinColour
    *   - edgeMidColour
    *   - edgeMaxColour
+   *   - edgeColourMap
+   *   - edgeColourMin
+   *   - edgeColourMax
    *
    * Attributes controlling the edge width in pixels. Any of these parameters
    * can be 'scale', in which case each edge width is scaled according to
-   * the corresponding network matrix value.
+   * the corresponding network matrix value. When the edge width is 
+   * 'scale', the minimum/maximum edge widths are set according to the 
+   * minEdgeWidth and maxEdgeWidth parameters. By default, the minimum and 
+   * maximum edge widths will correspond to the absolute minimum and maximum
+   * edge strengths (symmetrically to positive/negative edges), although this 
+   * can be overridden via the edgeWidthMin and edgeWidthMax parameters.
    * 
    *   - edgeWidth
    *   - defEdgeWidth
    *   - hltEdgeWidth
+   *   - minEdgeWidth
+   *   - maxEdgeWidth
+   *   - edgeWidthMin
+   *   - edgeWidthMax
    * 
    * Attribute controlling the distance between groups of nodes on the 
    * network circumference, with the unit being node diameters:
@@ -199,6 +222,9 @@ define(
     if (display.edgeMinColour) vd.EDGE_MIN_COLOUR = display.edgeMinColour;
     if (display.edgeMidColour) vd.EDGE_MID_COLOUR = display.edgeMidColour;
     if (display.edgeMaxColour) vd.EDGE_MAX_COLOUR = display.edgeMaxColour;
+    if (display.edgeColourMap) vd.EDGE_COLOURMAP  = display.edgeColourMap;
+    if (display.edgeColourMin) vd.EDGE_COLOUR_MIN = display.edgeColourMin;
+    if (display.edgeColourMax) vd.EDGE_COLOUR_MAX = display.edgeColourMax;
     
     if (display.defEdgeWidth) vd.DEF_EDGE_WIDTH = display.defEdgeWidth;
     if (display.hltEdgeWidth) vd.HLT_EDGE_WIDTH = display.hltEdgeWidth;
@@ -206,6 +232,11 @@ define(
       vd.DEF_EDGE_WIDTH = display.edgeWidth;
       vd.HLT_EDGE_WIDTH = display.edgeWidth;
     }
+
+    if (display.minEdgeWidth) vd.MIN_EDGE_WIDTH = display.minEdgeWidth;
+    if (display.maxEdgeWidth) vd.MAX_EDGE_WIDTH = display.maxEdgeWidth;
+    if (display.edgeWidthMin) vd.EDGE_WIDTH_MIN = display.edgeWidthMin;
+    if (display.edgeWidthMax) vd.EDGE_WIDTH_MAX = display.edgeWidthMax; 
 
     if (display.defEdgeOpacity) vd.DEF_EDGE_OPACITY = display.defEdgeOpacity;
     if (display.hltEdgeOpacity) vd.HLT_EDGE_OPACITY = display.hltEdgeOpacity;

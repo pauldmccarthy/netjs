@@ -56,11 +56,18 @@ define(["netdata", "lib/d3"], function(netdata, d3) {
   visDefaults.HLT_EDGE_COLOUR  = "highlight";
   visDefaults.DEF_EDGE_WIDTH   = 1;
   visDefaults.HLT_EDGE_WIDTH   = "scale";
+  visDefaults.MIN_EDGE_WIDTH   = 1;
+  visDefaults.MAX_EDGE_WIDTH   = 15;
+  visDefaults.EDGE_WIDTH_MIN   = null;
+  visDefaults.EDGE_WIDTH_MAX   = null; 
   visDefaults.EDGE_OPACITY     = 1.0;
 
-  visDefaults.EDGE_MIN_COLOUR = "#0000dd";
-  visDefaults.EDGE_MID_COLOUR = "#eeeeee";
-  visDefaults.EDGE_MAX_COLOUR = "#dd0000";
+  visDefaults.EDGE_MIN_COLOUR  = "#0000dd";
+  visDefaults.EDGE_MID_COLOUR  = "#eeeeee";
+  visDefaults.EDGE_MAX_COLOUR  = "#dd0000";
+  visDefaults.EDGE_COLOURMAP   = null;
+  visDefaults.EDGE_COLOUR_MIN  = null;
+  visDefaults.EDGE_COLOUR_MAX  = null;
 
   visDefaults.GROUP_DISTANCE   = 1.5;
 
@@ -128,17 +135,56 @@ define(["netdata", "lib/d3"], function(netdata, d3) {
     var ewMin = network.matrixAbsMins[ewwIdx];
     var ewMax = network.matrixAbsMaxs[ewwIdx];
 
+    if (network.display.EDGE_COLOUR_MIN !== null)
+      ecMin = network.display.EDGE_COLOUR_MIN;
+    if (network.display.EDGE_COLOUR_MAX !== null)
+      ecMax = network.display.EDGE_COLOUR_MAX;
+    if (network.display.EDGE_WIDTH_MIN !== null)
+      ewMin = network.display.EDGE_WIDTH_MIN;
+    if (network.display.EDGE_WIDTH_MAX !== null)
+      ewMax = network.display.EDGE_WIDTH_MAX; 
+
     // Edge width scale
     var edgeWidthScale = d3.scale.linear()
       .domain([-ewMax, -ewMin, -0, ewMin, ewMax])
-      .range( [ 15,     1,      0, 1,     15]);
+      .range( [network.display.MAX_EDGE_WIDTH,
+               network.display.MIN_EDGE_WIDTH,
+               0,
+               network.display.MIN_EDGE_WIDTH,
+               network.display.MAX_EDGE_WIDTH])
+      .clamp(true);
+
+    if (network.display.EDGE_COLOURMAP !== null) {
+
+      if (network.display.EDGE_COLOURMAP.length % 2 == 0) {
+        throw "Colour map must have an odd number of colours!";
+      }
+
+      // Make a colour map which covers
+      // [-max, -min, 0, min, max],  where
+      // the [-min, 0, min] section maps
+      // to the central colour.
+      halfway = Math.floor(network.display.EDGE_COLOURMAP.length / 2);
+      delta   = (ecMax - ecMin) / halfway;
+      range   =  network.display.EDGE_COLOURMAP.slice(0, halfway + 1).concat(
+                [network.display.EDGE_COLOURMAP[halfway]]).concat(
+                [network.display.EDGE_COLOURMAP[halfway]]).concat(
+                 network.display.EDGE_COLOURMAP.slice(halfway + 1));
+
+      domain  = d3.range(-ecMax, -ecMin + delta, delta).concat(
+        [0]).concat(d3.range(ecMin, ecMax + delta, delta));
+    }
+    else {
+      domain = [-ecMax, -ecMin, 0, ecMin, ecMax];
+      range  = [network.display.EDGE_MIN_COLOUR,
+                network.display.EDGE_MID_COLOUR,
+                network.display.EDGE_MID_COLOUR,
+                network.display.EDGE_MID_COLOUR,
+                network.display.EDGE_MAX_COLOUR];
+    }
 
     // Colour scale for highlighted edges
-    var hltEdgeColourScale = d3.scale.linear()
-      .domain([ -ecMax,   0,          ecMax  ])
-      .range( [network.display.EDGE_MIN_COLOUR,
-               network.display.EDGE_MID_COLOUR,
-               network.display.EDGE_MAX_COLOUR]);
+    var hltEdgeColourScale = d3.scale.linear().domain(domain).range(range);
 
     // The colour scale for non-highlighted edges
     // is a washed out version of that used for 
