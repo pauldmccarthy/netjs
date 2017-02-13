@@ -280,9 +280,11 @@ define(["netdata", "lib/d3"], function(netdata, d3) {
       return a.parent == b.parent ? 1 : visDefaults.GROUP_DISTANCE;
     }
 
+
     var clusterLayout  = d3.layout.cluster()
       .size([360, radius-110])
-        .separation(sep);
+        .separation(sep)
+        .sort(function(a, b) { return d3.ascending(a.order, b.order); });
 
     var rootNode       = network.treeNodes[network.treeNodes.length - 1];
     var clusteredNodes = clusterLayout.nodes(rootNode);

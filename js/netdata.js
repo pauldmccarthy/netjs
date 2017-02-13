@@ -422,6 +422,7 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
     nodeNameLabels,
     nodeNameIdx,
     linkage,
+    linkageOrder,
     nodeOrders,
     nodeOrderLabels,
     nodeOrderIdx,
@@ -444,6 +445,9 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
 
       node.index    = i;
       node.nodeData = nodeData.map(function(array) {return array[i];});
+
+      if (linkageOrder !== null) node.order = linkageOrder[i];
+      else                       node.order = i;
 
       // Attach a thumbnail URL to 
       // every node in the network
@@ -630,13 +634,14 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
     var numClusters     = stdArgs.numClusters;
     var onLoadFunc      = stdArgs.onLoadFunc;
     var linkage         = args[1];
+    var linkageOrder    = args[2];
 
     var numNodeData   = nodeDataLabels .length;
     var numNodeNames  = nodeNameLabels .length;
     var numMatrices   = matrixLabels   .length;
     var numNodeOrders = nodeOrderLabels.length;
 
-    var offset     = 2;
+    var offset     = 3;
     var nodeData   = args.slice(offset, offset + numNodeData);
     offset        += numNodeData;
     var matrices   = args.slice(offset, offset + numMatrices);
@@ -647,6 +652,14 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
 
     if (linkage !== null) 
       linkage = parseTextMatrix(linkage);
+
+    if (linkageOrder !== null)  {
+      linkageOrder = parseTextMatrix(linkageOrder);
+
+      linkageOrder = linkageOrder.map(function(array) {
+        return array.reduce(function(a, b) {return a.concat(b);});
+      }); 
+    }
     
     matrices   = matrices  .map(parseTextMatrix);
     nodeData   = nodeData  .map(parseTextMatrix);
@@ -725,6 +738,7 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
       nodeNameLabels,
       nodeNameIdx,
       linkage,
+      linkageOrder,
       nodeOrders,
       nodeOrderLabels,
       nodeOrderIdx,
@@ -802,6 +816,12 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
    *   - linkage:         Optional. A N*3 array of data describing
    *                      the dendrogram for the network - the output
    *                      of a call to the MATLAB linkage function.
+   * 
+   *   - linkageOrder:    Optional. A list of values, one for each 
+   *                      node, specifying the order in which nodes
+   *                      should be sorted when displaying the 
+   *                      dendrogram layout.
+   *
    *
    *   - nodeOrders:      Optional. A list of URLS pointing to 1D
    *                      arrays of numerical data, defining the 
@@ -902,6 +922,7 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
       a.thresLabels = a.thresVals.map(function(tv,i){ return "" + i;});
 
     if (a.linkage      === undefined) a.linkage      = null;
+    if (a.linkageOrder === undefined) a.linkageOrder = null;
     if (a.thumbnails   === undefined) a.thumbnails   = null;
     if (a.thresholdIdx === undefined) a.thresholdIdx = 0;
     if (a.numClusters  === undefined) a.numClusters  = 1;
@@ -938,6 +959,10 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
     // linkage data
     if (a.linkage !== null) q = q.defer(d3.text, a.linkage);
     else                    q = q.defer(qId,     a.linkage);
+
+    // linkage order
+    if (a.linkageOrder !== null) q = q.defer(d3.text, a.linkageOrder);
+    else                         q = q.defer(qId,     a.linkageOrder); 
 
     // node data
     a.nodeData.forEach(function(url) {
