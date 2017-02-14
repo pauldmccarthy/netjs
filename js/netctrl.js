@@ -564,6 +564,8 @@ define(
       edgeColourIdx    .selectedIndex = network.scaleInfo.edgeColourIdx;
       edgeWidthIdx     .selectedIndex = network.scaleInfo.edgeWidthIdx;
       nodeColourIdx    .selectedIndex = network.scaleInfo.nodeColourIdx;
+      nodeNameIdx      .selectedIndex = network.nodeNameIdx + 1;
+      nodeOrderIdx     .selectedIndex = network.nodeOrderIdx + 1;
       highlightNetwork .value         = false;
       pruneDisconnected.value         = network.prune;
 

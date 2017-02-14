@@ -446,7 +446,7 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
       node.index    = i;
       node.nodeData = nodeData.map(function(array) {return array[i];});
 
-      if (linkageOrder !== null) node.order = linkageOrder[i];
+      if (linkageOrder !== null) node.order = linkageOrder.indexOf(i);
       else                       node.order = i;
 
       // Attach a thumbnail URL to 
@@ -817,11 +817,10 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
    *                      the dendrogram for the network - the output
    *                      of a call to the MATLAB linkage function.
    * 
-   *   - linkageOrder:    Optional. A list of values, one for each 
-   *                      node, specifying the order in which nodes
-   *                      should be sorted when displaying the 
-   *                      dendrogram layout.
-   *
+   *   - linkageOrder:    Optional. A list of values, each a node
+   *                      index (starting from 0) specifying the order
+   *                      in which nodes should be sorted when 
+   *                      displaying the dendrogram layout.
    *
    *   - nodeOrders:      Optional. A list of URLS pointing to 1D
    *                      arrays of numerical data, defining the 
