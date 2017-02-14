@@ -5,7 +5,8 @@
 
   {{#thresholdValues}}
   <label for="thresholdValue{{index}}">{{label}}</label><br>
-  0<input id="thresholdValue{{index}}" type="range" min="0.0" max="1.0" step="0.05">1<br>
+  {{minVal}}<input id="thresholdValue{{index}}" type="range" min="{{minVal}}" max="{{maxVal}}" step="0.05">{{maxVal}}<br>
+  <label id="currentThresholdValue{{index}}"></label>
   <hr>
   {{/thresholdValues}}
 

@@ -143,6 +143,11 @@ define(
    *   - selThumbWidth
    *   - selThumbHeight
    *
+   *   - nodeRadiusOffset
+   *   - edgeRadiusOffset
+   *   - labelRadiusOffset
+   *   - thumbnailRadiusOffset
+   *
    * Attributes controlling initial state:
    *   - highlightOn
    *   - subnetOn
@@ -260,10 +265,22 @@ define(
       vd.DEF_THUMB_HEIGHT  = display.thumbHeight;
       vd.HLT_THUMB_HEIGHT  = display.thumbHeight;
       vd.SEL_THUMB_HEIGHT  = display.thumbHeight;
-    } 
+    }
 
     if (display.groupDistance)
       vd.GROUP_DISTANCE = display.groupDistance;
+
+    if (display.nodeRadiusOffset)
+      vd.NODE_RADIUS_OFFSET = display.nodeRadiusOffset;
+    
+    if (display.edgeRadiusOffset)
+      vd.EDGE_RADIUS_OFFSET = display.edgeRadiusOffset;
+    
+    if (display.labelRadiusOffset)
+      vd.LABEL_RADIUS_OFFSET = display.labelRadiusOffset;
+    
+    if (display.thumbnailRadiusOffset)
+      vd.THUMBNAIL_RADIUS_OFFSET = display.thumbnailRadiusOffset; 
 
     if (display.backgroundColour)
       vd.BACKGROUND_COLOUR = display.backgroundColour;

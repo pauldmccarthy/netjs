@@ -39,6 +39,8 @@ define(
       var templateData = {
         thresholdValues : network.thresholdValues.map(function(val, i) {
           var tv = {};
+          tv.minVal = 0;
+          tv.maxVal = d3.max(network.matrixAbsMaxs);
           tv.index = i;
           tv.label = network.thresholdValueLabels[i];
           return tv;
@@ -75,6 +77,10 @@ define(
       var thresholdValues = network.thresholdValues.map(function(val, i) {
           return div.querySelector("#thresholdValue" + i);
       });
+
+      var currentThresholdValues = network.thresholdValues.map(function(val, i) {
+          return div.querySelector("#currentThresholdValue" + i);
+      }); 
 
       /*
        * Refreshes the network display, and the subnetwork
@@ -461,6 +467,8 @@ define(
 
       thresholdValues.forEach(function(thresVal, i) {
         thresVal.onchange = function() {
+          
+          currentThresholdValues[i].innerHTML = this.value;
           netdata.setThresholdValue(network, i, parseFloat(this.value));
           toggleSubNetwork(); // recreate and reshow
           redraw(false);
@@ -570,7 +578,8 @@ define(
       pruneDisconnected.value         = network.prune;
 
       thresholdValues.forEach(function(thresVal, i) {
-        thresVal.value = network.thresholdValues[i];
+        thresVal.value                      = network.thresholdValues[i];
+        currentThresholdValues[i].innerHTML = network.thresholdValues[i];
       });
 
       if (highlightOn) {

@@ -62,6 +62,11 @@ define(["netdata", "lib/d3"], function(netdata, d3) {
   visDefaults.EDGE_WIDTH_MAX   = null; 
   visDefaults.EDGE_OPACITY     = 1.0;
 
+  visDefaults.NODE_RADIUS_OFFSET      = 110;
+  visDefaults.EDGE_RADIUS_OFFSET      = 8;
+  visDefaults.LABEL_RADIUS_OFFSET     = 20;
+  visDefaults.THUMBNAIL_RADIUS_OFFSET = 70;
+
   visDefaults.EDGE_MIN_COLOUR  = "#0000dd";
   visDefaults.EDGE_MID_COLOUR  = "#eeeeee";
   visDefaults.EDGE_MAX_COLOUR  = "#dd0000";
@@ -282,7 +287,7 @@ define(["netdata", "lib/d3"], function(netdata, d3) {
 
 
     var clusterLayout  = d3.layout.cluster()
-      .size([360, radius-110])
+      .size([360, radius-network.display.NODE_RADIUS_OFFSET])
         .separation(sep)
         .sort(function(a, b) { return d3.ascending(a.order, b.order); });
 
@@ -356,7 +361,7 @@ define(["netdata", "lib/d3"], function(netdata, d3) {
       else                              parent = rootNode;
 
       node.x        = (i / numNodes) * 360;
-      node.y        = radius - 110;
+      node.y        = radius - network.display.NODE_RADIUS_OFFSET;
       node.parent   = parent;
       node.depth    = 1;
       node.children = null;
@@ -401,7 +406,7 @@ define(["netdata", "lib/d3"], function(netdata, d3) {
     // Position labels in a slightly bigger circle.
     function positionLabel(node) {
       return "rotate("    + (node.x - 90)   + ")"  + 
-             "translate(" + (node.y + 4)  + ",0)" + 
+             "translate(" + (node.y + network.display.LABEL_RADIUS_OFFSET)  + ",0)" + 
              (node.x < 180 ? "" : "rotate(180)"); 
     }
 
@@ -409,10 +414,7 @@ define(["netdata", "lib/d3"], function(netdata, d3) {
     // circle, ensuring that they are upright.
     var halfThumbW = network.display.DEF_THUMB_WIDTH  / 2.0;
     var halfThumbH = network.display.DEF_THUMB_HEIGHT / 2.0;
-    var yoff       = 70;
-    if (network.display.SHOW_LABELS === false) {
-      yoff = 40;
-    }
+    var yoff       = network.display.THUMBNAIL_RADIUS_OFFSET;
  
     function positionThumbnail(node) {
       return "rotate("    + ( node.x - 90) + ")"   + 
@@ -512,7 +514,7 @@ define(["netdata", "lib/d3"], function(netdata, d3) {
     var line   = d3.svg.line.radial()
       .interpolate("bundle")
       .tension(.85)
-      .radius(function(node) { return node.y - 8; })
+      .radius(function(node) { return node.y - network.display.EDGE_RADIUS_OFFSET; })
       .angle( function(node) { return node.x / 180 * Math.PI; });
 
      // Each svg path element is given two classes - 'edge-X' 
