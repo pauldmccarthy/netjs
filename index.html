@@ -9,16 +9,31 @@
   <meta id="orders"        data="{{ orders        }}">
   <meta id="groups"        data="{{ groups        }}">
   <meta id="thumbnails"    data="{{ thumbnails    }}">
+  <meta id="images"        data="{{ images        }}">
+  <meta id="underlay"      data="{{ underlay      }}">
+  <meta id="image_size"    data="{{ image_size    }}">
   <meta id="matrix_labels" data="{{ matrix_labels }}">
   <meta id="name_labels"   data="{{ name_labels   }}">
   <meta id="order_labels"  data="{{ order_labels  }}">
   <meta id="group_labels"  data="{{ group_labels  }}">
 
+
+  <link rel="stylesheet" type="text/css" href="css/style.css" >
+
 </head>
 
-  <div id="networkCtrl" style="display: inline-block; vertical-align: top"></div>
-  <div id="fullNetwork" style="display: inline"></div>
+  <div id="control"> </div>
+  <div id="network"> </div>
 
-  <script data-main="js/main" src="js/lib/require.js"></script>
+  <div>
+    <canvas id="viewer"></canvas>
+
+    <img id="imageUnderlay"></img>
+    <img id="imageOverlay"> </img>
+  </div>
+
+
+  <script type="text/javascript" src="js/lib/require.js" data-main="js/main" ></script>
+
 </body>
 </html>

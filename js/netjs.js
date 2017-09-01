@@ -158,6 +158,8 @@ define(
 
     var networkDiv    = display.networkDiv;
     var subNetDiv     = display.subNetDiv;
+    var canvasDiv     = display.canvasDiv;
+    var imageDiv      = display.imageDiv;
     var controlDiv    = display.controlDiv;
     var networkWidth  = display.networkWidth;
     var networkHeight = display.networkHeight;
@@ -295,10 +297,11 @@ define(
       vd.SHOW_LABELS = display.showLabels;
 
     netvis.displayNetwork(network, networkDiv, networkWidth, networkHeight);
-    dynamics.configDynamics(network);
+    dynamics.configDynamics(network, display);
 
     netctrl.createNetworkControls(
       network,
+      display,
       networkDiv,
       controlDiv,
       subNetDiv,

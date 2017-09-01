@@ -427,6 +427,7 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
     nodeOrderLabels,
     nodeOrderIdx,
     thumbUrl,
+    imageUrl,
     thresholdFunc,
     thresholdValues,
     thresholdValueLabels,
@@ -452,11 +453,17 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
       // Attach a thumbnail URL to
       // every node in the network
       if (thumbUrl !== null) {
-        var imgUrl = thumbUrl + "/" + zerofmt(i) + ".png";
-        node.thumbnail = imgUrl;
+        node.thumbnail = thumbUrl + "/" + zerofmt(i) + ".png";
       }
       else {
         node.thumbnail = null;
+      }
+
+      if (imageUrl !== null) {
+        node.image = imageUrl + "/" + zerofmt(i) + ".png";
+      }
+      else {
+        node.image = null;
       }
 
       nodes.push(node);
@@ -623,6 +630,7 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
     var nodeDataLabels  = stdArgs.nodeDataLabels;
     var matrixLabels    = stdArgs.matrixLabels;
     var thumbUrl        = stdArgs.thumbnails;
+    var imgUrl          = stdArgs.images;
     var thresFunc       = stdArgs.thresFunc;
     var thresVals       = stdArgs.thresVals;
     var thresLabels     = stdArgs.thresLabels;
@@ -743,6 +751,7 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
       nodeOrderLabels,
       nodeOrderIdx,
       thumbUrl,
+      imgUrl,
       thresFunc,
       thresVals,
       thresLabels,
@@ -838,6 +847,8 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
    *                      where "%04d" is the zero-indexed node index
    *                      in the network, padded to four characters.
    *
+   *   - images:          TODO
+   *
    *   - thresFunc:       Required. A function which accepts two
    *                      parameters - a connectivity matrix, and a
    *                      list of parameters (thresVals, see below).
@@ -923,6 +934,7 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
     if (a.linkage      === undefined) a.linkage      = null;
     if (a.linkageOrder === undefined) a.linkageOrder = null;
     if (a.thumbnails   === undefined) a.thumbnails   = null;
+    if (a.images       === undefined) a.images       = null;
     if (a.thresholdIdx === undefined) a.thresholdIdx = 0;
     if (a.numClusters  === undefined) a.numClusters  = 1;
 
