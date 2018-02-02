@@ -13,10 +13,11 @@
   <label for="nodeOrderIdx">Node ordering</label><br>
   <select id="nodeOrderIdx"></select><br>
   <span id="nodeOrderIdx"></span>
-  <hr> 
+  <hr>
 
   <label for="numClusters">Number of clusters</label><br>
   <span>1<input id="numClusters" type="range" min="1" max="25"  step="1">25</span><br>
+  <label id="currentNumClusters"></label>
   <hr>
 
   <label for="edgeColourIdx">Colour edges by</label><br>
@@ -35,7 +36,7 @@
 
   <label for="nodeNameIdx">Name nodes by</label><br>
   <select id="nodeNameIdx"></select><br><br>
-  <hr> 
+  <hr>
 
   <label for="highlightNetwork">Highlight network</label><br>
   <input type="checkbox" id="highlightNetwork"></input>
@@ -47,7 +48,7 @@
 
   <label for="pruneDisconnected">Hide disconnected nodes</label><br>
   <input type="checkbox" id="pruneDisconnected"></input>
-  
+
   <hr>
   <a id="openAsSVG" href-lang="image/svg+xml" title="file.svg" href="fill">Open SVG</a>
 </div>
