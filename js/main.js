@@ -4,15 +4,8 @@ require(["netjs", "lib/d3"], function(netjs, d3) {
   // thresholding algorithm here.
   function thresholdMatrix(matrix, args) {
 
-    var thresPerc = args[0];
-
+    var threshold   = args[0];
     var thresMatrix = [];
-    var nodeThress  = [];
-
-    for (var i = 0; i < matrix.length; i++) {
-      absVals = matrix[i].map(function(val) {return Math.abs(val);});
-      nodeThress.push(d3.max(absVals) * thresPerc); 
-    }
 
     for (var i = 0; i < matrix.length; i++) {
 
@@ -20,17 +13,16 @@ require(["netjs", "lib/d3"], function(netjs, d3) {
 
       for (var j = 0; j < matrix[i].length; j++) {
 
-        if (Math.abs(matrix[i][j]) < nodeThress[i] ||
-            Math.abs(matrix[i][j]) < nodeThress[j])
+        var val = Math.abs(matrix[i][j]);
 
-          thresMatrix[i].push(Number.NaN);
-        else 
-          thresMatrix[i].push(matrix[i][j]);
+        if (val < threshold) thresMatrix[i].push(Number.NaN);
+        else                 thresMatrix[i].push(matrix[i][j]);
       }
     }
 
     return thresMatrix;
   }
+
 
   // You need to populate two objects:
   //
@@ -40,7 +32,7 @@ require(["netjs", "lib/d3"], function(netjs, d3) {
   //      initial values. See the loadNetwork
   //      function in netdata.js for detail on all
   //      arguments.
-  
+
   //
   //    - The second one ('display' here) is passed
   //      to the displayNetwork function, and specifies
@@ -84,10 +76,9 @@ require(["netjs", "lib/d3"], function(netjs, d3) {
 
   display.highlightOn   = true;
 
-  // Load the network, and 
+  // Load the network, and
   // display it when loaded.
   netjs.loadNetwork(args, function(net) {
     netjs.displayNetwork(net, display);
   });
 });
-
