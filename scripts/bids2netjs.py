@@ -38,7 +38,6 @@ import numpy         as np
 import nibabel       as nib
 import jinja2        as j2
 import bids.grabbids as grabbids
-
 import                  adjust_thumbnails
 
 
@@ -73,7 +72,7 @@ def getUnderlay(layout, indir, outdir):
 
     dest = op.join(outdir, 'images', 'underlay.png')
 
-    genMosaic(mean[0].filename, dest, 'mean')
+    genMosaic(mean[0].filename, dest, 'mean', False)
 
     return dest
 
@@ -122,7 +121,7 @@ def getNodeMeta(layout, outdir, key, prefix):
     return metamap
 
 
-def getThumbnails(layout, indir, outdir):
+def getThumbnails(layout, indir, outdir, zeroindex):
 
     thumbnails = layout.get(conndata='node', extensions='thumbnail.png')
     tndir      = op.join(outdir, 'thumbnails')
@@ -134,7 +133,11 @@ def getThumbnails(layout, indir, outdir):
 
     for thumb in thumbnails:
 
-        index = int(thumb.index) - 1
+        index = int(thumb.index)
+
+        if not zeroindex:
+            index -= 1
+
         dest  = op.join(tndir, '{:04d}.png'.format(index))
 
         shutil.copy(thumb.filename, dest)
@@ -142,11 +145,11 @@ def getThumbnails(layout, indir, outdir):
     return tndir
 
 
-def genMosaic(src, dest, ttype):
+def genMosaic(src, dest, ttype, clipbg=True):
 
     shape   = nib.load(src).shape
-    w, h    = shape[:2]
-    nslices = shape[ 2]
+    nslices = shape[0]
+    w, h    = shape[1:]
     ncols   = 10
     nrows   = int(np.ceil(nslices / float(ncols)))
 
@@ -166,17 +169,19 @@ def genMosaic(src, dest, ttype):
     else:
         args['cmopts'] = '-cm greyscale -b 40'
 
-    cmd = 'fsleyes render -of {dest} -sz {w} {h} -zx 2 ' \
+    cmd = 'fsleyes render -of {dest} -sz {w} {h} -zx X ' \
           '-slightbox -hc -nr {nrows} -nc {ncols} {image} {cmopts}'
 
     cmd = cmd.format(**args)
 
     sp.call(cmd.split())
 
-    # adjust_thumbnails.main(['-t', '0', op.dirname(dest), dest])
+    if clipbg:
+        adjust_thumbnails.main(['-t', '0', op.dirname(dest), dest])
+    return w, h
 
 
-def getNodeImages(layout, indir, outdir):
+def getNodeImages(layout, indir, outdir, zeroindex):
 
     images = layout.get(conndata='node', extensions='.nii.gz')
     imdir  = op.join(outdir, 'images')
@@ -190,9 +195,11 @@ def getNodeImages(layout, indir, outdir):
     w, h = 0, 0
 
     for img in images:
-        index = int(img.index) - 1
+        index = int(img.index)
+        if not zeroindex:
+            index  -= 1
         dest  = op.join(imdir, '{:04d}.png'.format(index))
-        genMosaic(img.filename,  dest, img.type)
+        w, h = genMosaic(img.filename,  dest, img.type)
         dests.append(dest)
 
     return imdir, (w, h)
@@ -220,11 +227,12 @@ def main(args=None):
     if args is None:
         args = sys.argv[1:]
 
-    if len(args) != 2:
-        raise RuntimeError('Usage: bids2netjs.py indir outdir')
+    if len(args) != 3:
+        raise RuntimeError('Usage: bids2netjs.py indir outdir zeroindexed')
 
-    indir  = args[0]
-    outdir = args[1]
+    indir     = args[0]
+    outdir    = args[1]
+    zeroindex = args[2] == 'true'
 
     basedir = op.dirname(__file__)
     config  = op.join(basedir, 'bids-connectivity-derivatives.json')
@@ -239,8 +247,8 @@ def main(args=None):
     names        = getNodeLabels(  layout, indir, datadir)
     orders       = getNodeOrders(  layout, indir, datadir)
     groups       = getNodeGroups(  layout, indir, datadir)
-    thumbnails   = getThumbnails(  layout, indir, datadir)
-    images, imsz = getNodeImages(  layout, indir, datadir)
+    thumbnails   = getThumbnails(  layout, indir, datadir, zeroindex)
+    images, imsz = getNodeImages(  layout, indir, datadir, zeroindex)
     underlay     = getUnderlay(    layout, indir, datadir)
 
     matrices   = [op.relpath(f, outdir) for f in matrices]
@@ -260,7 +268,6 @@ def main(args=None):
     name_labels   = [str(i) for i in range(len(names))]
     group_labels  = [str(i) for i in range(len(groups))]
     order_labels  = [str(i) for i in range(len(orders))]
-
 
     if len(linkages) > 0: linkages = linkages[0]
     else:                 linkages = ""

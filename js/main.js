@@ -118,6 +118,7 @@ require(["netjs", "lib/d3"], function(netjs, d3) {
   // Load the network, and
   // display it when loaded.
   netjs.loadNetwork(args, function(net) {
+    net.thresholdValues[0] = net.matrixMins[0] + 0.75 * (net.matrixMaxs[0] - net.matrixMins[0]);
     netjs.displayNetwork(net, display);
   });
 });
