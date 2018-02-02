@@ -1,22 +1,22 @@
 /*
  * Load, create, and modify objects representing networks.
- * 
+ *
  * Author: Paul McCarthy <pauldmccarthy@gmail.com>
  */
 define(["lib/d3", "lib/queue"], function(d3, queue) {
 
   /*
-   * Flattens the dendrogram tree for the given network 
-   * (see the makeNetworkDendrogramTree function below), 
-   * such that it contains at most maxClusters clusters. 
-   * This function basically performs the same job as 
+   * Flattens the dendrogram tree for the given network
+   * (see the makeNetworkDendrogramTree function below),
+   * such that it contains at most maxClusters clusters.
+   * This function basically performs the same job as
    * the MATLAB cluster function, e.g.:
    *
    *   > cluster(linkages, 'maxclust', maxClusters)
    */
   function flattenDendrogramTree(network, maxClusters) {
 
-    // Returns a list of tree nodes which contain leaf 
+    // Returns a list of tree nodes which contain leaf
     // nodes - the current 'clusters' in the tree.
     function getClusters() {
 
@@ -32,14 +32,14 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
       return uniqClusts;
     }
 
-    // Iterate through the list of clusters, 
-    // merging them  one by one, until we are 
+    // Iterate through the list of clusters,
+    // merging them  one by one, until we are
     // left with (at most) maxClusters.
     var clusters = getClusters();
 
     while (clusters.length > maxClusters) {
 
-      // Identify the cluster with the minimum 
+      // Identify the cluster with the minimum
       // distance between its children
       var distances = clusters.map(function(clust) {
 
@@ -54,9 +54,9 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
       var children      = clust.children;
       var clustChildIdx = parent.children.indexOf(clust);
       var clustTreeIdx  = network.treeNodes.indexOf(clust);
-      
-      // Squeeze that cluster node out of the 
-      // tree, by attaching its children to its 
+
+      // Squeeze that cluster node out of the
+      // tree, by attaching its children to its
       // parent and vice versa.
       parent .children .splice(clustChildIdx, 1);
       network.treeNodes.splice(clustTreeIdx,  1);
@@ -74,19 +74,19 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
 
   /*
    * This function is called by the setNumClusters function. All Any nodes
-   * which are disconnected (have no neighbours) are removed from the 
-   * dendrogram tree. The nodes are kept in the network, but their 
+   * which are disconnected (have no neighbours) are removed from the
+   * dendrogram tree. The nodes are kept in the network, but their
    * 'parent' attribute is set to null.
    */
   function pruneDendrogramTree(network) {
 
-    if (!network.pruningState) 
+    if (!network.pruningState)
       return
 
     var nodes     = network.nodes;
     var treeNodes = network.treeNodes;
 
-    // Removes the specified node 
+    // Removes the specified node
     // from the dendrogram tree.
     function removeFromTree(n) {
 
@@ -102,7 +102,7 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
       if (nIdx    > -1) parent.children.splice(nIdx,    1);
       if (treeIdx > -1) treeNodes      .splice(treeIdx, 1);
 
-      // If this node had no siblings, 
+      // If this node had no siblings,
       // then remove its parent too.
       if (parent.children.length === 0) {
         removeFromTree(parent);
@@ -135,12 +135,12 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
   }
 
   /*
-   * Given a network (see the createNetwork function), and the 
-   * output of a call to the MATLAB linkage function which 
-   * describes the dendrogram of clusters of the network 
-   * nodes, this function creates a list of 'dummy' nodes 
-   * which represent the dendrogram tree. This list is added 
-   * as an attribute called 'treeNodes' of the provided 
+   * Given a network (see the createNetwork function), and the
+   * output of a call to the MATLAB linkage function which
+   * describes the dendrogram of clusters of the network
+   * nodes, this function creates a list of 'dummy' nodes
+   * which represent the dendrogram tree. This list is added
+   * as an attribute called 'treeNodes' of the provided
    * network.
    */
   function makeNetworkDendrogramTree(network, linkages) {
@@ -205,17 +205,17 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
   }
 
   /*
-   * Extracts and returns a subnetwork from the given network, 
-   * consisting of the node at the specified index, all of the 
-   * neighbours of that node, and all of the edges between 
+   * Extracts and returns a subnetwork from the given network,
+   * consisting of the node at the specified index, all of the
+   * neighbours of that node, and all of the edges between
    * them.
    */
   function extractSubNetwork(network, rootIdx) {
 
     var oldRoot  = network.nodes[rootIdx];
 
-    // Create a list of node indices, in the parent 
-    // network, of all nodes to be included in the 
+    // Create a list of node indices, in the parent
+    // network, of all nodes to be included in the
     // subnetwork
     var nodeIdxs = [rootIdx];
 
@@ -224,19 +224,19 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
     }
     nodeIdxs.sort(function(a,b){return a-b;});
 
-    // Create a bunch of sub-matrices containing 
+    // Create a bunch of sub-matrices containing
     // the data for the above list of nodes
     var subMatrices = network.matrices.map(
       function(matrix) {return extractSubMatrix(matrix, nodeIdxs);});
 
-    // create a bunch of node data arrays 
+    // create a bunch of node data arrays
     // from the original network node data
     var subNodeData = network.nodeData.map(function(array) {
       return nodeIdxs.map(function(idx) {
         return array[idx];
       });
     });
-    
+
     // Do the same for the node names
     var subNodeNames = network.nodeNames.map(function(array) {
       return nodeIdxs.map(function(idx) {
@@ -254,16 +254,17 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
     var subNodeOrders = network.nodeOrders.map(function(array) {
       return adjustIndices(array, subNetMask);
     });
- 
+
 
     var subnet = createNetwork(
-      subMatrices, 
-      network.matrixLabels, 
+      subMatrices,
+      network.matrixLabels,
       subNodeData,
       network.nodeDataLabels,
       subNodeNames,
       network.nodeNameLabels,
       network.nodeNameIdx,
+      null,
       null,
       subNodeOrders,
       network.nodeOrderLabels,
@@ -281,7 +282,7 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
     subnet.matrixAbsMins = network.matrixAbsMins;
     subnet.matrixAbsMaxs = network.matrixAbsMaxs;
 
-    // Fix node thumbnails, and add 
+    // Fix node thumbnails, and add
     // indices for each subnetwork
     // node back to the corresponding
     // parent network node
@@ -300,7 +301,7 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
 
     // Create a dummy dendrogram with a single cluster
     setNumClusters(subnet, 1);
-      
+
     // save a reference to the parent network?
     // subnet.parentNetwork = network;
 
@@ -308,17 +309,17 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
   }
 
   /*
-   * Creates a tree representing the dendrogram specified 
-   * in the linkage data provided when the network was loaded, 
-   * and flattens the tree so that it contains (at most) the 
-   * specified number of clusters. If there was no linkage 
-   * data specified when the network was loaded, this function 
+   * Creates a tree representing the dendrogram specified
+   * in the linkage data provided when the network was loaded,
+   * and flattens the tree so that it contains (at most) the
+   * specified number of clusters. If there was no linkage
+   * data specified when the network was loaded, this function
    * does nothing.
    */
   function setNumClusters(network, numClusts) {
 
     if (network.linkage === null) {
-          
+
       // Create a dummy dendrogram with a single cluster
       var root = {};
       root.index    = network.nodes.length;
@@ -334,7 +335,7 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
       return;
     }
 
-    // generate a tree of dummy nodes from 
+    // generate a tree of dummy nodes from
     // the dendrogram in the linkages data
     makeNetworkDendrogramTree(network, network.linkage);
 
@@ -343,7 +344,7 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
 
     // flatten the tree to the specified number of clusters
     flattenDendrogramTree(network, numClusts);
-      
+
     network.numClusters = numClusts;
   }
 
@@ -353,11 +354,11 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
   }
 
   /*
-   * Creates a list of edges for the given network by calling 
-   * the 'thresFunc' function provided when the network was 
-   * loaded. The network edges are defined by the matrix at 
-   * network.matrices[network.thresholdIdx].  The list of 
-   * values in all matrices (including the one just mentioned) 
+   * Creates a list of edges for the given network by calling
+   * the 'thresFunc' function provided when the network was
+   * loaded. The network edges are defined by the matrix at
+   * network.matrices[network.thresholdIdx].  The list of
+   * values in all matrices (including the one just mentioned)
    * for a given edge is added as an attribute called 'weight'
    * on that edge.
    */
@@ -369,9 +370,9 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
     // Create a list of edges
     network.edges = [];
 
-    // threshold the matrix. It is assumed that the 
+    // threshold the matrix. It is assumed that the
     // provided threshold function behaves nicely
-    // by thresholding a copy of the matrix, not 
+    // by thresholding a copy of the matrix, not
     // the matrix itself.
     matrix = network.thresholdFunc(matrix, network.thresholdValues);
 
@@ -381,7 +382,7 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
       network.nodes[i].neighbours = [];
     }
 
-    // Currently only undirected 
+    // Currently only undirected
     // networks are supported
     for (var i = 0; i < numNodes; i++) {
       for (var j = i+1; j < numNodes; j++) {
@@ -395,8 +396,8 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
         edge.j       = network.nodes[j];
         edge.weights = network.matrices.map(function(mat) {return mat[i][j];});
 
-        // d3.layout.bundle and d3.layout.force require two 
-        // attributes, 'source' and 'target', so we add them 
+        // d3.layout.bundle and d3.layout.force require two
+        // attributes, 'source' and 'target', so we add them
         // here purely for convenience.
         edge.source  = edge.i;
         edge.target  = edge.j;
@@ -449,7 +450,7 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
       if (linkageOrder !== null) node.order = linkageOrder.indexOf(i);
       else                       node.order = i;
 
-      // Attach a thumbnail URL to 
+      // Attach a thumbnail URL to
       // every node in the network
       if (thumbUrl !== null) {
         var imgUrl = thumbUrl + "/" + zerofmt(i) + ".png";
@@ -485,7 +486,7 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
     // create the network edges
     thresholdNetwork(network);
 
-    // Create a dendrogram, and flatten it 
+    // Create a dendrogram, and flatten it
     // to the specified number of clusters.
     // This will do nothing if this network
     // has no linkage data.
@@ -508,7 +509,7 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
     return network;
   }
 
-  /* 
+  /*
    * Sets the matrix data used to scale edge widths
    * to the matrix at the specified index.
    */
@@ -516,12 +517,12 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
 
     if (idx < 0 || idx >= network.matrices.length) {
       throw "Matrix index out of range.";
-    } 
+    }
 
     network.scaleInfo.edgeWidthIdx = idx;
   }
 
-  /* 
+  /*
    * Sets the matrix data used to colour edges
    * to the matrix at the specified index.
    */
@@ -529,13 +530,13 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
 
     if (idx < 0 || idx >= network.matrices.length) {
       throw "Matrix index out of range.";
-    } 
+    }
 
     network.scaleInfo.edgeColourIdx = idx;
   }
 
-  /* 
-   * Sets the node data used to colour nodes 
+  /*
+   * Sets the node data used to colour nodes
    * to the node data at the specified data index.
    */
   function setNodeColourIdx(network, idx) {
@@ -570,25 +571,25 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
   }
 
   /*
-   * Sets the matrix used to threshold the network to the 
-   * matrix at the specified index, and re-thresholds the 
+   * Sets the matrix used to threshold the network to the
+   * matrix at the specified index, and re-thresholds the
    * network.
    */
   function setThresholdIdx(network, idx) {
 
     if (idx < 0 || idx >= network.matrices.length) {
       throw "Matrix index out of range.";
-    } 
+    }
 
     network.thresholdIdx = idx;
 
-    // this forces re-thresholding, and all 
-    // the other stuff that needs to be done 
+    // this forces re-thresholding, and all
+    // the other stuff that needs to be done
     setThresholdValue(network, 0, network.thresholdValues[0]);
   }
 
   /*
-   * Sets the value for the threshold function argument at 
+   * Sets the value for the threshold function argument at
    * the given index, and re-thresholds the network.
    */
   function setThresholdValue(network, idx, value) {
@@ -607,9 +608,9 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
   /*
    * The loadNetwork function (below) asynchronously loads
    * all of the data required to create a network. When
-   * all that data is loaded, this function is called. 
-   * This function parses the data, passes it all to the 
-   * createNetwork function (above), and then passes 
+   * all that data is loaded, this function is called.
+   * This function parses the data, passes it all to the
+   * createNetwork function (above), and then passes
    * the resulting network to the onLoadFunc callback
    * function which was passed to loadNetwork.
    */
@@ -650,7 +651,7 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
     offset        += numNodeNames;
     var nodeOrders = args.slice(offset, offset + numNodeOrders);
 
-    if (linkage !== null) 
+    if (linkage !== null)
       linkage = parseTextMatrix(linkage);
 
     if (linkageOrder !== null)  {
@@ -658,16 +659,16 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
 
       linkageOrder = linkageOrder.map(function(array) {
         return array.reduce(function(a, b) {return a.concat(b);});
-      }); 
+      });
     }
-    
+
     matrices   = matrices  .map(parseTextMatrix);
     nodeData   = nodeData  .map(parseTextMatrix);
     nodeOrders = nodeOrders.map(parseTextMatrix);
 
     // node names must be newline separated
     nodeNames = nodeNames.map(function(str) {
-      
+
       var lines = str.trim().split("\n");
       return lines.map(function(l) {return l.trim();});
     });
@@ -679,18 +680,18 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
     nodeData = nodeData.map(function(array) {
       return array.reduce(function(a, b) {return a.concat(b);});
     });
-    
+
     nodeOrders = nodeOrders.map(function(array) {
       return array.reduce(function(a, b) {return a.concat(b);});
-    }); 
-    
-    // check all data arrays to ensure 
+    });
+
+    // check all data arrays to ensure
     // they are of compatible lengths
     var numNodes = matrices[0].length;
 
     matrices.forEach(function(matrix, i) {
       var errorMsg =  "Matrix " + matrixLabels[i] + " has invalid size ";
-      
+
       // number of rows
       if (matrix.length !== numNodes) {
         throw errorMsg + "(num rows: " + matrix.length + ")";
@@ -707,7 +708,7 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
     // node data arrays
     nodeData.forEach(function(array, i) {
       if (array.length !== numNodes) {
-        throw "Node data array " + nodeDataLabels[i] + 
+        throw "Node data array " + nodeDataLabels[i] +
               " has invalid length (" + array.length + ")";
       }
     });
@@ -715,10 +716,10 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
     // node name arrays
     nodeNames.forEach(function(array, i) {
       if (array.length !== numNodes) {
-        throw "Node names array " + nodeNameLabels[i] + 
+        throw "Node names array " + nodeNameLabels[i] +
               " has invalid length (" + array.length + ")";
       }
-    }); 
+    });
 
     // node order arrays
     nodeOrders.forEach(function(array, i) {
@@ -730,8 +731,8 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
 
     // create the network
     network = createNetwork(
-      matrices, 
-      matrixLabels, 
+      matrices,
+      matrixLabels,
       nodeData,
       nodeDataLabels,
       nodeNames,
@@ -780,7 +781,7 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
       network.matrixMins   .push(min);
       network.matrixMaxs   .push(max);
       network.matrixAbsMins.push(absMin);
-      network.matrixAbsMaxs.push(absMax); 
+      network.matrixAbsMaxs.push(absMax);
     }
 
     onLoadFunc(network);
@@ -790,86 +791,86 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
    * Loads all of the network data provided in the given args
    * object. When the network data is loaded, a network is created
    * and passed to the onLoadFunc callback function.
-   * 
+   *
    * The args object should have the following properties:
    *
-   *   - matrices:        Required. A list of URLS pointing to 
+   *   - matrices:        Required. A list of URLS pointing to
    *                      connectivity matrices.
    *
-   *   - matrixLabels:    Optional. A list of labels for each of 
+   *   - matrixLabels:    Optional. A list of labels for each of
    *                      the above matrices.
-   * 
-   *   - nodeData:        Optional. A list of URLS pointing to 
-   *                      1D arrays of numerical data, to be 
+   *
+   *   - nodeData:        Optional. A list of URLS pointing to
+   *                      1D arrays of numerical data, to be
    *                      associated with the nodes in the network.
    *
-   *   - nodeDataLabls:   Optional. A list of labels for each of 
+   *   - nodeDataLabls:   Optional. A list of labels for each of
    *                      the above arrays.
    *
-   *   - nodeNames:       Optional. A list of URLS pointing to 
-   *                      files containing newline-separated names 
+   *   - nodeNames:       Optional. A list of URLS pointing to
+   *                      files containing newline-separated names
    *                      for each node in the network.
    *
-   *   - nodeNameLabels:  Optional. A list of names for each of the 
+   *   - nodeNameLabels:  Optional. A list of names for each of the
    *                      above arrays.
    *
    *   - linkage:         Optional. A N*3 array of data describing
    *                      the dendrogram for the network - the output
    *                      of a call to the MATLAB linkage function.
-   * 
+   *
    *   - linkageOrder:    Optional. A list of values, each a node
    *                      index (starting from 0) specifying the order
-   *                      in which nodes should be sorted when 
+   *                      in which nodes should be sorted when
    *                      displaying the dendrogram layout.
    *
    *   - nodeOrders:      Optional. A list of URLS pointing to 1D
-   *                      arrays of numerical data, defining the 
-   *                      order in which the nodes should be 
-   *                      displayed - when a display order is 
+   *                      arrays of numerical data, defining the
+   *                      order in which the nodes should be
+   *                      displayed - when a display order is
    *                      selected, the linkage data is not used.
    *
-   *   - nodeOrderLabels: Optional. A list of labels for each of the 
+   *   - nodeOrderLabels: Optional. A list of labels for each of the
    *                      above node orderings.
-   * 
-   *   - thumbnails:      Optional. A URL pointing to a folder in 
-   *                      which thumbnails for each node may be 
-   *                      found. Thumbnail file names must currently 
+   *
+   *   - thumbnails:      Optional. A URL pointing to a folder in
+   *                      which thumbnails for each node may be
+   *                      found. Thumbnail file names must currently
    *                      be named according to the format "%04d.png",
    *                      where "%04d" is the zero-indexed node index
    *                      in the network, padded to four characters.
-   *                     
-   *   - thresFunc:       Required. A function which accepts two 
-   *                      parameters - a connectivity matrix, and a 
+   *
+   *   - thresFunc:       Required. A function which accepts two
+   *                      parameters - a connectivity matrix, and a
    *                      list of parameters (thresVals, see below).
-   *                      This function should create and return a 
-   *                      thresholded copy of the provided matrix - 
+   *                      This function should create and return a
+   *                      thresholded copy of the provided matrix -
    *                      this thresholded matrix is used to define
-   *                      network edges. Currently, all accepted 
-   *                      threshold  values must be between 0.0 and 
+   *                      network edges. Currently, all accepted
+   *                      threshold  values must be between 0.0 and
    *                      1.0.
    *
    *   - thresVals:       Optional. List of parameters to be passed
    *                      to the thresFunc. Must currently be between
    *                      0.0 and 1.0.
-   * 
+   *
    *   - thresLabels:     Optional. List of labels for the above
    *                      threshold values.
-   * 
-   *   - thresholdIdx:    Optional. Initial index of the connectivity 
+   *
+   *   - thresholdIdx:    Optional. Initial index of the connectivity
    *                      matrix used to define the network edges.
    *
    *   - nodeOrderIdx:    Optional. Initial index into the nodeOrders
-   *                      list, specifying the node display order to 
-   *                      use. If not provided, or set to -1, the nodes 
-   *                      are displayed according to the linkage 
+   *                      list, specifying the node display order to
+   *                      use. If not provided, or set to -1, the nodes
+   *                      are displayed according to the linkage
    *                      (dendrogram) information.
    *
    *   - nodeNameIdx:     Optional. Initial index into the nodeNames
-   *                      list, specifying the node names to use. If 
+   *                      list, specifying the node names to use. If
    *                      not provided, or set to -1, the node indices
    *                      (starting from 1) used as the node names.
-   * 
-   *   - numClusters:     Optional. Initial number of clusters to 
+   *
+   *   - numClusters:     Optional. Initial number of clusters to
    *                      flatten the network dendrogram tree to.
    */
   function loadNetwork(args, onLoadFunc) {
@@ -878,46 +879,46 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
 
     a.onLoadFunc = onLoadFunc;
 
-    if (a.matrices === undefined) 
+    if (a.matrices === undefined)
       throw "A list of matrices must be specified";
 
-    if (a.matrices.length === 0) 
+    if (a.matrices.length === 0)
       throw "At least one matrix is required";
 
-    if (a.thresFunc === undefined) 
+    if (a.thresFunc === undefined)
       throw "A thresFunc must be specified";
 
-    if (a.matrixLabels === undefined) 
+    if (a.matrixLabels === undefined)
       a.matrixLabels = a.matrices.slice(0);
-    
-    if (a.nodeData === undefined) 
+
+    if (a.nodeData === undefined)
       a.nodeData = [];
 
-    if (a.nodeDataLabels === undefined) 
+    if (a.nodeDataLabels === undefined)
       a.nodeDataLabels = a.nodeData.map(function(nd,i){ return "" + i;});
 
-    if (a.nodeNames === undefined) 
+    if (a.nodeNames === undefined)
       a.nodeNames = [];
-    
-    if (a.nodeNameLabels === undefined) 
-      a.nodeNameLabels = a.nodeNames.map(function(no,i){ return "" + i;}); 
-    
-    if (a.nodeOrders === undefined) 
+
+    if (a.nodeNameLabels === undefined)
+      a.nodeNameLabels = a.nodeNames.map(function(no,i){ return "" + i;});
+
+    if (a.nodeOrders === undefined)
       a.nodeOrders = [];
 
-    if (a.nodeOrderLabels === undefined) 
+    if (a.nodeOrderLabels === undefined)
       a.nodeOrderLabels = a.nodeOrders.map(function(no,i){ return "" + i;});
 
     if (a.nodeOrderIdx === undefined)
       a.nodeOrderIdx = -1;
 
     if (a.nodeNameIdx === undefined)
-      a.nodeNameIdx = -1; 
+      a.nodeNameIdx = -1;
 
-    if (a.thresVals === undefined) 
+    if (a.thresVals === undefined)
       a.thresVals = [];
 
-    if (a.thresLabels === undefined) 
+    if (a.thresLabels === undefined)
       a.thresLabels = a.thresVals.map(function(tv,i){ return "" + i;});
 
     if (a.linkage      === undefined) a.linkage      = null;
@@ -926,42 +927,42 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
     if (a.thresholdIdx === undefined) a.thresholdIdx = 0;
     if (a.numClusters  === undefined) a.numClusters  = 1;
 
-    if (a.matrices.length !== a.matrixLabels.length) 
+    if (a.matrices.length !== a.matrixLabels.length)
       throw "Matrix URL and label lengths do not match";
 
-    if (a.nodeData.length !== a.nodeDataLabels.length) 
+    if (a.nodeData.length !== a.nodeDataLabels.length)
       throw "Node data URL and label lengths do not match";
 
-    if (a.nodeNames.length !== a.nodeNameLabels.length) 
-      throw "Node name URL and label lengths do not match"; 
+    if (a.nodeNames.length !== a.nodeNameLabels.length)
+      throw "Node name URL and label lengths do not match";
 
-    if (a.nodeOrders.length !== a.nodeOrderLabels.length) 
-      throw "Node order URL and label lengths do not match"; 
+    if (a.nodeOrders.length !== a.nodeOrderLabels.length)
+      throw "Node order URL and label lengths do not match";
 
-    if (a.thresVals.length !== a.thresLabels.length) 
+    if (a.thresVals.length !== a.thresLabels.length)
       throw "Threshold value and label lengths do not match";
 
-    // The qId function is an identity function 
-    // which may be used to pass standard 
-    // arguments (i.e. arguments which are not 
-    // the result of an asychronous load) to the 
+    // The qId function is an identity function
+    // which may be used to pass standard
+    // arguments (i.e. arguments which are not
+    // the result of an asychronous load) to the
     // await/awaitAll functions.
     function qId(arg, cb) {cb(null, arg);}
 
-    // Load all of the network data, and 
-    // pass it to the onDataLoad function. 
+    // Load all of the network data, and
+    // pass it to the onDataLoad function.
     var q = queue();
 
     // standard arguments
     q = q.defer(qId, a);
-    
+
     // linkage data
     if (a.linkage !== null) q = q.defer(d3.text, a.linkage);
     else                    q = q.defer(qId,     a.linkage);
 
     // linkage order
     if (a.linkageOrder !== null) q = q.defer(d3.text, a.linkageOrder);
-    else                         q = q.defer(qId,     a.linkageOrder); 
+    else                         q = q.defer(qId,     a.linkageOrder);
 
     // node data
     a.nodeData.forEach(function(url) {
@@ -976,27 +977,27 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
     // node names
     a.nodeNames.forEach(function(url) {
       q = q.defer(d3.text, url);
-    }); 
-    
+    });
+
     // node orders
     a.nodeOrders.forEach(function(url) {
       q = q.defer(d3.text, url);
-    }); 
+    });
 
     // load all the things!
     q.awaitAll(onDataLoad);
   }
 
   /*
-   * Uses d3.dsv to turn a string containing 
+   * Uses d3.dsv to turn a string containing
    * numerical matrix data into a 2D array.
    */
-  function parseTextMatrix(matrixText) { 
+  function parseTextMatrix(matrixText) {
 
     // create a parser for space delimited text
     var parser = d3.dsv(" ", "text/plain");
-      
-    // parse the text data, converting each value to 
+
+    // parse the text data, converting each value to
     // a float and ignoring any extraneous whitespace
     // around or between values.
     var matrix = parser.parseRows(matrixText, function(row) {
@@ -1032,7 +1033,7 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
 
     return newIndices;
   }
-  
+
 
 
   var netdata               = {};
