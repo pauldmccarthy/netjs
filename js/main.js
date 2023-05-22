@@ -43,6 +43,11 @@ require(["netjs", "lib/d3"], function(netjs, d3) {
   var args             = {};
   var display          = {};
 
+  // Generate thumbnail file names (0000.png - 0099.png)
+  var thumbnails = [...Array(100).keys()];
+  thumbnails     = thumbnails.map(({ t }) => d3.format("%04d")(t));
+  thumbnails     = thumbnails.map(({ t }) => "data/dataset2/melodic_IC_sum.sum/" + t);
+
   args.matrices        = ["data/dataset2/Znet1.txt", "data/dataset2/Znet2.txt"];
   args.matrixLabels    = ["Corr1", "Corr2"];
   args.nodeData        = ["data/dataset2/clusters.txt"];
@@ -52,7 +57,7 @@ require(["netjs", "lib/d3"], function(netjs, d3) {
   args.linkage         =  "data/dataset2/linkages.txt";
   args.nodeOrders      = ["data/dataset2/order1.txt"];
   args.nodeOrderLabels = ["Order 1"];
-  args.thumbnails      =  "data/dataset2/melodic_IC_sum.sum";
+  args.thumbnails      = thumbnails;
   args.thresFunc       = thresholdMatrix;
   args.thresVals       = [0.75];
   args.thresLabels     = ["Thres perc"];
