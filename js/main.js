@@ -72,14 +72,9 @@ require(["netjs", "lib/d3"], function(netjs, d3) {
   var sz = Math.min(w/2.0, h);
 
   display.networkDiv    = "#fullNetwork";
-  display.subNetDiv     = "#subNetwork";
   display.controlDiv    = "#networkCtrl";
   display.networkWidth  = sz;
   display.networkHeight = sz;
-  display.subNetWidth   = sz;
-  display.subNetHeight  = sz;
-
-  display.highlightOn   = true;
 
   // Load the network, and
   // display it when loaded.
