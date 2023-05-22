@@ -597,6 +597,7 @@ define(["netdata", "lib/d3"], function(netdata, d3) {
       svg = d3.select(div).append("svg")
         .attr("version",           "1.1")
         .attr("xmlns",             "http://www.w3.org/2000/svg")
+        .attr("xmlns:xlink",       "http://www.w3.org/1999/xlink")
         .attr("width",             width)
         .attr("height",            height)
         .style("background-color", visDefaults.BACKGROUND_COLOUR);

@@ -1,7 +1,7 @@
 /*
  * Application interface for the netjs library. Exposes two functions:
  *
- *   - loadNetwork:     Given a bunch of URLs and metadata, loads 
+ *   - loadNetwork:     Given a bunch of URLs and metadata, loads
  *                      the data at the URLs and creates a network.
  *                      from it.
  *   - displayNetwork:  Displays a network on a div.
@@ -9,14 +9,14 @@
  * Author: Paul McCarthy <pauldmccarthy@gmail.com>
  */
 define(
-  ["netvis", "netdata", "netctrl", "netvis_dynamics"], 
+  ["netvis", "netdata", "netctrl", "netvis_dynamics"],
   function(netvis, netdata, netctrl, dynamics) {
 
   /*
-   * Displays the given network on a specified <div> element. The 
+   * Displays the given network on a specified <div> element. The
    * display object must have the following attributes:
-   * 
-   *   - networkDiv:    ID of a div element in which to place the network 
+   *
+   *   - networkDiv:    ID of a div element in which to place the network
    *                    canvas.
    *   - controlDiv:    ID of a div element in which to  place the network
    *                    controls.
@@ -26,8 +26,8 @@ define(
    * If you want to be able to display the sub-network consisting
    * of the selected node and its immediate neighbours, the dispaly
    * object must also have:
-   *   
-   *   - subNetDiv:    ID of a div element in which to place the sub-network 
+   *
+   *   - subNetDiv:    ID of a div element in which to place the sub-network
    *                   canvas.
    *   - subNetWidth:  Width in pixels of subnetwork div.
    *   - subNetHeight: Height in pixels of subnetwork div.
@@ -45,15 +45,15 @@ define(
    *
    *  - showLabels
    *  - backgroundColour
-   * 
+   *
    * Attributes controlling node label font size:
-   * 
+   *
    *   - labelSize
    *   - defLabelSize
    *   - hltLabelSize
    *   - selLabelSize
    *
-   * Attributes controlling node label font weight (e.g. 'normal', 'bold', 
+   * Attributes controlling node label font weight (e.g. 'normal', 'bold',
    * etc):
    *
    *   - labelWeight
@@ -69,14 +69,14 @@ define(
    *   - selLabelFont
    *
    * Attributes controlling the node radius in pixels:
-   * 
+   *
    *   - nodeSize
    *   - defNodeSize
    *   - hltNodeSize
    *   - selNodeSize
    *
    * Attributes controlling the node opacity (between 0.0 and 1.0):
-   * 
+   *
    *   - nodeOpacity
    *   - defNodeOpacity
    *   - hltNodeOpacity
@@ -89,16 +89,16 @@ define(
    * to their corresponding network matrix value, and a colour range specified
    * by the edgeMinColour, edgeMidColour and edgeMaxColour attributes.  Or,
    * the edgeColourMap parameter may be a list of colours, which will be
-   * mapped to, and interpolated across, the data range. If edgeColourMap is 
+   * mapped to, and interpolated across, the data range. If edgeColourMap is
    * provided, it must contain an odd number of colours, so that a single
-   * colour is able to be mapped to the minimum edge strength.  The 'default' 
+   * colour is able to be mapped to the minimum edge strength.  The 'default'
    * colour is a pseudo-transparent version of the 'highlight' colour.
-   * 
-   * By default, the minimum colour will be mapped to the negative of the 
-   * maximum absolute edge strength, and the maximum colour mapped to the 
+   *
+   * By default, the minimum colour will be mapped to the negative of the
+   * maximum absolute edge strength, and the maximum colour mapped to the
    * positive of the maximum absolute edge strength (i.e. so the colour map
    * will be centered at 0). This can be overridden with the edgeColourMin
-   * and edgeColourMax parameters, which specify the edge strength values that 
+   * and edgeColourMax parameters, which specify the edge strength values that
    * correspond to the minimum and maximum edge colours - these are applied
    * symmetrically to positive and negative edge strengths.
    *
@@ -114,13 +114,13 @@ define(
    *
    * Attributes controlling the edge width in pixels. Any of these parameters
    * can be 'scale', in which case each edge width is scaled according to
-   * the corresponding network matrix value. When the edge width is 
-   * 'scale', the minimum/maximum edge widths are set according to the 
-   * minEdgeWidth and maxEdgeWidth parameters. By default, the minimum and 
+   * the corresponding network matrix value. When the edge width is
+   * 'scale', the minimum/maximum edge widths are set according to the
+   * minEdgeWidth and maxEdgeWidth parameters. By default, the minimum and
    * maximum edge widths will correspond to the absolute minimum and maximum
-   * edge strengths (symmetrically to positive/negative edges), although this 
+   * edge strengths (symmetrically to positive/negative edges), although this
    * can be overridden via the edgeWidthMin and edgeWidthMax parameters.
-   * 
+   *
    *   - edgeWidth
    *   - defEdgeWidth
    *   - hltEdgeWidth
@@ -128,14 +128,14 @@ define(
    *   - maxEdgeWidth
    *   - edgeWidthMin
    *   - edgeWidthMax
-   * 
-   * Attribute controlling the distance between groups of nodes on the 
+   *
+   * Attribute controlling the distance between groups of nodes on the
    * network circumference, with the unit being node diameters:
    *   - groupDistance
    *
    * Attributes controlling the node thumbnail size in pixels:
    *   - thumbWidth
-   *   - thumbHeight 
+   *   - thumbHeight
    *   - defThumbWidth
    *   - defThumbHeight
    *   - hltThumbWidth
@@ -161,8 +161,14 @@ define(
     var networkHeight = display.networkHeight;
     var subNetWidth   = display.subNetWidth;
     var subNetHeight  = display.subNetHeight;
-
     var vd            = netvis.visDefaults;
+
+    if (subNetDiv === undefined) {
+      subNetDiv = null;
+    }
+    if (controlDiv === undefined) {
+      controlDiv = null;
+    }
 
     // TODO Instead of modifying the visDefaults
     //      object, you should probably modify
@@ -180,7 +186,7 @@ define(
       vd.HLT_LABEL_SIZE = display.labelSize;
       vd.SEL_LABEL_SIZE = display.labelSize;
     }
-    
+
     if (display.defLabelWeight) vd.DEF_LABEL_WEIGHT = display.defLabelWeight;
     if (display.hltLabelWeight) vd.HLT_LABEL_WEIGHT = display.hltLabelWeight;
     if (display.selLabelWeight) vd.SEL_LABEL_WEIGHT = display.selLabelWeight;
@@ -230,7 +236,7 @@ define(
     if (display.edgeColourMap) vd.EDGE_COLOURMAP  = display.edgeColourMap;
     if (display.edgeColourMin) vd.EDGE_COLOUR_MIN = display.edgeColourMin;
     if (display.edgeColourMax) vd.EDGE_COLOUR_MAX = display.edgeColourMax;
-    
+
     if (display.defEdgeWidth) vd.DEF_EDGE_WIDTH = display.defEdgeWidth;
     if (display.hltEdgeWidth) vd.HLT_EDGE_WIDTH = display.hltEdgeWidth;
     if (display.edgeWidth) {
@@ -241,7 +247,7 @@ define(
     if (display.minEdgeWidth) vd.MIN_EDGE_WIDTH = display.minEdgeWidth;
     if (display.maxEdgeWidth) vd.MAX_EDGE_WIDTH = display.maxEdgeWidth;
     if (display.edgeWidthMin) vd.EDGE_WIDTH_MIN = display.edgeWidthMin;
-    if (display.edgeWidthMax) vd.EDGE_WIDTH_MAX = display.edgeWidthMax; 
+    if (display.edgeWidthMax) vd.EDGE_WIDTH_MAX = display.edgeWidthMax;
 
     if (display.defEdgeOpacity) vd.DEF_EDGE_OPACITY = display.defEdgeOpacity;
     if (display.hltEdgeOpacity) vd.HLT_EDGE_OPACITY = display.hltEdgeOpacity;
@@ -272,24 +278,24 @@ define(
 
     if (display.nodeRadiusOffset)
       vd.NODE_RADIUS_OFFSET = display.nodeRadiusOffset;
-    
+
     if (display.edgeRadiusOffset)
       vd.EDGE_RADIUS_OFFSET = display.edgeRadiusOffset;
-    
+
     if (display.labelRadiusOffset)
       vd.LABEL_RADIUS_OFFSET = display.labelRadiusOffset;
-    
+
     if (display.thumbnailRadiusOffset)
-      vd.THUMBNAIL_RADIUS_OFFSET = display.thumbnailRadiusOffset; 
+      vd.THUMBNAIL_RADIUS_OFFSET = display.thumbnailRadiusOffset;
 
     if (display.backgroundColour)
       vd.BACKGROUND_COLOUR = display.backgroundColour;
 
     if (display.showLabels !== undefined)
-      vd.SHOW_LABELS = display.showLabels; 
+      vd.SHOW_LABELS = display.showLabels;
 
     netvis.displayNetwork(network, networkDiv, networkWidth, networkHeight);
-    dynamics.configDynamics(network); 
+    dynamics.configDynamics(network);
 
     netctrl.createNetworkControls(
       network,

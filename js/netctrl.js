@@ -23,14 +23,15 @@ define(
                                  highlightOn,
                                  subnetOn) {
 
-    div = d3.select(div)[0][0];
+    div = d3.select(div);
 
     var subnet = null;
 
-    if (subNetDiv !== null)
-      subNetDiv = d3.select(subNetDiv)[0][0];
+    if (subNetDiv !== null) {
+      subNetDiv = d3.select(subNetDiv);
+    }
 
-    d3.text("js/netctrl.html", function(error, template) {
+    d3.text("js/netctrl.html").then(function(template) {
 
       // The file netctrl.html is a mustache template.
       // Before setting up input event handling and whatnot,
@@ -49,24 +50,24 @@ define(
 
       // Create some HTML from the template,
       // and put it in the control div
-      template      = mustache.render(template, templateData);
-      div.innerHTML = template;
+      template             = mustache.render(template, templateData);
+      div.node().innerHTML = template;
 
       // Now we can retrieve all of the input
       // elements from the rendered HTML
-      var thresholdIdx      = div.querySelector("#thresholdIdx");
-      var nodeOrderIdx      = div.querySelector("#nodeOrderIdx");
-      var numClusters       = div.querySelector("#numClusters");
-      var edgeColourIdx     = div.querySelector("#edgeColourIdx");
-      var edgeColourBar     = div.querySelector("#edgeColourBar");
-      var edgeWidthIdx      = div.querySelector("#edgeWidthIdx");
-      var edgeWidthLegend   = div.querySelector("#edgeWidthLegend");
-      var nodeColourIdx     = div.querySelector("#nodeColourIdx");
-      var nodeNameIdx       = div.querySelector("#nodeNameIdx");
-      var showSubNetwork    = div.querySelector("#showSubNetwork");
-      var highlightNetwork  = div.querySelector("#highlightNetwork");
-      var pruneDisconnected = div.querySelector("#pruneDisconnected");
-      var openAsSVG         = div.querySelector("#openAsSVG");
+      var thresholdIdx      = div.select("#thresholdIdx");
+      var nodeOrderIdx      = div.select("#nodeOrderIdx");
+      var numClusters       = div.select("#numClusters");
+      var edgeColourIdx     = div.select("#edgeColourIdx");
+      var edgeColourBar     = div.select("#edgeColourBar");
+      var edgeWidthIdx      = div.select("#edgeWidthIdx");
+      var edgeWidthLegend   = div.select("#edgeWidthLegend");
+      var nodeColourIdx     = div.select("#nodeColourIdx");
+      var nodeNameIdx       = div.select("#nodeNameIdx");
+      var showSubNetwork    = div.select("#showSubNetwork");
+      var highlightNetwork  = div.select("#highlightNetwork");
+      var pruneDisconnected = div.select("#pruneDisconnected");
+      var openAsSVG         = div.select("#openAsSVG");
 
       // a checkbox is created and inserted
       // into the #showSubNetwork div only
@@ -75,14 +76,14 @@ define(
 
       // get the input widgets for each threshold value
       var thresholdValues = network.thresholdValues.map(function(val, i) {
-          return div.querySelector("#thresholdValue" + i);
+          return div.select("#thresholdValue" + i).node();
       });
 
       var currentThresholdValues = network.thresholdValues.map(function(val, i) {
-          return div.querySelector("#currentThresholdValue" + i);
+          return div.select("#currentThresholdValue" + i).node();
       });
 
-      var currentNumClusters = div.querySelector("#currentNumClusters");
+      var currentNumClusters = div.select("#currentNumClusters").node();
 
       /*
        * Refreshes the network display, and the subnetwork
@@ -175,22 +176,28 @@ define(
         // These functions only show nodes/thumbnails/labels
         // in highlighted state if they have at least one
         // adjacent edge
-        var highlightThumbVis = function(node) {
-          if (node.neighbours.length == 0)
+        function highlightThumbVis(node) {
+          if (node.data.neighbours === undefined)
+            return netvis.visDefaults.DEF_THUMB_VISIBILITY;
+          if (node.data.neighbours.length == 0)
             return netvis.visDefaults.DEF_THUMB_VISIBILITY;
           else
             return netvis.visDefaults.HLT_THUMB_VISIBILITY;
         };
 
-        var highlightNodeOpacity = function(node) {
-          if (node.neighbours.length == 0)
+        function highlightNodeOpacity(node) {
+          if (node.data.neighbours === undefined)
+            return netvis.visDefaults.DEF_NODE_OPACITY;
+          if (node.data.neighbours.length == 0)
             return netvis.visDefaults.DEF_NODE_OPACITY;
           else
             return netvis.visDefaults.HLT_NODE_OPACITY;
         };
 
-        var highlightLabelWeight = function(node) {
-          if (node.neighbours.length == 0)
+        function highlightLabelWeight(node) {
+          if (node.data.neighbours === undefined)
+            return netvis.visDefaults.DEF_LABEL_WEIGHT;
+          if (node.data.neighbours.length == 0)
             return netvis.visDefaults.DEF_LABEL_WEIGHT;
           else
             return netvis.visDefaults.HLT_LABEL_WEIGHT;
@@ -245,23 +252,20 @@ define(
        */
       function drawEdgeColourBar() {
 
-        edgeColourBar.innerHTML = "";
-
-        var min     = -network.matrixAbsMaxs[network.scaleInfo.edgeColourIdx];
-        var max     =  network.matrixAbsMaxs[network.scaleInfo.edgeColourIdx];
+        var min = -network.matrixAbsMaxs[network.scaleInfo.edgeColourIdx];
+        var max =  network.matrixAbsMaxs[network.scaleInfo.edgeColourIdx];
 
         if (network.display.EDGE_COLOUR_MAX !== null) {
           min = -network.display.EDGE_COLOUR_MAX;
           max =  network.display.EDGE_COLOUR_MAX;
         }
 
-        var d3ecb   = d3.select(edgeColourBar);
         var step    = (max - min) / 20.0;
         var points  = d3.range(min, max + 1, step);
         var fmt     = d3.format("5.2f");
 
         //svg canvas for colour bar (drawn below)
-        var svg = d3ecb.append("svg")
+        var svg = edgeColourBar.append("svg")
           .attr("width",  150)
           .attr("height", 15);
 
@@ -301,15 +305,12 @@ define(
        */
       function drawEdgeWidthLegend() {
 
-        edgeWidthLegend.innerHTML = "";
-        var d3ewl = d3.select(edgeWidthLegend);
-
-        var svg = d3ewl.append("svg")
+        var svg = edgeWidthLegend.append("svg")
           .attr("width",  150)
           .attr("height", 100);
 
-        var min     = network.matrixAbsMins[network.scaleInfo.edgeWidthIdx];
-        var max     = network.matrixAbsMaxs[network.scaleInfo.edgeWidthIdx];
+        var min = network.matrixAbsMins[network.scaleInfo.edgeWidthIdx];
+        var max = network.matrixAbsMaxs[network.scaleInfo.edgeWidthIdx];
 
         if (network.display.EDGE_WIDTH_MIN !== null) {
           min = network.display.EDGE_WIDTH_MIN;
@@ -356,9 +357,9 @@ define(
         opt.value     = "" + i;
         opt.innerHTML = network.matrixLabels[i];
 
-        edgeColourIdx.appendChild(opt);
-        edgeWidthIdx .appendChild(opt.cloneNode(true));
-        thresholdIdx .appendChild(opt.cloneNode(true));
+        edgeColourIdx.node().appendChild(opt);
+        edgeWidthIdx .node().appendChild(opt.cloneNode(true));
+        thresholdIdx .node().appendChild(opt.cloneNode(true));
       }
 
       // Populate the nodeColourIdx drop down
@@ -367,7 +368,7 @@ define(
         var opt       = document.createElement("option");
         opt.value     = "" + i;
         opt.innerHTML = network.nodeDataLabels[i];
-        nodeColourIdx.appendChild(opt);
+        nodeColourIdx.node().appendChild(opt);
       }
 
       // Populate the nodeNameIdx drop down box -
@@ -376,13 +377,13 @@ define(
       var opt       = document.createElement("option");
       opt.value     = "-1";
       opt.innerHTML = "Use node indices";
-      nodeNameIdx.appendChild(opt);
+      nodeNameIdx.node().appendChild(opt);
 
       for (var i = 0; i < network.nodeNameLabels.length; i++) {
         var opt       = document.createElement("option");
         opt.value     = "" + i;
         opt.innerHTML = network.nodeNameLabels[i];
-        nodeNameIdx.appendChild(opt);
+        nodeNameIdx.node().appendChild(opt);
       }
 
       // Populate the nodeOrderIdx drop down box -
@@ -396,13 +397,13 @@ define(
       var opt       = document.createElement("option");
       opt.value     = "-1";
       opt.innerHTML = "Display network dendrogram";
-      nodeOrderIdx.appendChild(opt);
+      nodeOrderIdx.node().appendChild(opt);
 
       for (var i = 0; i < network.nodeOrderLabels.length; i++) {
         var opt       = document.createElement("option");
         opt.value     = "" + i;
         opt.innerHTML = network.nodeOrderLabels[i];
-        nodeOrderIdx.appendChild(opt);
+        nodeOrderIdx.node().appendChild(opt);
       }
 
       drawEdgeColourBar();
@@ -411,38 +412,36 @@ define(
       // Set up event handlers
       // on all of the widgets
 
-      numClusters
-        .onchange = function() {
+      numClusters.node().onchange = function() {
+          console.log("CHANGENAA ");
           currentNumClusters.innerHTML = this.value;
           netdata.setNumClusters(network, parseInt(this.value));
           redraw(false);
         };
 
-      edgeColourIdx
-        .onchange = function() {
+      edgeColourIdx.node().onchange = function() {
           netdata.setEdgeColourIdx(network, parseInt(this.value));
           drawEdgeColourBar();
           redraw(true);
         };
 
-      edgeWidthIdx
-        .onchange = function() {
+      edgeWidthIdx.node().onchange = function() {
           netdata.setEdgeWidthIdx(network, parseInt(this.value));
           drawEdgeWidthLegend();
           redraw(true);
         };
 
-      nodeNameIdx.onchange = function() {
+      nodeNameIdx.node().onchange = function() {
         netdata.setNodeNameIdx(network, parseInt(this.value));
         redraw(true);
       };
 
-      nodeColourIdx.onchange = function() {
+      nodeColourIdx.node().onchange = function() {
         netdata.setNodeColourIdx(network, parseInt(this.value));
         redraw(true);
       };
 
-      thresholdIdx.onchange = function() {
+      thresholdIdx.node().onchange = function() {
         netdata.setThresholdIdx(network, parseInt(this.value));
 
         // Network thresholding has changed, meaning
@@ -452,7 +451,7 @@ define(
         redraw(false);
       };
 
-      nodeOrderIdx.onchange = function() {
+      nodeOrderIdx.node().onchange = function() {
 
         var idx = parseInt(this.value);
 
@@ -486,7 +485,10 @@ define(
         showSubNetworkCtrl.type     = "checkbox";
         showSubNetworkCtrl.checked  = false;
         showSubNetworkCtrl.onchange = toggleSubNetwork;
-        showSubNetwork.appendChild(showSubNetworkCtrl);
+        showSubNetwork.node().appendChild(showSubNetworkCtrl);
+      }
+      else {
+        d3.select("#showSubNetworkDiv").node().innerHTML = "";
       }
 
       highlightNetwork .onchange = toggleHighlightNetwork;
@@ -496,76 +498,16 @@ define(
        * Open the network svg in a new window
        * when the 'Open SVG' link is clicked
        */
-      openAsSVG.onclick = function() {
-
-        // Thanks http://stackoverflow.com/a/26595628
-        var b64encode = function (input) {
-          var uInt8Array = new Uint8Array(input),
-              i = uInt8Array.length;
-          var biStr = []; //new Array(i);
-          while (i--) { biStr[i] = String.fromCharCode(uInt8Array[i]);  }
-          var base64 = window.btoa(biStr.join(''));
-          return base64;
-        };
-
+      openAsSVG.node().onclick = function() {
 
         var div       = d3.select(networkDiv);
-        var zerofmt   = d3.format("04d");
-        var svgWindow = window.open();
-        var q         = queue();
-        var imgSelect = div.selectAll("image");
-        var imgElems  = [];
+        var encoded = new Blob([div.html()], {type:"image/svg+xml;charset=utf-8"});
+        var url     = URL.createObjectURL(encoded);
+        window.open(url);
 
-        // This is a bit fiddly, because the network svg
-        // has been created using links to the thumbnails.
-        // In order to create a standalone svg scene, we
-        // need to download all of those thumbnails and
-        // insert them into the svg, in place of the
-        // original links.
-
-        // Function which downloads the thumbnail
-        // for the specified node.
-        var getthumb = function(nodeIdx, callback) {
-
-          var url = network.thumbUrl + "/" + zerofmt(nodeIdx) + ".png";
-          d3.xhr(url)
-            .mimeType("image/png")
-            .responseType("arraybuffer")
-            .get(callback);
-        };
-
-        // Queue a request to download all the thumbnails
-        if (network.thumbUrl !== null) {
-          for (var i = 0; i < network.nodes.length; i++) {
-
-            var imgElem = imgSelect.filter(".node-" + i);
-
-            if (imgElem !== undefined) {
-              imgElems.push(imgElem);
-              q = q.defer(getthumb, i);
-            }
-          }
-        }
-
-        // When all the thumbs have been downloaded,
-        q.awaitAll(function(error, thumbs) {
-
-          thumbs.map(function(thumb, idx) {
-
-            // b64 encode them, and insert
-            // them into the svg
-            var encoded = b64encode(thumb.response);
-            imgElems[idx].attr("xlink:href", "data:image/png+xml;base64,\n" + encoded);
-
-          });
-
-          // Load the full SVG in a new window
-          var encoded = btoa(div.html());
-          var url     = "data:image/svg+xml;base64,\n" + encoded;
-
-          svgWindow.location = url;
-        });
-
+        // Must return false to stop the browser
+        // from opening the <a href> url (which
+        // is just a placeholder - see netctrl.html)
         return false;
       };
 
