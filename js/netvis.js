@@ -1,19 +1,19 @@
 /*
- * Display the dendrogram and connectivity of a 
+ * Display the dendrogram and connectivity of a
  * of a network using D3.js.
- * 
+ *
  * Author: Paul McCarthy <pauldmccarthy@gmail.com>
  *
- * Citations: 
+ * Citations:
  *   - http://d3js.org/
  *   - http://bl.ocks.org/mbostock/7607999
  */
 define(["netdata", "lib/d3"], function(netdata, d3) {
 
-  /* 
-   * Various per-network constants for configuring how 
+  /*
+   * Various per-network constants for configuring how
    * nodes, labels, thumbnails, and edges are displayed
-   * normally (DEF), when highlighted (HLT), and when 
+   * normally (DEF), when highlighted (HLT), and when
    * selected (SEL).
    */
   var visDefaults = {};
@@ -47,10 +47,10 @@ define(["netdata", "lib/d3"], function(netdata, d3) {
   visDefaults.HLT_THUMB_HEIGHT = 109/2.5;
   visDefaults.SEL_THUMB_HEIGHT = 109/2.0;
 
-  // edge width and colour are scaled 
+  // edge width and colour are scaled
   // according to edge weights. Also,
-  // a default edge opacity of less 
-  // than 1.0 will result in a huge 
+  // a default edge opacity of less
+  // than 1.0 will result in a huge
   // performance hit for large networks.
   visDefaults.DEF_EDGE_COLOUR  = "default";
   visDefaults.HLT_EDGE_COLOUR  = "highlight";
@@ -59,7 +59,7 @@ define(["netdata", "lib/d3"], function(netdata, d3) {
   visDefaults.MIN_EDGE_WIDTH   = 1;
   visDefaults.MAX_EDGE_WIDTH   = 15;
   visDefaults.EDGE_WIDTH_MIN   = null;
-  visDefaults.EDGE_WIDTH_MAX   = null; 
+  visDefaults.EDGE_WIDTH_MAX   = null;
   visDefaults.EDGE_OPACITY     = 1.0;
 
   visDefaults.NODE_RADIUS_OFFSET      = 110;
@@ -78,10 +78,10 @@ define(["netdata", "lib/d3"], function(netdata, d3) {
 
   /*
    * Generates D3 colour (and edge width) scales for the given
-   * network, and attaches them as attributes of the given 
+   * network, and attaches them as attributes of the given
    * scaleInfo object.
    *
-   * It is assumed that the scaleInfo object already has the following 
+   * It is assumed that the scaleInfo object already has the following
    * properties:
    *
    *   - edgeWidthIdx:  Index of the edge weight to be used
@@ -95,20 +95,20 @@ define(["netdata", "lib/d3"], function(netdata, d3) {
    *
    * The following attributes are added to the scaleInfo object:
    *
-   *   - nodeColourScale:     Colours nodes according to the 
+   *   - nodeColourScale:     Colours nodes according to the
    *                          node data at nodeColourIdx.
    *
-   *   - edgeWidthScale:      Scales edge widths according to the edge 
+   *   - edgeWidthScale:      Scales edge widths according to the edge
    *                          weight at index edgeWidthIdx.
    *
-   *   - defEdgeColourScale:  Colours edges, when not highlighted, 
-   *                          according to the edge weight at index 
+   *   - defEdgeColourScale:  Colours edges, when not highlighted,
+   *                          according to the edge weight at index
    *                          edgeColourIdx.
    *
-   *   - hltEdgeColourScale:  Colours edges, when highlighted, 
-   *                          according to the edge weight at 
+   *   - hltEdgeColourScale:  Colours edges, when highlighted,
+   *                          according to the edge weight at
    *                          index edgeColourIdx.
-   * 
+   *
    *   - nodeColour:          Function which takes a node object,
    *                          and returns a colour for it.
    *
@@ -121,13 +121,13 @@ define(["netdata", "lib/d3"], function(netdata, d3) {
    *   - edgeWidth:           Function which takes an edge object,
    *                          and returns a width for it.
    *
-   *   - *Path*:              Same as the above *Edge* functions, 
+   *   - *Path*:              Same as the above *Edge* functions,
    *                          except these ones accept an object
-   *                          which is assumed to have an edge 
+   *                          which is assumed to have an edge
    *                          object as an attribute called 'edge'.
    */
   function genColourScales(network, scaleInfo) {
-    
+
     var ewwIdx = scaleInfo.edgeWidthIdx;
     var ecwIdx = scaleInfo.edgeColourIdx;
 
@@ -147,7 +147,7 @@ define(["netdata", "lib/d3"], function(netdata, d3) {
     if (network.display.EDGE_WIDTH_MIN !== null)
       ewMin = network.display.EDGE_WIDTH_MIN;
     if (network.display.EDGE_WIDTH_MAX !== null)
-      ewMax = network.display.EDGE_WIDTH_MAX; 
+      ewMax = network.display.EDGE_WIDTH_MAX;
 
     // Edge width scale
     var edgeWidthScale = d3.scale.linear()
@@ -202,7 +202,7 @@ define(["netdata", "lib/d3"], function(netdata, d3) {
 
     var defEdgeColourScale = function(val) {
       var c = d3.rgb(hltEdgeColourScale(val));
-      
+
       var cols = [c.r,c.g,c.b];
       cols.sort(function(a,b) {return a-b;});
 
@@ -217,14 +217,14 @@ define(["netdata", "lib/d3"], function(netdata, d3) {
       return c;
     }
 
-    // attach all those scales as attributes 
+    // attach all those scales as attributes
     // of the provided scaleinfo object
     scaleInfo.nodeColourScale    = nodeColourScale;
     scaleInfo.edgeWidthScale     = edgeWidthScale;
     scaleInfo.defEdgeColourScale = defEdgeColourScale;
     scaleInfo.hltEdgeColourScale = hltEdgeColourScale;
 
-    // And attach a bunch of convenience 
+    // And attach a bunch of convenience
     // functions for use in d3 attr calls
     scaleInfo.nodeColour = function(node) {
       return scaleInfo.nodeColourScale(
@@ -235,8 +235,8 @@ define(["netdata", "lib/d3"], function(netdata, d3) {
       return scaleInfo.defEdgeColourScale(
         edge.weights[scaleInfo.edgeColourIdx]);
     };
-    
-    // The *Path* functions are provided, as 
+
+    // The *Path* functions are provided, as
     // edges are represented as spline paths
     // (see netvis.js)
     scaleInfo.defPathColour = function(path) {
@@ -253,7 +253,7 @@ define(["netdata", "lib/d3"], function(netdata, d3) {
       return scaleInfo.hltEdgeColourScale(
         path.edge.weights[scaleInfo.edgeColourIdx]);
     };
-   
+
     scaleInfo.edgeWidth = function(edge) {
       return scaleInfo.edgeWidthScale(
         edge.weights[scaleInfo.edgeWidthIdx]);
@@ -267,7 +267,7 @@ define(["netdata", "lib/d3"], function(netdata, d3) {
 
 
   /*
-   * Positions the network nodes according to the 
+   * Positions the network nodes according to the
    * linkags/dendrogram information
    */
   function dendrogramLayout(network) {
@@ -275,12 +275,12 @@ define(["netdata", "lib/d3"], function(netdata, d3) {
     var radius = network.display.radius;
 
     // We use the D3 cluster layout to draw the nodes in a circle.
-    // This also lays out the tree nodes (see the 
-    // makeNetworkDendrogramTree function) which represent the 
+    // This also lays out the tree nodes (see the
+    // makeNetworkDendrogramTree function) which represent the
     // network dendrogram. These nodes are not displayed, but their
     // locations are used to determine the path splines used to
     // display edges (see the drawEdges function).
-      
+
     function sep(a, b) {
       return a.parent == b.parent ? 1 : visDefaults.GROUP_DISTANCE;
     }
@@ -304,11 +304,11 @@ define(["netdata", "lib/d3"], function(netdata, d3) {
     return leafNodes;
   }
 
-  /* 
+  /*
    * Positions the nodes according to a fixed ordering.
    */
   function fixedLayout(network) {
-    
+
     var radius    = network.display.radius;
     var rootNode  = network.treeNodes[network.treeNodes.length - 1];
     var nodes     = network.nodes;
@@ -343,7 +343,7 @@ define(["netdata", "lib/d3"], function(netdata, d3) {
     // We need to add all of these attributes
     // to each node in the dendrogram tree
     // so that edge paths can be calculated.
-    // 
+    //
     // See the documentation for
     // the d3.layout.cluster and
     // d3.layout.bundle functions.
@@ -372,16 +372,16 @@ define(["netdata", "lib/d3"], function(netdata, d3) {
 
   /*
    * Draw the nodes of the network. It is assumed that the network
-   * has the following D3 selections as attributes (which are 
-   * created and attached to the network in the displayNetwork 
+   * has the following D3 selections as attributes (which are
+   * created and attached to the network in the displayNetwork
    * function):
    *
    *   - network.svgNodes:      Place to draw circles representing nodes
    *   - network.svgNodeLabels: Place to draw node labels
    *   - network.svgThumbnails: Place to draw node thumbnails
    *
-   * And that the network also has a 'treeNodes' attribute, containing 
-   * node in the dendrogram tree (see the makeNetworkDendrogramTree 
+   * And that the network also has a 'treeNodes' attribute, containing
+   * node in the dendrogram tree (see the makeNetworkDendrogramTree
    * function).
    */
   function drawNodes(network) {
@@ -395,12 +395,12 @@ define(["netdata", "lib/d3"], function(netdata, d3) {
     // the value of nodeOrderIdx.
     if (network.nodeOrderIdx === -1) nodes = dendrogramLayout(network);
     else                             nodes = fixedLayout(     network);
-      
+
     // Position nodes in a big circle.
     function positionNode(node) {
-      return "rotate("    + (node.x - 90) + ")"   + 
-             "translate(" + (node.y)      + ",0)" + 
-             (node.x < 180 ? "" : "rotate(180)"); 
+      return "rotate("    + (node.x - 90) + ")"   +
+             "translate(" + (node.y)      + ",0)" +
+             (node.x < 180 ? "" : "rotate(180)");
     }
 
     // Position labels in a slightly bigger circle.
@@ -425,13 +425,13 @@ define(["netdata", "lib/d3"], function(netdata, d3) {
 
     // Position node names nicely.
     function anchorLabel(node) {
-      return node.x < 180 ? "start" : "end"; 
+      return node.x < 180 ? "start" : "end";
     }
 
-    // The circle, label and thumbnail for a specific node 
-    // are given css class 'node-X', where X is the node 
-    // index. For every neighbour of a particular node, that 
-    // node is also given the css class  'nodenbr-Y', where 
+    // The circle, label and thumbnail for a specific node
+    // are given css class 'node-X', where X is the node
+    // index. For every neighbour of a particular node, that
+    // node is also given the css class  'nodenbr-Y', where
     // Y is the index of the neighbour.
     function nodeClasses(node) {
 
@@ -462,7 +462,7 @@ define(["netdata", "lib/d3"], function(netdata, d3) {
       .attr("opacity",   network.display.DEF_NODE_OPACITY)
       .attr("r",         network.display.DEF_NODE_SIZE)
       .attr("fill",      network.scaleInfo.nodeColour);
-      
+
     // Draw the node labels
     if (network.display.SHOW_LABELS === true) {
       network.display.svgNodeLabels
@@ -480,9 +480,9 @@ define(["netdata", "lib/d3"], function(netdata, d3) {
         .attr("transform",    positionLabel)
         .style("text-anchor", anchorLabel)
         .text(nodeNames);
-  }
+    }
 
-    // Draw the node thumbnails 
+    // Draw the node thumbnails
     network.display.svgThumbnails
       .selectAll("image")
       .data(nodes)
@@ -498,10 +498,10 @@ define(["netdata", "lib/d3"], function(netdata, d3) {
 
   /*
    * Draw the edges of the given network. An edge between two nodes
-   * is drawn as a spline path which wiggles its way from the first 
-   * node, through the dendrogram tree up to the first common 
-   * ancester of the two nodes, and then back down to the second 
-   * node. Most of the hard work is done by the d3.layout.bundle 
+   * is drawn as a spline path which wiggles its way from the first
+   * node, through the dendrogram tree up to the first common
+   * ancester of the two nodes, and then back down to the second
+   * node. Most of the hard work is done by the d3.layout.bundle
    * function.
    */
   function drawEdges(network) {
@@ -517,7 +517,7 @@ define(["netdata", "lib/d3"], function(netdata, d3) {
       .radius(function(node) { return node.y - network.display.EDGE_RADIUS_OFFSET; })
       .angle( function(node) { return node.x / 180 * Math.PI; });
 
-     // Each svg path element is given two classes - 'edge-X' 
+     // Each svg path element is given two classes - 'edge-X'
      // and 'edge-Y', where X and Y are the edge endpoints
     function edgeClasses(path) {
       end = path.length - 1;
@@ -525,7 +525,7 @@ define(["netdata", "lib/d3"], function(netdata, d3) {
       return classes.join(" ");
     }
 
-    // Each edge is also given an id 'edge-X-Y', where 
+    // Each edge is also given an id 'edge-X-Y', where
     // X and Y are the edge endpoints (and X < Y).
     function edgeId(path) {
       end = path.length - 1;
@@ -557,11 +557,11 @@ define(["netdata", "lib/d3"], function(netdata, d3) {
     var edgeColour = network.display.DEF_EDGE_COLOUR;
     var edgeWidth  = network.display.DEF_EDGE_WIDTH;
 
-    if      (edgeWidth  === "scale")     
+    if      (edgeWidth  === "scale")
       edgeWidth  = network.scaleInfo.pathWidth;
-    if      (edgeColour === "default")   
+    if      (edgeColour === "default")
       edgeColour = network.scaleInfo.defPathColour;
-    else if (edgeColour === "highlight") 
+    else if (edgeColour === "highlight")
       edgeColour = network.scaleInfo.hltPathColour;
 
     // draw the edges
@@ -581,9 +581,9 @@ define(["netdata", "lib/d3"], function(netdata, d3) {
   }
 
   /*
-   * Takes a network created by the matricesToNetowrk 
-   * function (see below), and displays it in the 
-   * specified networkDiv element, with nodes arranged 
+   * Takes a network created by the matricesToNetowrk
+   * function (see below), and displays it in the
+   * specified networkDiv element, with nodes arranged
    * in a big circle.
    */
   function displayNetwork(network, div, width, height) {
@@ -620,7 +620,7 @@ define(["netdata", "lib/d3"], function(netdata, d3) {
     // In addition to this, a single div is added to the <body>,
     // which is used as a popup to display edge weights when
     // the mouse moves over an edge.
-    // 
+    //
 
     if (!network.display) network.display = {};
     network.display.svg           = svg;
@@ -628,7 +628,7 @@ define(["netdata", "lib/d3"], function(netdata, d3) {
     network.display.width         = width;
     network.display.height        = height;
 
-    // The order of these lines defines the order in which the 
+    // The order of these lines defines the order in which the
     // elements are displayed (last displayed on top)
     network.display.svgEdges      = parentGroup.append("g");
     network.display.svgThumbnails = parentGroup.append("g");
