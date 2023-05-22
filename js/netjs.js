@@ -23,15 +23,6 @@ define(
    *   - networkWidth:  Width in pixels of network div.
    *   - networkHeight: Width in pixels of network div.
    *
-   * If you want to be able to display the sub-network consisting
-   * of the selected node and its immediate neighbours, the dispaly
-   * object must also have:
-   *
-   *   - subNetDiv:    ID of a div element in which to place the sub-network
-   *                   canvas.
-   *   - subNetWidth:  Width in pixels of subnetwork div.
-   *   - subNetHeight: Height in pixels of subnetwork div.
-   *
    * The display object may also contain the following optional attributes.
    * Network nodes have three possible display 'states': default, highlighted,
    * and selected. Edges have two possible display states: default and
@@ -147,25 +138,15 @@ define(
    *   - edgeRadiusOffset
    *   - labelRadiusOffset
    *   - thumbnailRadiusOffset
-   *
-   * Attributes controlling initial state:
-   *   - highlightOn
-   *   - subnetOn
    */
   function displayNetwork(network, display) {
 
     var networkDiv    = display.networkDiv;
-    var subNetDiv     = display.subNetDiv;
     var controlDiv    = display.controlDiv;
     var networkWidth  = display.networkWidth;
     var networkHeight = display.networkHeight;
-    var subNetWidth   = display.subNetWidth;
-    var subNetHeight  = display.subNetHeight;
     var vd            = netvis.visDefaults;
 
-    if (subNetDiv === undefined) {
-      subNetDiv = null;
-    }
     if (controlDiv === undefined) {
       controlDiv = null;
     }
@@ -300,12 +281,7 @@ define(
     netctrl.createNetworkControls(
       network,
       networkDiv,
-      controlDiv,
-      subNetDiv,
-      subNetWidth,
-      subNetHeight,
-      display.highlightOn,
-      display.subnetOn);
+      controlDiv);
   }
 
   var netjs = {};

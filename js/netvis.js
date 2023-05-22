@@ -23,7 +23,7 @@ define(["netdata", "lib/d3"], function(netdata, d3) {
   visDefaults.DEF_LABEL_SIZE   = 10;
   visDefaults.HLT_LABEL_SIZE   = 10;
   visDefaults.SEL_LABEL_SIZE   = 16;
-  visDefaults.DEF_LABEL_WEIGHT = "normal";
+  visDefaults.DEF_LABEL_WEIGHT = "bold";
   visDefaults.HLT_LABEL_WEIGHT = "bold";
   visDefaults.SEL_LABEL_WEIGHT = "bold";
   visDefaults.DEF_LABEL_FONT   = "sans";
@@ -33,11 +33,11 @@ define(["netdata", "lib/d3"], function(netdata, d3) {
   visDefaults.DEF_NODE_SIZE    = 3;
   visDefaults.HLT_NODE_SIZE    = 3;
   visDefaults.SEL_NODE_SIZE    = 5;
-  visDefaults.DEF_NODE_OPACITY = 0.5;
+  visDefaults.DEF_NODE_OPACITY = 1.0;
   visDefaults.HLT_NODE_OPACITY = 1.0;
   visDefaults.SEL_NODE_OPACITY = 1.0;
 
-  visDefaults.DEF_THUMB_VISIBILITY = "hidden";
+  visDefaults.DEF_THUMB_VISIBILITY = "visible";
   visDefaults.HLT_THUMB_VISIBILITY = "visible";
   visDefaults.SEL_THUMB_VISIBILITY = "visible";
   visDefaults.DEF_THUMB_WIDTH  = 91 /2.5;
@@ -52,9 +52,9 @@ define(["netdata", "lib/d3"], function(netdata, d3) {
   // a default edge opacity of less
   // than 1.0 will result in a huge
   // performance hit for large networks.
-  visDefaults.DEF_EDGE_COLOUR  = "default";
+  visDefaults.DEF_EDGE_COLOUR  = "highlight";
   visDefaults.HLT_EDGE_COLOUR  = "highlight";
-  visDefaults.DEF_EDGE_WIDTH   = 1;
+  visDefaults.DEF_EDGE_WIDTH   = "scale";
   visDefaults.HLT_EDGE_WIDTH   = "scale";
   visDefaults.MIN_EDGE_WIDTH   = 1;
   visDefaults.MAX_EDGE_WIDTH   = 15;
@@ -133,7 +133,7 @@ define(["netdata", "lib/d3"], function(netdata, d3) {
 
     // Nodes are coloured according to their node data.
     // TODO handle more than 10 node labels?
-    var nodeColourScale = d3.scale.category10();
+    var nodeColourScale = d3.schemeCategory10;
 
     var ecMin = network.matrixAbsMins[ecwIdx];
     var ecMax = network.matrixAbsMaxs[ecwIdx];
@@ -150,7 +150,7 @@ define(["netdata", "lib/d3"], function(netdata, d3) {
       ewMax = network.display.EDGE_WIDTH_MAX;
 
     // Edge width scale
-    var edgeWidthScale = d3.scale.linear()
+    var edgeWidthScale = d3.scaleLinear()
       .domain([-ewMax, -ewMin, -0, ewMin, ewMax])
       .range( [network.display.MAX_EDGE_WIDTH,
                network.display.MIN_EDGE_WIDTH,
@@ -189,14 +189,14 @@ define(["netdata", "lib/d3"], function(netdata, d3) {
     }
 
     // Colour scale for highlighted edges
-    var hltEdgeColourScale = d3.scale.linear().domain(domain).range(range);
+    var hltEdgeColourScale = d3.scaleLinear().domain(domain).range(range);
 
     // The colour scale for non-highlighted edges
-    // is a washed out version of that used for 
+    // is a washed out version of that used for
     // highlighted edges. Could achieve the same
     // effect with opacity, but avoiding opacity
     // gives better performance.
-    var edgeColourHltToDef = d3.scale.linear()
+    var edgeColourHltToDef = d3.scaleLinear()
       .domain([0,   255])
       .range( [210, 240]);
 
@@ -227,8 +227,10 @@ define(["netdata", "lib/d3"], function(netdata, d3) {
     // And attach a bunch of convenience
     // functions for use in d3 attr calls
     scaleInfo.nodeColour = function(node) {
-      return scaleInfo.nodeColourScale(
-        node.nodeData[network.scaleInfo.nodeColourIdx]);
+      if (node.data.nodeData == undefined)
+        return "#000000";
+      return scaleInfo.nodeColourScale[
+        node.data.nodeData[network.scaleInfo.nodeColourIdx]];
     };
 
     scaleInfo.defEdgeColour = function(edge) {
@@ -241,7 +243,7 @@ define(["netdata", "lib/d3"], function(netdata, d3) {
     // (see netvis.js)
     scaleInfo.defPathColour = function(path) {
       return scaleInfo.defEdgeColourScale(
-        path.edge.weights[scaleInfo.edgeColourIdx]);
+        path.weights[scaleInfo.edgeColourIdx]);
     };
 
     scaleInfo.hltEdgeColour = function(edge) {
@@ -251,7 +253,7 @@ define(["netdata", "lib/d3"], function(netdata, d3) {
 
     scaleInfo.hltPathColour = function(path) {
       return scaleInfo.hltEdgeColourScale(
-        path.edge.weights[scaleInfo.edgeColourIdx]);
+        path.weights[scaleInfo.edgeColourIdx]);
     };
 
     scaleInfo.edgeWidth = function(edge) {
@@ -261,7 +263,7 @@ define(["netdata", "lib/d3"], function(netdata, d3) {
 
     scaleInfo.pathWidth = function(path) {
       return scaleInfo.edgeWidthScale(
-        path.edge.weights[scaleInfo.edgeWidthIdx]);
+        path.weights[scaleInfo.edgeWidthIdx]);
     };
   }
 
@@ -285,21 +287,30 @@ define(["netdata", "lib/d3"], function(netdata, d3) {
       return a.parent == b.parent ? 1 : visDefaults.GROUP_DISTANCE;
     }
 
+    // arrange in the current node order
+    function sort(a, b) {
+      return d3.ascending(a.data.order, b.data.order);
+    };
 
-    var clusterLayout  = d3.layout.cluster()
+    // We need to use d3.hierarchy, which creates
+    // its own node objects arranged
+    var rootNode = network.treeNodes[network.treeNodes.length - 1];
+    rootNode     = d3.hierarchy(rootNode).sort(sort);
+
+    // d3.cluster will layout the nodes, adding
+    // x/y coordinates to each node object
+    var clusterLayout  = d3.cluster()
       .size([360, radius-network.display.NODE_RADIUS_OFFSET])
-        .separation(sep)
-        .sort(function(a, b) { return d3.ascending(a.order, b.order); });
+      .separation(sep);
+    clusterLayout(rootNode);
 
-    var rootNode       = network.treeNodes[network.treeNodes.length - 1];
-    var clusteredNodes = clusterLayout.nodes(rootNode);
+    var leafNodes = rootNode.leaves();
 
-    // If network pruning is enabled, pruned nodes
-    // will not have a parent - remove these nodes.
-    // See netdata.js:pruneDendrogramTree.
-    var leafNodes      = network.nodes.filter(function (n) {
-      return n.parent !== null;
-    });
+    // Add refs from each d3 node object
+    // to our own node objects.
+    for (var i = 0; i < leafNodes.length; i++) {
+      leafNodes[i].data.clusterNode = leafNodes[i];
+    }
 
     return leafNodes;
   }
@@ -405,20 +416,20 @@ define(["netdata", "lib/d3"], function(netdata, d3) {
 
     // Position labels in a slightly bigger circle.
     function positionLabel(node) {
-      return "rotate("    + (node.x - 90)   + ")"  + 
-             "translate(" + (node.y + network.display.LABEL_RADIUS_OFFSET)  + ",0)" + 
-             (node.x < 180 ? "" : "rotate(180)"); 
+      return "rotate("    + (node.x - 90)   + ")"  +
+             "translate(" + (node.y + network.display.LABEL_RADIUS_OFFSET)  + ",0)" +
+             (node.x < 180 ? "" : "rotate(180)");
     }
 
-    // Position thumbnails in an even slightly bigger 
+    // Position thumbnails in an even slightly bigger
     // circle, ensuring that they are upright.
     var halfThumbW = network.display.DEF_THUMB_WIDTH  / 2.0;
     var halfThumbH = network.display.DEF_THUMB_HEIGHT / 2.0;
     var yoff       = network.display.THUMBNAIL_RADIUS_OFFSET;
- 
+
     function positionThumbnail(node) {
-      return "rotate("    + ( node.x - 90) + ")"   + 
-             "translate(" + ( node.y + yoff) + ",0)" + 
+      return "rotate("    + ( node.x - 90) + ")"   +
+             "translate(" + ( node.y + yoff) + ",0)" +
              "rotate("    + (-node.x + 90) + ")" +
              "translate(-" + halfThumbW + ",-" + halfThumbH + ")";
     }
@@ -435,9 +446,13 @@ define(["netdata", "lib/d3"], function(netdata, d3) {
     // Y is the index of the neighbour.
     function nodeClasses(node) {
 
-      var classes = ["node-" + node.index];
+      var classes = ["node-" + node.data.index];
 
-      node.neighbours.forEach(function(nbr) {
+      if (node.data.neighbours === undefined) {
+        return "";
+      }
+
+      node.data.neighbours.forEach(function(nbr) {
         classes.push("nodenbr-" + nbr.index);
       });
 
@@ -445,11 +460,27 @@ define(["netdata", "lib/d3"], function(netdata, d3) {
     }
 
     function nodeNames(node) {
-      if (network.nodeNameIdx == -1)
-        return "" + (node.index + 1);
 
-      return network.nodeNames[network.nodeNameIdx][node.index];
+      if (node.data.index === undefined) {
+        return "";
+      }
+
+      if (network.nodeNameIdx == -1)
+        return "" + (node.data.index + 1);
+
+      return network.nodeNames[network.nodeNameIdx][node.data.index];
     }
+
+    // Encode thumbnail images as base64
+    // Thanks http://stackoverflow.com/a/26595628
+    function b64encode(input) {
+      var uInt8Array = new Uint8Array(input);
+      var i = uInt8Array.length;
+      var biStr = [];
+      while (i--) { biStr[i] = String.fromCharCode(uInt8Array[i]);  }
+      var base64 = window.btoa(biStr.join(''));
+      return base64;
+    };
 
     // Draw the nodes
     network.display.svgNodes
@@ -493,7 +524,8 @@ define(["netdata", "lib/d3"], function(netdata, d3) {
       .attr("visibility",  network.display.DEF_THUMB_VISIBILITY)
       .attr("width",       network.display.DEF_THUMB_WIDTH)
       .attr("height",      network.display.DEF_THUMB_HEIGHT)
-      .attr("xlink:href",  function(node) {return node.thumbnail;});
+      .attr("xlink:href",  function(node) {
+        return "data:image/png;base64," + b64encode(node.data.thumbnail)});
   }
 
   /*
@@ -510,10 +542,8 @@ define(["netdata", "lib/d3"], function(netdata, d3) {
     var radius = network.display.radius;
 
     // For drawing network edges as splines
-    var bundle = d3.layout.bundle();
-    var line   = d3.svg.line.radial()
-      .interpolate("bundle")
-      .tension(.85)
+    var line   = d3.lineRadial()
+      .curve(d3.curveBundle.beta(0.85))
       .radius(function(node) { return node.y - network.display.EDGE_RADIUS_OFFSET; })
       .angle( function(node) { return node.x / 180 * Math.PI; });
 
@@ -521,7 +551,7 @@ define(["netdata", "lib/d3"], function(netdata, d3) {
      // and 'edge-Y', where X and Y are the edge endpoints
     function edgeClasses(path) {
       end = path.length - 1;
-      classes = ["edge-" + path[0].index, "edge-" + path[end].index];
+      classes = ["edge-" + path.i.index, "edge-" + path.j.index];
       return classes.join(" ");
     }
 
@@ -529,30 +559,10 @@ define(["netdata", "lib/d3"], function(netdata, d3) {
     // X and Y are the edge endpoints (and X < Y).
     function edgeId(path) {
       end = path.length - 1;
-      idxs = [path[0].index, path[end].index];
+      idxs = [path.i.index, path.j.index];
       idxs.sort(function(a, b){return a-b});
       return "edge-" + idxs[0] + "-" + idxs[1];
     }
-    
-    // Generate the spline paths for each edge,
-    // and attach each edge as an attribute of
-    // its path, and vice versa, to make things
-    // easier in the various callback functions
-    // passed to D3 (see the configDynamics
-    // function)
-    var paths = bundle(network.edges);
-    for (var i = 0; i < paths.length; i++) {
-      paths[i].edge         = network.edges[i];
-      network.edges[i].path = paths[i];
-    }
-
-    // And we'll also add the paths associated with
-    // the edges of each node as an attribute of 
-    // that node, again to make D3 callback functions
-    // nicer.
-    network.nodes.forEach(function(node) {
-      node.paths = node.edges.map(function(edge) {return edge.path;});
-    });
 
     var edgeColour = network.display.DEF_EDGE_COLOUR;
     var edgeWidth  = network.display.DEF_EDGE_WIDTH;
@@ -567,7 +577,7 @@ define(["netdata", "lib/d3"], function(netdata, d3) {
     // draw the edges
     network.display.svgEdges
       .selectAll("path")
-      .data(paths)
+      .data(network.edges)
       .enter()
       .append("path")
       .attr("id",              edgeId)
@@ -577,7 +587,10 @@ define(["netdata", "lib/d3"], function(netdata, d3) {
       .attr("stroke-linecap", "round")
       .attr("fill",           "none")
       .attr("opacity",         network.display.DEF_EDGE_OPACITY)
-      .attr("d",               line);
+      .attr("d",               function(edge) {
+        return line(edge.i.clusterNode.path(edge.j.clusterNode));
+      });
+      // .each(                   function(edge) {edge.path = this;});
   }
 
   /*
