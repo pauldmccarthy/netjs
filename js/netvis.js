@@ -23,7 +23,7 @@ define(["netdata", "lib/d3"], function(netdata, d3) {
   visDefaults.DEF_LABEL_SIZE   = 10;
   visDefaults.HLT_LABEL_SIZE   = 10;
   visDefaults.SEL_LABEL_SIZE   = 16;
-  visDefaults.DEF_LABEL_WEIGHT = "bold";
+  visDefaults.DEF_LABEL_WEIGHT = "normal";
   visDefaults.HLT_LABEL_WEIGHT = "bold";
   visDefaults.SEL_LABEL_WEIGHT = "bold";
   visDefaults.DEF_LABEL_FONT   = "sans";
@@ -47,20 +47,22 @@ define(["netdata", "lib/d3"], function(netdata, d3) {
   visDefaults.HLT_THUMB_HEIGHT = 109/2.5;
   visDefaults.SEL_THUMB_HEIGHT = 109/2.0;
 
-  // edge width and colour are scaled
-  // according to edge weights. Also,
-  // a default edge opacity of less
-  // than 1.0 will result in a huge
+  // Edge width and colour are scaled
+  // according to edge weights.
+
+  // NOTE that a default edge opacity of
+  // less than 1.0 may result in poor
   // performance hit for large networks.
-  visDefaults.DEF_EDGE_COLOUR  = "highlight";
+  visDefaults.DEF_EDGE_COLOUR  = "default";
   visDefaults.HLT_EDGE_COLOUR  = "highlight";
-  visDefaults.DEF_EDGE_WIDTH   = "scale";
+  visDefaults.DEF_EDGE_WIDTH   = "default";
   visDefaults.HLT_EDGE_WIDTH   = "scale";
   visDefaults.MIN_EDGE_WIDTH   = 1;
   visDefaults.MAX_EDGE_WIDTH   = 15;
   visDefaults.EDGE_WIDTH_MIN   = null;
   visDefaults.EDGE_WIDTH_MAX   = null;
-  visDefaults.EDGE_OPACITY     = 1.0;
+  visDefaults.DEF_EDGE_OPACITY = 0.25;
+  visDefaults.HLT_EDGE_OPACITY = 0.75;
 
   visDefaults.NODE_RADIUS_OFFSET      = 110;
   visDefaults.EDGE_RADIUS_OFFSET      = 8;
@@ -198,7 +200,7 @@ define(["netdata", "lib/d3"], function(netdata, d3) {
     // gives better performance.
     var edgeColourHltToDef = d3.scaleLinear()
       .domain([0,   255])
-      .range( [210, 240]);
+      .range( [150, 240]);
 
     var defEdgeColourScale = function(val) {
       var c = d3.rgb(hltEdgeColourScale(val));
@@ -237,34 +239,22 @@ define(["netdata", "lib/d3"], function(netdata, d3) {
       return scaleInfo.defEdgeColourScale(
         edge.weights[scaleInfo.edgeColourIdx]);
     };
-
-    // The *Path* functions are provided, as
-    // edges are represented as spline paths
-    // (see netvis.js)
-    scaleInfo.defPathColour = function(path) {
-      return scaleInfo.defEdgeColourScale(
-        path.weights[scaleInfo.edgeColourIdx]);
-    };
-
     scaleInfo.hltEdgeColour = function(edge) {
       return scaleInfo.hltEdgeColourScale(
         edge.weights[scaleInfo.edgeColourIdx]);
     };
-
-    scaleInfo.hltPathColour = function(path) {
-      return scaleInfo.hltEdgeColourScale(
-        path.weights[scaleInfo.edgeColourIdx]);
-    };
-
     scaleInfo.edgeWidth = function(edge) {
       return scaleInfo.edgeWidthScale(
         edge.weights[scaleInfo.edgeWidthIdx]);
     };
 
-    scaleInfo.pathWidth = function(path) {
-      return scaleInfo.edgeWidthScale(
-        path.weights[scaleInfo.edgeWidthIdx]);
-    };
+
+    // The *Path* functions are provided, as
+    // edges are represented as spline paths
+    // (see netvis.js)
+    scaleInfo.defPathColour = function(path) { return scaleInfo.defEdgeColour(path.edge); };
+    scaleInfo.hltPathColour = function(path) { return scaleInfo.hltEdgeColour(path.edge); };
+    scaleInfo.pathWidth     = function(path) { return scaleInfo.edgeWidth(    path.edge); };
   }
 
 
@@ -287,7 +277,7 @@ define(["netdata", "lib/d3"], function(netdata, d3) {
       return a.parent == b.parent ? 1 : visDefaults.GROUP_DISTANCE;
     }
 
-    // arrange in the current node order
+    // arrange by index within cluster
     function sort(a, b) {
       return d3.ascending(a.data.order, b.data.order);
     };
@@ -449,12 +439,16 @@ define(["netdata", "lib/d3"], function(netdata, d3) {
       return base64;
     };
 
+    // We add a "node" attribute to each SVG element
+    // to make lookup easier in netvis_dynamics.js
+
     // Draw the nodes
     network.display.svgNodes
       .selectAll("circle")
       .data(nodes)
       .enter()
       .append("circle")
+      .each(function(node) { this.node = node.data; })
       .attr("class",     nodeClasses)
       .attr("transform", positionNode)
       .attr("opacity",   network.display.DEF_NODE_OPACITY)
@@ -468,6 +462,7 @@ define(["netdata", "lib/d3"], function(netdata, d3) {
         .data(nodes)
         .enter()
         .append("text")
+        .each(function(node) { this.node = node.data; })
         .attr("class",        nodeClasses)
         .attr("dy",          ".31em")
         .attr("opacity",      network.display.DEF_NODE_OPACITY)
@@ -486,6 +481,7 @@ define(["netdata", "lib/d3"], function(netdata, d3) {
       .data(nodes)
       .enter()
       .append("image")
+      .each(function(node) { this.node = node.data; })
       .attr("class",       nodeClasses)
       .attr("transform",   positionThumbnail)
       .attr("visibility",  network.display.DEF_THUMB_VISIBILITY)
@@ -535,18 +531,21 @@ define(["netdata", "lib/d3"], function(netdata, d3) {
     var edgeWidth  = network.display.DEF_EDGE_WIDTH;
 
     if      (edgeWidth  === "scale")
-      edgeWidth  = network.scaleInfo.pathWidth;
+      edgeWidth  = network.scaleInfo.edgeWidth;
     if      (edgeColour === "default")
-      edgeColour = network.scaleInfo.defPathColour;
+      edgeColour = network.scaleInfo.defEdgeColour;
     else if (edgeColour === "highlight")
-      edgeColour = network.scaleInfo.hltPathColour;
+      edgeColour = network.scaleInfo.hltEdgeColour;
 
-    // draw the edges
+    // draw the edges. We add each SVG path element as
+    // an attribute called "path" to the edge object
+    // to ease lookup in netvis_dynamics.
     network.display.svgEdges
       .selectAll("path")
       .data(network.edges)
       .enter()
       .append("path")
+      .each(                   function(edge) {edge.path = this; this.edge = edge;})
       .attr("id",              edgeId)
       .attr("class",           edgeClasses)
       .attr("stroke",          edgeColour)
@@ -557,7 +556,6 @@ define(["netdata", "lib/d3"], function(netdata, d3) {
       .attr("d",               function(edge) {
         return line(edge.i.clusterNode.path(edge.j.clusterNode));
       });
-      // .each(                   function(edge) {edge.path = this;});
   }
 
   /*
