@@ -318,17 +318,16 @@ define(["lib/d3"], function(d3, queue) {
    */
   function setNumClusters(network, numClusts) {
 
-    if (network.linkage === null) {
+    if (network.linkage === null || network.nodeOrderIdx != -1) {
 
-      // Create a dummy dendrogram with a single cluster
-      var root = {};
-      root.index    = network.nodes.length;
-      // Make sure we take a copy of the
+      // Create a dummy dendrogram with a single
+      // cluster Make sure we take a copy of the
       // nodes array for the root node's
       // children, as the root node children
       // might be modified
+      var root      = {};
       root.children = network.nodes.slice();
-      network.nodes.forEach(function(node) {node.parent = root;});
+      root.children.forEach(function(node) {node.parent = root;});
       network.treeNodes = [root];
 
       pruneDendrogramTree(network);
@@ -395,12 +394,6 @@ define(["lib/d3"], function(d3, queue) {
         edge.i       = network.nodes[i];
         edge.j       = network.nodes[j];
         edge.weights = network.matrices.map(function(mat) {return mat[i][j];});
-
-        // d3.layout.bundle and d3.layout.force require two
-        // attributes, 'source' and 'target', so we add them
-        // here purely for convenience.
-        edge.source  = edge.i;
-        edge.target  = edge.j;
 
         network.edges.push(edge);
         network.nodes[i].neighbours.push(network.nodes[j]);
@@ -564,6 +557,7 @@ define(["lib/d3"], function(d3, queue) {
     }
 
     network.nodeOrderIdx = idx;
+    setNumClusters(network, network.numClusters);
   }
 
   /*

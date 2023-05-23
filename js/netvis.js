@@ -274,7 +274,7 @@ define(["netdata", "lib/d3"], function(netdata, d3) {
    */
   function dendrogramLayout(network) {
 
-    var radius = network.display.radius;
+    var radius = network.display.radius - network.display.NODE_RADIUS_OFFSET;
 
     // We use the D3 cluster layout to draw the nodes in a circle.
     // This also lays out the tree nodes (see the
@@ -300,7 +300,7 @@ define(["netdata", "lib/d3"], function(netdata, d3) {
     // d3.cluster will layout the nodes, adding
     // x/y coordinates to each node object
     var clusterLayout  = d3.cluster()
-      .size([360, radius-network.display.NODE_RADIUS_OFFSET])
+      .size([360, radius])
       .separation(sep);
     clusterLayout(rootNode);
 
@@ -320,65 +320,32 @@ define(["netdata", "lib/d3"], function(netdata, d3) {
    */
   function fixedLayout(network) {
 
-    var radius    = network.display.radius;
-    var rootNode  = network.treeNodes[network.treeNodes.length - 1];
-    var nodes     = network.nodes;
-    var nodeOrder = network.nodeOrders[network.nodeOrderIdx];
+    var radius       = network.display.radius - network.display.NODE_RADIUS_OFFSET;
+    var nodes        = network.treeNodes[0].children;
+    var nodeOrder    = network.nodeOrders[network.nodeOrderIdx];
+    var orderedNodes = [];
 
-    // If pruningState is true, we need
-    // to hide disconnected nodes. So
-    // we filter the node list, and
-    // adjust the node ordering accordingly.
-    if (network.pruningState) {
+    for (var i = 0; i < nodeOrder.length; i++) {
 
-      var mask = [];
+      var node = nodes.find((n) => n.index == nodeOrder[i]);
 
-      for (var i = 0; i < nodes.length; i++) {
-
-        if (nodes[i].neighbours.length > 0) mask.push(1);
-        else                                mask.push(0);
+      if (node === undefined) {
+        continue;
       }
+      orderedNodes.push(node);
 
-      nodeOrder = netdata.adjustIndices(nodeOrder, mask);
-      nodes     = nodes.filter(function(n, i) {
-        return mask[i] > 0;
-      });
+      // Make our nodes look like the node
+      // objects created by d3.hierarchy
+      node.x           = i * (360 / nodes.length);
+      node.y           = radius;
+      node.data        = node;
+      node.clusterNode = node;
+      node.path        = function(target) {
+        return [this, target];
+      }
     }
 
-    var numNodes = nodes.length;
-
-    // We are constructing a dendrogram
-    // of depth 1 i.e. with a single root
-    // node, and [numNodes] leaf nodes.
-    //
-    // We need to add all of these attributes
-    // to each node in the dendrogram tree
-    // so that edge paths can be calculated.
-    //
-    // See the documentation for
-    // the d3.layout.cluster and
-    // d3.layout.bundle functions.
-    rootNode.x        = 0;
-    rootNode.y        = 0;
-    rootNode.depth    = 0;
-    rootNode.children = nodes;
-
-    for (var i = 0; i < numNodes; i++) {
-
-      var node = nodes[nodeOrder[i]];
-      var parent;
-
-      if (node.neighbours.length === 0) parent = null;
-      else                              parent = rootNode;
-
-      node.x        = (i / numNodes) * 360;
-      node.y        = radius - network.display.NODE_RADIUS_OFFSET;
-      node.parent   = parent;
-      node.depth    = 1;
-      node.children = null;
-    }
-
-    return nodes;
+    return orderedNodes;
   }
 
   /*
@@ -466,7 +433,7 @@ define(["netdata", "lib/d3"], function(netdata, d3) {
       }
 
       if (network.nodeNameIdx == -1)
-        return "" + (node.data.index + 1);
+        return "" + (node.data.index);
 
       return network.nodeNames[network.nodeNameIdx][node.data.index];
     }
