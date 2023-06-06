@@ -9,13 +9,13 @@ define(["lib/d3", "netvis"], function(d3, netvis) {
 
     /*
      * Shows or hides the network for the given node.
-     * This includes the edges on the node and the 
+     * This includes the edges on the node and the
      * thumbnails of the node neighbours.
      */
     function showNodeNetwork(node, show) {
 
       var pathElems     = node.pathElems;
-      var paths         = node.paths;
+      var paths         = node.edges.map(function(edge) {return edge.path;});
       var nbrElems      = node.nbrElems;
       var nbrLabelElems = node.nbrLabelElems;
       var nbrThumbElems = node.nbrThumbElems;
@@ -45,11 +45,11 @@ define(["lib/d3", "netvis"], function(d3, netvis) {
         edgeColour  = network.display.HLT_EDGE_COLOUR;
       }
 
-      if      (edgeWidth  === "scale")     
+      if      (edgeWidth  === "scale")
         edgeWidth  = network.scaleInfo.pathWidth;
-      if      (edgeColour === "default")   
+      if      (edgeColour === "default")
         edgeColour = network.scaleInfo.defPathColour;
-      else if (edgeColour === "highlight") 
+      else if (edgeColour === "highlight")
         edgeColour = network.scaleInfo.hltPathColour;
 
       nbrElems
@@ -65,7 +65,7 @@ define(["lib/d3", "netvis"], function(d3, netvis) {
         .attr("visibility", thumbVis)
         .attr("width",      thumbWidth)
         .attr("height",     thumbHeight);
-      
+
       pathElems
         .data(paths)
         .attr("stroke-width", edgeWidth)
@@ -75,11 +75,11 @@ define(["lib/d3", "netvis"], function(d3, netvis) {
     }
 
     /*
-     * Show or hide the given node, label, and thumbnail. The 
-     * 'show' parameter may be "highlight", in which case the 
-     * node is highlighted, "select", in which case the node 
-     * is highlighted in a slightly more emphatic manner, or 
-     * any other value, in which case the node thumbnail is 
+     * Show or hide the given node, label, and thumbnail. The
+     * 'show' parameter may be "highlight", in which case the
+     * node is highlighted, "select", in which case the node
+     * is highlighted in a slightly more emphatic manner, or
+     * any other value, in which case the node thumbnail is
      * hidden, and circle/label set to a default style.
      */
     function showNode(node, show) {
@@ -96,7 +96,7 @@ define(["lib/d3", "netvis"], function(d3, netvis) {
       if (show === "highlight") {
         opacity     = network.display.HLT_NODE_OPACITY;
         font        = network.display.HLT_LABEL_FONT;
-        fontWeight  = network.display.HLT_LABEL_WEIGHT; 
+        fontWeight  = network.display.HLT_LABEL_WEIGHT;
         fontSize    = network.display.HLT_LABEL_SIZE;
         nodeSize    = network.display.HLT_NODE_SIZE;
         thumbVis    = network.display.HLT_THUMB_VISIBILITY;
@@ -106,7 +106,7 @@ define(["lib/d3", "netvis"], function(d3, netvis) {
       else if (show === "select") {
         opacity     = network.display.SEL_NODE_OPACITY;
         font        = network.display.SEL_LABEL_FONT;
-        fontWeight  = network.display.SEL_LABEL_WEIGHT; 
+        fontWeight  = network.display.SEL_LABEL_WEIGHT;
         fontSize    = network.display.SEL_LABEL_SIZE;
         nodeSize    = network.display.SEL_NODE_SIZE;
         thumbVis    = network.display.SEL_THUMB_VISIBILITY;
@@ -135,15 +135,16 @@ define(["lib/d3", "netvis"], function(d3, netvis) {
 
     /*
      * Called when a node, its label or thumbnail is clicked.
-     * Selects that node, which involves highlighting the node 
+     * Selects that node, which involves highlighting the node
      * and its immediate network. Or if the node was already
      * selected, it is deselected.
      */
-    function mouseClickNode(node) {
+    function mouseClickNode(ev) {
 
+      var node         = ev.target.node;
       var oldSelection = network.selectedNode;
 
-      // Situation the first. No other node 
+      // Situation the first. No other node
       // was selected. Select this node.
       if (oldSelection === null) {
         network.selectedNode = node;
@@ -151,17 +152,17 @@ define(["lib/d3", "netvis"], function(d3, netvis) {
         showNode(       node, "select");
         showNodeNetwork(node,  true);
       }
-      
+
       // Situation the second. This node was
       // already selected. Deselect it.
       else if (oldSelection === node) {
         network.selectedNode = null;
 
         showNode(       node, false);
-        showNodeNetwork(node, false); 
+        showNodeNetwork(node, false);
       }
 
-      // Situation the third. Another node 
+      // Situation the third. Another node
       // was selected. Deselect that node,
       // and select this one.
       else {
@@ -177,13 +178,13 @@ define(["lib/d3", "netvis"], function(d3, netvis) {
         network.nodeSelectCb(network.selectedNode);
       }
     }
-    
+
     /*
-     * Called when the mouse moves over a node. 
+     * Called when the mouse moves over a node.
      * Highlights that node.
      */
-    function mouseOverNode(node) {
-      showNode(node, "select");
+    function mouseOverNode(ev) {
+      showNode(ev.target.node, "select");
     }
 
     /*
@@ -191,23 +192,25 @@ define(["lib/d3", "netvis"], function(d3, netvis) {
      * Removes any highlighting that was applied
      * by the mouseOverNode function.
      */
-    function mouseOutNode(node) {
+    function mouseOutNode(ev) {
 
-      // Situation the first. The node 
+      var node = ev.target.node;
+
+      // Situation the first. The node
       // is selected. Don't touch it.
       if (network.selectedNode === node) {
         return;
       }
 
-      // Situation the second. The node is a 
-      // neighbour of the selected node. Return 
+      // Situation the second. The node is a
+      // neighbour of the selected node. Return
       // it back to a 'highlight' state.
-      if (network.selectedNode !== null && 
+      if (network.selectedNode !== null &&
           (network.selectedNode.neighbours.indexOf(node) > -1)) {
         showNode(node, "highlight");
       }
 
-      // Situation the third. The node 
+      // Situation the third. The node
       // is just a node. Hide it.
       else {
         showNode(node, false);
@@ -221,7 +224,7 @@ define(["lib/d3", "netvis"], function(d3, netvis) {
     var svgThumbnails = network.display.svgThumbnails;
     var svgEdges      = network.display.svgEdges;
 
-    // configure mouse event callbacks on 
+    // configure mouse event callbacks on
     // node circles, labels, and thumbnails.
     svgNodes
       .selectAll("circle")
@@ -239,7 +242,7 @@ define(["lib/d3", "netvis"], function(d3, netvis) {
       .on("mouseout",  mouseOutNode)
       .on("click",     mouseClickNode);
 
-    // initialise the selection display, if 
+    // initialise the selection display, if
     // a node has previously been selected
     if (network.selectedNode != null) {
       showNode(       network.selectedNode, "select");
@@ -276,26 +279,37 @@ define(["lib/d3", "netvis"], function(d3, netvis) {
     }
     /*
      * Called when the mouse moves over a path in the network
-     * of the selected node. Pops up a tooltip displaying the 
+     * of the selected node. Pops up a tooltip displaying the
      * edge weights.
      */
-    function mouseOverPath(path) {
+    function mouseOverPath(ev) {
+
+      var edge = ev.target.edge;
 
       if (network.selectedNode === null) return;
-      if (network.selectedNode !== path.edge.i &&
-          network.selectedNode !== path.edge.j)  return;
+      if (network.selectedNode !== edge.i &&
+          network.selectedNode !== edge.j)  return;
 
-      var label = path.edge.i.name + " - " + 
-                  path.edge.j.name + "<br>";
-      for (var i = 0; i < path.edge.weights.length; i++) {
-        label = label + network.matrixLabels[i] + ": " 
-                      + path.edge.weights[i] + "<br>";
+      if (network.nodeNameIdx == -1) {
+        var iname = edge.i.index;
+        var jname = edge.j.index;
+      }
+      else {
+        var iname = network.nodeNames[network.nodeNameIdx][edge.i.index];
+        var jname = network.nodeNames[network.nodeNameIdx][edge.j.index];
+      }
+
+      var label = iname + " - " +
+                  jname + "<br>";
+      for (var i = 0; i < edge.weights.length; i++) {
+        label = label + network.matrixLabels[i] + ": "
+                      + edge.weights[i] + "<br>";
       }
 
       edgeLabelElem
         .html(label)
-        .style("left", (d3.event.pageX) + "px")
-        .style("top",  (d3.event.pageY) + "px")
+        .style("left", ev.pageX + "px")
+        .style("top",  ev.pageY + "px")
         .transition()
         .duration(50)
         .style("opacity", 0.7)
@@ -304,7 +318,7 @@ define(["lib/d3", "netvis"], function(d3, netvis) {
     /*
      * Hides the edge tooltip, if it is being displayed.
      */
-    function mouseOutPath(path) {
+    function mouseOutPath(ev) {
       edgeLabelElem
         .transition()
         .duration(50)
@@ -347,25 +361,23 @@ define(["lib/d3", "netvis"], function(d3, netvis) {
      * and the current network rotation, are stored in an object,
      * and the mouseDownPos variable pointed towards it.
      */
-    function mouseDownCanvas() {
-      
-      var mouseCoords = d3.mouse(this);
+    function mouseDownCanvas(ev) {
+
+      var mouseCoords = d3.pointer(ev, this);
 
       var x = mouseCoords[0] - network.display.width  / 2.0;
       var y = mouseCoords[1] - network.display.height / 2.0;
-      
+
       mouseDownPos.down  = true;
       mouseDownPos.x     = x;
       mouseDownPos.y     = y;
       mouseDownPos.angle = (Math.atan2(y, x) * 180.0/Math.PI) % 360;
-
-      d3.event.preventDefault();
     }
 
     /*
      * Clears the mouseDownPos reference.
      */
-    function mouseUpCanvas() {
+    function mouseUpCanvas(ev) {
       mouseDownPos.down    = false;
       mouseDownPos.origRot = mouseDownPos.newRot;
     }
@@ -375,14 +387,15 @@ define(["lib/d3", "netvis"], function(d3, netvis) {
      * is rotated according to the distance between the original
      * mouse click location, and the current mouse location.
      */
-    function mouseMoveCanvas() {
+    function mouseMoveCanvas(ev) {
 
       if (mouseDownPos.down === false) return;
 
-      var mouseCoords = d3.mouse(this);
+      var mouseCoords = d3.pointer(ev, this);
 
       var newX     = mouseCoords[0] - network.display.width  / 2.0;
       var newY     = mouseCoords[1] - network.display.height / 2.0;
+
       var oldX     = mouseDownPos.x;
       var oldY     = mouseDownPos.y;
       var oldRot   = mouseDownPos.origRot;
@@ -393,7 +406,7 @@ define(["lib/d3", "netvis"], function(d3, netvis) {
       mouseDownPos.newRot = newRot;
 
       parentGroup
-        .attr("transform", "translate(" + radius + "," + radius + ")" + 
+        .attr("transform", "translate(" + radius + "," + radius + ")" +
                            "rotate(" + newRot + ")");
     }
 
@@ -405,13 +418,13 @@ define(["lib/d3", "netvis"], function(d3, netvis) {
   }
 
   /*
-   * Configures mouse-based interaction with the full 
-   * connectivity network. When the mouse moves over a node 
-   * or its label, it is highlighted and its thumbnail 
-   * displayed. When a mouse click occurs on a node, its 
+   * Configures mouse-based interaction with the full
+   * connectivity network. When the mouse moves over a node
+   * or its label, it is highlighted and its thumbnail
+   * displayed. When a mouse click occurs on a node, its
    * label or thumbnail, it is 'selected'.  The edges of
    * that node, and its neighbour nodes are then highlighted,
-   * and remain so until the node is clicked again, or 
+   * and remain so until the node is clicked again, or
    * another node is clicked upon.
    */
   function configDynamics(network) {
@@ -423,14 +436,14 @@ define(["lib/d3", "netvis"], function(d3, netvis) {
     var svgThumbnails = network.display.svgThumbnails;
     var svgEdges      = network.display.svgEdges;
 
-    // The selectedNode variable is used to keep 
-    // track of the currently selected node. When 
+    // The selectedNode variable is used to keep
+    // track of the currently selected node. When
     // the selected node changes, the nodeSelectCb
     // function is called (see setNodeSelectCb)
     if (!network.selectedNode)
       network.selectedNode = null;
 
-    // Here, we pre-emptively run CSS selector lookups 
+    // Here, we pre-emptively run CSS selector lookups
     // so they don't have to be done on every mouse event.
     // Makes the interaction a bit more snappy.
     network.nodes.forEach(function(node) {

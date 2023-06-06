@@ -5,32 +5,19 @@
  * Author: Paul McCarthy <pauldmccarthy@gmail.com>
  */
 define(
-  ["lib/d3", "lib/mustache", "lib/queue", "netdata", "netvis", "netvis_dynamics"],
-  function(d3, mustache, queue, netdata, netvis, dynamics) {
+  ["lib/d3", "lib/mustache", "netdata", "netvis", "netvis_dynamics"],
+  function(d3, mustache, netdata, netvis, dynamics) {
 
   /*
    * Creates a collection of widgets for controlling the network display.
-   *
-   *   - highlightOn: Initial highlighted state of the network.
-   *   - subnetOn:    Initial state of the sub-network.
    */
   function createNetworkControls(network,
                                  networkDiv,
-                                 div,
-                                 subNetDiv,
-                                 subNetWidth,
-                                 subNetHeight,
-                                 highlightOn,
-                                 subnetOn) {
+                                 div) {
 
-    div = d3.select(div)[0][0];
+    div = d3.select(div);
 
-    var subnet = null;
-
-    if (subNetDiv !== null)
-      subNetDiv = d3.select(subNetDiv)[0][0];
-
-    d3.text("js/netctrl.html", function(error, template) {
+    d3.text("js/netctrl.html").then(function(template) {
 
       // The file netctrl.html is a mustache template.
       // Before setting up input event handling and whatnot,
@@ -49,187 +36,40 @@ define(
 
       // Create some HTML from the template,
       // and put it in the control div
-      template      = mustache.render(template, templateData);
-      div.innerHTML = template;
+      template             = mustache.render(template, templateData);
+      div.node().innerHTML = template;
 
       // Now we can retrieve all of the input
       // elements from the rendered HTML
-      var thresholdIdx      = div.querySelector("#thresholdIdx");
-      var nodeOrderIdx      = div.querySelector("#nodeOrderIdx");
-      var numClusters       = div.querySelector("#numClusters");
-      var edgeColourIdx     = div.querySelector("#edgeColourIdx");
-      var edgeColourBar     = div.querySelector("#edgeColourBar");
-      var edgeWidthIdx      = div.querySelector("#edgeWidthIdx");
-      var edgeWidthLegend   = div.querySelector("#edgeWidthLegend");
-      var nodeColourIdx     = div.querySelector("#nodeColourIdx");
-      var nodeNameIdx       = div.querySelector("#nodeNameIdx");
-      var showSubNetwork    = div.querySelector("#showSubNetwork");
-      var highlightNetwork  = div.querySelector("#highlightNetwork");
-      var pruneDisconnected = div.querySelector("#pruneDisconnected");
-      var openAsSVG         = div.querySelector("#openAsSVG");
-
-      // a checkbox is created and inserted
-      // into the #showSubNetwork div only
-      // if a subNetDiv was specified
-      var showSubNetworkCtrl = null;
+      var thresholdIdx      = div.select("#thresholdIdx")     .node();
+      var nodeOrderIdx      = div.select("#nodeOrderIdx")     .node();
+      var numClusters       = div.select("#numClusters")      .node();
+      var edgeColourIdx     = div.select("#edgeColourIdx")    .node();
+      var edgeColourBar     = div.select("#edgeColourBar");
+      var edgeWidthIdx      = div.select("#edgeWidthIdx")     .node();
+      var edgeWidthLegend   = div.select("#edgeWidthLegend");
+      var nodeColourIdx     = div.select("#nodeColourIdx")    .node();
+      var nodeNameIdx       = div.select("#nodeNameIdx")      .node();
+      var pruneDisconnected = div.select("#pruneDisconnected").node();
+      var openAsSVG         = div.select("#openAsSVG")        .node();
 
       // get the input widgets for each threshold value
       var thresholdValues = network.thresholdValues.map(function(val, i) {
-          return div.querySelector("#thresholdValue" + i);
+          return div.select("#thresholdValue" + i).node();
       });
 
       var currentThresholdValues = network.thresholdValues.map(function(val, i) {
-          return div.querySelector("#currentThresholdValue" + i);
+          return div.select("#currentThresholdValue" + i).node();
       });
 
-      var currentNumClusters = div.querySelector("#currentNumClusters");
+      var currentNumClusters = div.select("#currentNumClusters").node();
 
       /*
-       * Refreshes the network display, and the subnetwork
-       * display, if redrawSubNet is true, and a subnetwork
-       * is currently being displayed.
+       * Refreshes the network display
        */
-      function redraw(redrawSubNet) {
-
+      function redraw() {
         netvis.redrawNetwork(network);
         dynamics.configDynamics(network);
-
-        if (redrawSubNet && subnet !== null)  {
-          netvis.redrawNetwork(subnet);
-          dynamics.configDynamics(subnet);
-        }
-      }
-
-      /*
-       * Shows/hides/refreshes the subnetwork display.
-       *
-       * Called when the 'showSubNetwork' checkbox is clicked, and
-       * when the subnetwork display needs to be refreshed.
-       */
-      function toggleSubNetwork() {
-
-        // clear any previously
-        // displayed subnetwork
-        if (subnet !== null) {
-          netvis.clearNetwork(subnet);
-          subnet = null;
-        }
-
-        // There is no subnetwork div, so
-        // we cannot display a subnetwork
-        if (showSubNetworkCtrl === null)
-          return;
-
-        // Subnetwork display is
-        // currently disabled
-        if (!(showSubNetworkCtrl.checked))
-          return;
-
-        // There is no node selected.
-        // Nothing to do here.
-        if (network.selectedNode === null)
-          return;
-
-        // Extract the subnetwork for the
-        // selected node, and display it.
-        subnet = netdata.extractSubNetwork(network, network.selectedNode.index);
-
-        // tweak the sub-network display a little bit
-        subnet.display = {};
-        subnet.display.DEF_THUMB_VISIBILITY = "visible";
-        subnet.display.DEF_NODE_OPACITY     = 1.0;
-        subnet.display.DEF_EDGE_WIDTH       = "scale";
-        subnet.display.DEF_THUMB_WIDTH      = network.display.SEL_THUMB_WIDTH;
-        subnet.display.DEF_THUMB_HEIGHT     = network.display.SEL_THUMB_HEIGHT;
-        subnet.display.HLT_THUMB_WIDTH      = network.display.SEL_THUMB_WIDTH;
-        subnet.display.HLT_THUMB_HEIGHT     = network.display.SEL_THUMB_HEIGHT;
-        subnet.display.SEL_THUMB_WIDTH      = network.display.SEL_THUMB_HEIGHT * 1.33;
-        subnet.display.SEL_THUMB_HEIGHT     = network.display.SEL_THUMB_HEIGHT * 1.33;
-
-        // share colour/scaling information between
-        // the parent network and sub-network
-        subnet.scaleInfo = network.scaleInfo;
-
-        // Apply highlighting, but don't redraw, as
-        // the subnetwork has not been displayed yet
-        toggleHighlightNetwork(undefined, false);
-
-        // display the subnetwork
-        netvis.displayNetwork(subnet, subNetDiv, subNetWidth, subNetHeight);
-        dynamics.configDynamics(subnet);
-      }
-
-      /*
-       * Called when the 'highlightNetwork' checkbox is clicked.
-       * Enables/disables some 'highlighted' visibility options.
-       *
-       * If the draw parameter is true (the default), the
-       * network (and subnetwork) display will be redrawn.
-       */
-      function toggleHighlightNetwork(ev, draw) {
-
-        if (typeof draw === "undefined") {
-          draw = true;
-        }
-
-        // These functions only show nodes/thumbnails/labels
-        // in highlighted state if they have at least one
-        // adjacent edge
-        var highlightThumbVis = function(node) {
-          if (node.neighbours.length == 0)
-            return netvis.visDefaults.DEF_THUMB_VISIBILITY;
-          else
-            return netvis.visDefaults.HLT_THUMB_VISIBILITY;
-        };
-
-        var highlightNodeOpacity = function(node) {
-          if (node.neighbours.length == 0)
-            return netvis.visDefaults.DEF_NODE_OPACITY;
-          else
-            return netvis.visDefaults.HLT_NODE_OPACITY;
-        };
-
-        var highlightLabelWeight = function(node) {
-          if (node.neighbours.length == 0)
-            return netvis.visDefaults.DEF_LABEL_WEIGHT;
-          else
-            return netvis.visDefaults.HLT_LABEL_WEIGHT;
-        };
-
-        var displays = [network.display];
-
-        if (subnet !== null) {
-          displays.push(subnet.display);
-        }
-
-        for (var i = 0; i < displays.length; i++) {
-
-          var d = displays[i];
-          if (highlightNetwork.checked) {
-
-            d.DEF_THUMB_VISIBILITY = highlightThumbVis;
-            d.DEF_THUMB_WIDTH      = netvis.visDefaults.SEL_THUMB_WIDTH;
-            d.DEF_THUMB_HEIGHT     = netvis.visDefaults.SEL_THUMB_HEIGHT;
-            d.DEF_EDGE_COLOUR      = netvis.visDefaults.HLT_EDGE_COLOUR;
-            d.DEF_EDGE_OPACITY     = netvis.visDefaults.HLT_EDGE_OPACITY;
-            d.DEF_EDGE_WIDTH       = netvis.visDefaults.HLT_EDGE_WIDTH;
-            d.DEF_NODE_OPACITY     = highlightNodeOpacity;
-            d.DEF_LABEL_WEIGHT     = highlightLabelWeight;
-          }
-          else {
-            d.DEF_THUMB_VISIBILITY = netvis.visDefaults.DEF_THUMB_VISIBILITY;
-            d.DEF_THUMB_WIDTH      = netvis.visDefaults.DEF_THUMB_WIDTH;
-            d.DEF_THUMB_HEIGHT     = netvis.visDefaults.DEF_THUMB_HEIGHT;
-            d.DEF_EDGE_COLOUR      = netvis.visDefaults.DEF_EDGE_COLOUR;
-            d.DEF_EDGE_OPACITY     = netvis.visDefaults.DEF_EDGE_OPACITY;
-            d.DEF_EDGE_WIDTH       = netvis.visDefaults.DEF_EDGE_WIDTH;
-            d.DEF_NODE_OPACITY     = netvis.visDefaults.DEF_NODE_OPACITY;
-            d.DEF_LABEL_WEIGHT     = netvis.visDefaults.DEF_LABEL_WEIGHT;
-          }
-        }
-
-        if (draw)
-          redraw(true);
       }
 
       function togglePruneDisconnected() {
@@ -245,25 +85,23 @@ define(
        */
       function drawEdgeColourBar() {
 
-        edgeColourBar.innerHTML = "";
+        //svg canvas for colour bar (drawn below)
+        edgeColourBar.node().innerHTML = "";
+        var svg = edgeColourBar.append("svg")
+          .attr("width",  150)
+          .attr("height", 15);
 
-        var min     = -network.matrixAbsMaxs[network.scaleInfo.edgeColourIdx];
-        var max     =  network.matrixAbsMaxs[network.scaleInfo.edgeColourIdx];
+        var min = -network.matrixAbsMaxs[network.scaleInfo.edgeColourIdx];
+        var max =  network.matrixAbsMaxs[network.scaleInfo.edgeColourIdx];
 
         if (network.display.EDGE_COLOUR_MAX !== null) {
           min = -network.display.EDGE_COLOUR_MAX;
           max =  network.display.EDGE_COLOUR_MAX;
         }
 
-        var d3ecb   = d3.select(edgeColourBar);
         var step    = (max - min) / 20.0;
         var points  = d3.range(min, max + 1, step);
         var fmt     = d3.format("5.2f");
-
-        //svg canvas for colour bar (drawn below)
-        var svg = d3ecb.append("svg")
-          .attr("width",  150)
-          .attr("height", 15);
 
         var minLabel = svg.append("text")
           .attr("x",            0)
@@ -301,15 +139,13 @@ define(
        */
       function drawEdgeWidthLegend() {
 
-        edgeWidthLegend.innerHTML = "";
-        var d3ewl = d3.select(edgeWidthLegend);
-
-        var svg = d3ewl.append("svg")
+        edgeWidthLegend.node().innerHTML = "";
+        var svg = edgeWidthLegend.append("svg")
           .attr("width",  150)
           .attr("height", 100);
 
-        var min     = network.matrixAbsMins[network.scaleInfo.edgeWidthIdx];
-        var max     = network.matrixAbsMaxs[network.scaleInfo.edgeWidthIdx];
+        var min = network.matrixAbsMins[network.scaleInfo.edgeWidthIdx];
+        var max = network.matrixAbsMaxs[network.scaleInfo.edgeWidthIdx];
 
         if (network.display.EDGE_WIDTH_MIN !== null) {
           min = network.display.EDGE_WIDTH_MIN;
@@ -339,12 +175,6 @@ define(
             .text(fmt(value));
         });
       }
-
-
-      // Register for selected node
-      // changes on the full network
-      if (subNetDiv !== null)
-          dynamics.setNodeSelectCb(network, toggleSubNetwork);
 
       // Populate the thresholdIdx, edgeColourIdx
       // and edgeWidthIdx drop down boxes - they
@@ -411,45 +241,38 @@ define(
       // Set up event handlers
       // on all of the widgets
 
-      numClusters
-        .onchange = function() {
+      numClusters.onchange = function() {
           currentNumClusters.innerHTML = this.value;
           netdata.setNumClusters(network, parseInt(this.value));
-          redraw(false);
+          redraw();
         };
 
-      edgeColourIdx
-        .onchange = function() {
+      edgeColourIdx.onchange = function() {
           netdata.setEdgeColourIdx(network, parseInt(this.value));
           drawEdgeColourBar();
-          redraw(true);
+          redraw();
         };
 
-      edgeWidthIdx
-        .onchange = function() {
+      edgeWidthIdx.onchange = function() {
           netdata.setEdgeWidthIdx(network, parseInt(this.value));
           drawEdgeWidthLegend();
-          redraw(true);
+          redraw();
         };
 
       nodeNameIdx.onchange = function() {
         netdata.setNodeNameIdx(network, parseInt(this.value));
-        redraw(true);
+        redraw();
       };
 
       nodeColourIdx.onchange = function() {
         netdata.setNodeColourIdx(network, parseInt(this.value));
-        redraw(true);
+        redraw();
       };
 
       thresholdIdx.onchange = function() {
         netdata.setThresholdIdx(network, parseInt(this.value));
 
-        // Network thresholding has changed, meaning
-        // that the subnetwork (if displayed) needs
-        // to be regenerated.
-        toggleSubNetwork(); // recreate and reshow
-        redraw(false);
+        redraw();
       };
 
       nodeOrderIdx.onchange = function() {
@@ -473,23 +296,10 @@ define(
 
           currentThresholdValues[i].innerHTML = this.value;
           netdata.setThresholdValue(network, i, parseFloat(this.value));
-          toggleSubNetwork(); // recreate and reshow
-          redraw(false);
+          redraw();
         };
       });
 
-      // Create a show/hide button if we have been
-      // given a div in which to display a subnetwork
-      if (subNetDiv !== null) {
-        showSubNetworkCtrl = document.createElement("input");
-
-        showSubNetworkCtrl.type     = "checkbox";
-        showSubNetworkCtrl.checked  = false;
-        showSubNetworkCtrl.onchange = toggleSubNetwork;
-        showSubNetwork.appendChild(showSubNetworkCtrl);
-      }
-
-      highlightNetwork .onchange = toggleHighlightNetwork;
       pruneDisconnected.onchange = togglePruneDisconnected;
 
       /*
@@ -498,74 +308,14 @@ define(
        */
       openAsSVG.onclick = function() {
 
-        // Thanks http://stackoverflow.com/a/26595628
-        var b64encode = function (input) {
-          var uInt8Array = new Uint8Array(input),
-              i = uInt8Array.length;
-          var biStr = []; //new Array(i);
-          while (i--) { biStr[i] = String.fromCharCode(uInt8Array[i]);  }
-          var base64 = window.btoa(biStr.join(''));
-          return base64;
-        };
-
-
         var div       = d3.select(networkDiv);
-        var zerofmt   = d3.format("04d");
-        var svgWindow = window.open();
-        var q         = queue();
-        var imgSelect = div.selectAll("image");
-        var imgElems  = [];
+        var encoded = new Blob([div.html()], {type:"image/svg+xml;charset=utf-8"});
+        var url     = URL.createObjectURL(encoded);
+        window.open(url);
 
-        // This is a bit fiddly, because the network svg
-        // has been created using links to the thumbnails.
-        // In order to create a standalone svg scene, we
-        // need to download all of those thumbnails and
-        // insert them into the svg, in place of the
-        // original links.
-
-        // Function which downloads the thumbnail
-        // for the specified node.
-        var getthumb = function(nodeIdx, callback) {
-
-          var url = network.thumbUrl + "/" + zerofmt(nodeIdx) + ".png";
-          d3.xhr(url)
-            .mimeType("image/png")
-            .responseType("arraybuffer")
-            .get(callback);
-        };
-
-        // Queue a request to download all the thumbnails
-        if (network.thumbUrl !== null) {
-          for (var i = 0; i < network.nodes.length; i++) {
-
-            var imgElem = imgSelect.filter(".node-" + i);
-
-            if (imgElem !== undefined) {
-              imgElems.push(imgElem);
-              q = q.defer(getthumb, i);
-            }
-          }
-        }
-
-        // When all the thumbs have been downloaded,
-        q.awaitAll(function(error, thumbs) {
-
-          thumbs.map(function(thumb, idx) {
-
-            // b64 encode them, and insert
-            // them into the svg
-            var encoded = b64encode(thumb.response);
-            imgElems[idx].attr("xlink:href", "data:image/png+xml;base64,\n" + encoded);
-
-          });
-
-          // Load the full SVG in a new window
-          var encoded = btoa(div.html());
-          var url     = "data:image/svg+xml;base64,\n" + encoded;
-
-          svgWindow.location = url;
-        });
-
+        // Must return false to stop the browser
+        // from opening the <a href> url (which
+        // is just a placeholder - see netctrl.html)
         return false;
       };
 
@@ -578,23 +328,12 @@ define(
       nodeColourIdx     .selectedIndex = network.scaleInfo.nodeColourIdx;
       nodeNameIdx       .selectedIndex = network.nodeNameIdx + 1;
       nodeOrderIdx      .selectedIndex = network.nodeOrderIdx + 1;
-      highlightNetwork  .value         = false;
       pruneDisconnected .value         = network.prune;
 
       thresholdValues.forEach(function(thresVal, i) {
         thresVal.value                      = network.thresholdValues[i];
         currentThresholdValues[i].innerHTML = network.thresholdValues[i];
       });
-
-      if (highlightOn) {
-        highlightNetwork.checked = true;
-        toggleHighlightNetwork();
-      }
-
-      if (subnetOn && (subNetDiv !== null)) {
-        showSubNetworkCtrl.checked = true;
-        toggleSubNetwork();
-      }
     });
   }
 

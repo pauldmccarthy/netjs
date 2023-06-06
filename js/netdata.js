@@ -3,7 +3,7 @@
  *
  * Author: Paul McCarthy <pauldmccarthy@gmail.com>
  */
-define(["lib/d3", "lib/queue"], function(d3, queue) {
+define(["lib/d3"], function(d3, queue) {
 
   /*
    * Flattens the dendrogram tree for the given network
@@ -318,17 +318,16 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
    */
   function setNumClusters(network, numClusts) {
 
-    if (network.linkage === null) {
+    if (network.linkage === null || network.nodeOrderIdx != -1) {
 
-      // Create a dummy dendrogram with a single cluster
-      var root = {};
-      root.index    = network.nodes.length;
-      // Make sure we take a copy of the
+      // Create a dummy dendrogram with a single
+      // cluster Make sure we take a copy of the
       // nodes array for the root node's
       // children, as the root node children
       // might be modified
+      var root      = {};
       root.children = network.nodes.slice();
-      network.nodes.forEach(function(node) {node.parent = root;});
+      root.children.forEach(function(node) {node.parent = root;});
       network.treeNodes = [root];
 
       pruneDendrogramTree(network);
@@ -396,12 +395,6 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
         edge.j       = network.nodes[j];
         edge.weights = network.matrices.map(function(mat) {return mat[i][j];});
 
-        // d3.layout.bundle and d3.layout.force require two
-        // attributes, 'source' and 'target', so we add them
-        // here purely for convenience.
-        edge.source  = edge.i;
-        edge.target  = edge.j;
-
         network.edges.push(edge);
         network.nodes[i].neighbours.push(network.nodes[j]);
         network.nodes[j].neighbours.push(network.nodes[i]);
@@ -427,7 +420,7 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
     nodeOrders,
     nodeOrderLabels,
     nodeOrderIdx,
-    thumbUrl,
+    thumbnails,
     thresholdFunc,
     thresholdValues,
     thresholdValueLabels,
@@ -450,11 +443,10 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
       if (linkageOrder !== null) node.order = linkageOrder.indexOf(i);
       else                       node.order = i;
 
-      // Attach a thumbnail URL to
+      // Attach a thumbnail to
       // every node in the network
-      if (thumbUrl !== null) {
-        var imgUrl = thumbUrl + "/" + zerofmt(i) + ".png";
-        node.thumbnail = imgUrl;
+      if (thumbnails !== null) {
+        node.thumbnail = thumbnails[i];
       }
       else {
         node.thumbnail = null;
@@ -475,7 +467,6 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
     network.nodeOrders           = nodeOrders;
     network.nodeOrderLabels      = nodeOrderLabels;
     network.nodeOrderIdx         = nodeOrderIdx;
-    network.thumbUrl             = thumbUrl;
     network.thresholdFunc        = thresholdFunc;
     network.thresholdValues      = thresholdValues;
     network.thresholdValueLabels = thresholdValueLabels;
@@ -503,8 +494,6 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
     scaleInfo.edgeWidthIdx  = thresholdIdx;
     scaleInfo.edgeColourIdx = thresholdIdx;
     scaleInfo.nodeColourIdx = 0;
-
-    // console.log(network);
 
     return network;
   }
@@ -568,6 +557,7 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
     }
 
     network.nodeOrderIdx = idx;
+    setNumClusters(network, network.numClusters);
   }
 
   /*
@@ -614,16 +604,12 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
    * the resulting network to the onLoadFunc callback
    * function which was passed to loadNetwork.
    */
-  function onDataLoad(error, args) {
-
-    if (error !== null) {
-      throw error;
-    }
+  function onDataLoad(args) {
 
     var stdArgs         = args[0];
     var nodeDataLabels  = stdArgs.nodeDataLabels;
     var matrixLabels    = stdArgs.matrixLabels;
-    var thumbUrl        = stdArgs.thumbnails;
+    var thumbnails      = stdArgs.thumbnails;
     var thresFunc       = stdArgs.thresFunc;
     var thresVals       = stdArgs.thresVals;
     var thresLabels     = stdArgs.thresLabels;
@@ -650,9 +636,14 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
     var nodeNames  = args.slice(offset, offset + numNodeNames);
     offset        += numNodeNames;
     var nodeOrders = args.slice(offset, offset + numNodeOrders);
+    offset        += numNodeOrders;
+    if (thumbnails !== null) {
+      thumbnails = args.slice(offset);
+    }
 
-    if (linkage !== null)
+    if (linkage !== null) {
       linkage = parseTextMatrix(linkage);
+    }
 
     if (linkageOrder !== null)  {
       linkageOrder = parseTextMatrix(linkageOrder);
@@ -729,7 +720,15 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
       }
     });
 
+    if (thumbnails !== null) {
+      if (thumbnails.length !== numNodes) {
+        throw "Number of thumbnails does not equal " +
+          "number of nodes (" + thumbnails.length + ")";
+      }
+    }
+
     // create the network
+
     network = createNetwork(
       matrices,
       matrixLabels,
@@ -743,7 +742,7 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
       nodeOrders,
       nodeOrderLabels,
       nodeOrderIdx,
-      thumbUrl,
+      thumbnails,
       thresFunc,
       thresVals,
       thresLabels,
@@ -832,12 +831,8 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
    *   - nodeOrderLabels: Optional. A list of labels for each of the
    *                      above node orderings.
    *
-   *   - thumbnails:      Optional. A URL pointing to a folder in
-   *                      which thumbnails for each node may be
-   *                      found. Thumbnail file names must currently
-   *                      be named according to the format "%04d.png",
-   *                      where "%04d" is the zero-indexed node index
-   *                      in the network, padded to four characters.
+   *   - thumbnails:      Optional. A list of paths of thumbnail images
+   *                      for each node.
    *
    *   - thresFunc:       Required. A function which accepts two
    *                      parameters - a connectivity matrix, and a
@@ -942,50 +937,51 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
     if (a.thresVals.length !== a.thresLabels.length)
       throw "Threshold value and label lengths do not match";
 
-    // The qId function is an identity function
-    // which may be used to pass standard
-    // arguments (i.e. arguments which are not
-    // the result of an asychronous load) to the
-    // await/awaitAll functions.
-    function qId(arg, cb) {cb(null, arg);}
 
     // Load all of the network data, and
     // pass it to the onDataLoad function.
-    var q = queue();
-
-    // standard arguments
-    q = q.defer(qId, a);
+    // All downloaded items are appended
+    // to a list which is then passed to
+    // onDataLoad.
+    var q = [Promise.resolve(a)];
 
     // linkage data
-    if (a.linkage !== null) q = q.defer(d3.text, a.linkage);
-    else                    q = q.defer(qId,     a.linkage);
+    if (a.linkage !== null) q.push(d3.text(        a.linkage));
+    else                    q.push(Promise.resolve(a.linkage));
 
     // linkage order
-    if (a.linkageOrder !== null) q = q.defer(d3.text, a.linkageOrder);
-    else                         q = q.defer(qId,     a.linkageOrder);
+    if (a.linkageOrder !== null) q.push(d3.text(        a.linkageOrder));
+    else                         q.push(Promise.resolve(a.linkageOrder));
 
     // node data
     a.nodeData.forEach(function(url) {
-      q = q.defer(d3.text, url);
+      q.push(d3.text(url));
     });
 
     // matrix data
     a.matrices.forEach(function(url) {
-      q = q.defer(d3.text, url);
+      q.push(d3.text(url));
     });
 
     // node names
     a.nodeNames.forEach(function(url) {
-      q = q.defer(d3.text, url);
+      q.push(d3.text(url));
     });
 
     // node orders
     a.nodeOrders.forEach(function(url) {
-      q = q.defer(d3.text, url);
+      q.push(d3.text(url));
     });
 
+    // node thumbnails
+    if (a.thumbnails !== null) {
+      a.thumbnails.forEach(function(url) {
+        q.push(d3.buffer(url));
+      });
+    }
+
     // load all the things!
-    q.awaitAll(onDataLoad);
+    Promise.all(q).then(onDataLoad);
   }
 
   /*
@@ -995,7 +991,7 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
   function parseTextMatrix(matrixText) {
 
     // create a parser for space delimited text
-    var parser = d3.dsv(" ", "text/plain");
+    var parser = d3.dsvFormat(" ");
 
     // parse the text data, converting each value to
     // a float and ignoring any extraneous whitespace
@@ -1033,8 +1029,6 @@ define(["lib/d3", "lib/queue"], function(d3, queue) {
 
     return newIndices;
   }
-
-
 
   var netdata               = {};
   netdata.loadNetwork       = loadNetwork;
